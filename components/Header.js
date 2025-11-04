@@ -204,7 +204,7 @@ const Header = () => {
 								</h1>
 								<div className="mt-2">
 									<h3 className="poppins mx-auto w-full text-center text-base md:mx-0  md:text-xl lg:text-base">
-										UNC-Chapel Hill&apos;s student-run, freeform radio station
+										Duke and Durham&apos;s alternative, non-commmercial radio station
 									</h3>
 								</div>
 							</div>
