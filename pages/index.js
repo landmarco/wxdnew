@@ -6,6 +6,21 @@ import HomepageBanner from '../components/HomepageBanner'
 import Link from 'next/link'
 import photo from '../images/logo.png'
 import Image from 'next/image'
+import HoverImageLinks from '../components/HoverImageLinks'
+
+// Update this list to surface additional hoverable image links on the homepage.
+const homepageHoverLinks = [
+	{
+		id: 'paperclip-wknc',
+		href: 'https://wknc.org',
+		defaultSrc: '/clipA.jpg',
+		hoverSrc: '/clipB.jpg',
+		alt: 'Paperclip linking to WKNC',
+		width: 160,
+		height: 160,
+		openInNewTab: true,
+	},
+]
 
 // home page
 export default function Home(props) {
@@ -21,6 +36,10 @@ export default function Home(props) {
 
 			{/* Header with WXYC logo lives here */}
 			<div className="mx-auto lg:flex hidden w-5/6 flex-col items-start justify-center pt-10 md:mb-10 md:pt-2 ">
+					<HoverImageLinks
+						items={homepageHoverLinks}
+						className="items-start self-start"
+					/>
 					<Link href="/">
 						{/* Header text parent container */}
 						<div className="mb-20 lg:mb-5 flex  w-full cursor-pointer flex-col items-center justify-center pt-20 md:flex-row md:items-end md:pt-20 lg:pt-1">
