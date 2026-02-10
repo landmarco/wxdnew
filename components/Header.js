@@ -110,41 +110,53 @@ const Header = () => {
 							</Menu>
 						</div>
 
-						<div className="ml-10 flex h-8 text-3xl">
-							<Link
-								href="/about"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={toggleMenu}
-							>
-								About
-							</Link>
-						</div>
+			<div className="ml-10 flex h-8 text-3xl">
+				<Link
+					href="/about"
+					legacyBehavior={false}
+					className="cursor-pointer"
+					rel="noopener noreferrer"
+					onClick={toggleMenu}
+				>
+					About
+				</Link>
+			</div>
 
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/programming"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={toggleMenu}
-							>
-								Programming
-							</Link>
-						</div>
+			<div className="ml-10 mt-8 flex h-8 text-3xl">
+				<Link
+					href="/programming"
+					legacyBehavior={false}
+					className="cursor-pointer"
+					rel="noopener noreferrer"
+					onClick={toggleMenu}
+				>
+					Programming
+				</Link>
+			</div>
 
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/archive"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={toggleMenu}
-							>
-								Archive
-							</Link>
-						</div>
+			<div className="ml-10 mt-8 flex h-8 text-3xl">
+				<Link
+					href="/playlists"
+					legacyBehavior={false}
+					className="cursor-pointer"
+					rel="noopener noreferrer"
+					onClick={toggleMenu}
+				>
+					Playlists
+				</Link>
+			</div>
+
+			<div className="ml-10 mt-8 flex h-8 text-3xl">
+				<Link
+					href="/archive"
+					legacyBehavior={false}
+					className="cursor-pointer"
+					rel="noopener noreferrer"
+					onClick={toggleMenu}
+				>
+					Archive
+				</Link>
+			</div>
 
 						<div className="ml-10 mt-8 flex h-8 text-3xl">
 							<Link
@@ -239,16 +251,24 @@ const Header = () => {
 								</a>
 							</Link>
 
-							<Link href="/programming">
-								<a className="flex h-12 grow items-center justify-center">
-									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										Programming
-									</p>
-								</a>
-							</Link>
+			<Link href="/programming">
+				<a className="flex h-12 grow items-center justify-center">
+					<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
+						Programming
+					</p>
+				</a>
+			</Link>
 
-							<Link href="/archive">
-								<a className="flex h-12 grow items-center justify-center">
+			<Link href="/playlists">
+				<a className="flex h-12 grow items-center justify-center">
+					<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
+						Playlists
+					</p>
+				</a>
+			</Link>
+
+			<Link href="/archive">
+				<a className="flex h-12 grow items-center justify-center">
 									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
 										Archive
 									</p>
