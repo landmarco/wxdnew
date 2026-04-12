@@ -17,7 +17,7 @@ const DropdownMenu = () => {
 								href="https://stream.wxdu.art/wxdu192.mp3"
 								target="_blank"
 							>
-								Stream (MP3)
+								Stream
 							</a>
 						</Menu.Item>
 					</div>

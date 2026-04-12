@@ -1,6 +1,7 @@
 import React, {useState} from 'react'
 import Link from 'next/link'
 import DropdownMenu from './DropdownMenu'
+import DropdownAbout from './DropdownAbout'
 import photo from '../images/logo.png'
 import Image from 'next/image'
 import AudioPlayerStream from '../components/audioplayers/AudioPlayerStream'
@@ -223,7 +224,7 @@ const Header = () => {
 							<Link href="/about">
 								<a className="flex h-12 grow items-center justify-center">
 									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										About
+										<DropdownAbout />
 									</p>
 								</a>
 							</Link>
