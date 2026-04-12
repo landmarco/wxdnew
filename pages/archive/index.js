@@ -38,7 +38,7 @@ export default function EventList(props) {
 			<div className="relative z-10 -mt-2 flex w-full flex-col items-center justify-between md:w-5/6 md:flex-row">
 				<div className="relative z-20 mt-5 text-sm md:text-base">
 					An archive of WXDU&apos;s weekly specialty shows and events.{' '}
-					<a href="../page/programming" className="underline">
+					<a href="../programming" className="underline">
 						Learn more about WXDU&apos;s specialty programming.
 					</a>
 				</div>

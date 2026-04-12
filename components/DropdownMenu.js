@@ -14,21 +14,21 @@ const DropdownMenu = () => {
 					<div className="text-medium flex w-full items-center justify-center px-4 py-2 text-white hover:text-blue-300">
 						<Menu.Item>
 							<a
-								href="https://apps.apple.com/us/app/wxyc-radio/id353182815"
+								href="https://stream.wxdu.art/wxdu192.mp3"
 								target="_blank"
 							>
-								iPhone App
+								Stream (MP3)
 							</a>
 						</Menu.Item>
 					</div>
 					<div className="text-medium flex w-full items-center justify-center rounded-md px-4 py-2  text-white hover:text-blue-300">
 						<Menu.Item>
 							<Link
-								href="https://stream.wxdu.art/wxdu192.mp3"
+								href="https://stream.wxdu.art/wxdu128.ogg"
 								target="_blank"
 								legacyBehavior={false}
 							>
-								Streaming
+								Stream (ogg)
 							</Link>
 						</Menu.Item>
 					</div>
