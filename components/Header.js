@@ -81,7 +81,7 @@ const Header = () => {
 										<Menu.Item>
 											<Link
 												//href="https://audio-mp3.ibiblio.org/wxyc.mp3"
-												href="https://stream.wxdu.art/wxdu192.mp3" // TODO: will need to change this to wxdu.org
+												href="https://stream.wxdu.art/wxdu192.mp3" // changed to WXDU
 												target="_blank"
 											>
 												Streaming
@@ -91,7 +91,7 @@ const Header = () => {
 									<div className="mb-2 flex w-full text-nowrap text-white">
 										<Menu.Item>
 											<Link
-												href="http://www.wxyc.info/playlists/recent"
+												href="https://wxdu.org/plmanager/world/last10.php"
 												target="_blank"
 											>
 												Live playlist
