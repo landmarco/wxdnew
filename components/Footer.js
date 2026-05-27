@@ -72,7 +72,7 @@ const Footer = () => {
 						</a>
 					</div>
 				</div>
-			</div>
+			</div> */}
 
 			<div className="px-5">
 				<p className="text-lg font-bold md:text-xl">Contact</p>
