@@ -88,6 +88,17 @@ const Header = () => {
 										submenuOpen ? 'max-h-[400px]' : 'max-h-0'
 									}`}
 								>
+
+									<div className="mb-2 flex w-full text-nowrap text-white">
+										<Menu.Item>
+											<Link
+												//href="https://audio-mp3.ibiblio.org/wxyc.mp3"
+												href="/listen" // TODO: will need to change this to wxdu.org
+											>
+												Listen Here
+											</Link>
+										</Menu.Item>
+									</div>
 									<div className="mb-2 flex w-full text-nowrap text-white">
 										<Menu.Item>
 											<Link
@@ -115,13 +126,6 @@ const Header = () => {
 												target="_blank"
 											>
 												Live playlist
-											</Link>
-										</Menu.Item>
-									</div>
-									<div className="mb-2 flex w-full text-nowrap text-white">
-										<Menu.Item>
-											<Link href="https://archive.wxyc.org" target="_blank">
-												Archive
 											</Link>
 										</Menu.Item>
 									</div>
