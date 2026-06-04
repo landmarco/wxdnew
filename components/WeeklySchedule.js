@@ -29,7 +29,6 @@ export default function WeeklySchedule({schedule}) {
 		return null
 	}
 
-	// init arrays
 	const headerRow = reconstructedSchedule[0]
 	const hourRows = reconstructedSchedule.slice(1)
 	const days = headerRow

@@ -4,6 +4,10 @@ import {client} from '../tina/__generated__/client'
 import WeeklySchedule from '../components/WeeklySchedule'
 import { scheduleBuilder } from '../lib/schedule/scheduleBuilder'
 
+import {parseSchedule} from '../lib/scheduleParser'
+import {lookupFullNames} from '../lib/schedule-fullName-lookup'
+import {lookupDjNames} from '../lib/schedule-djName-lookup'
+
 //editable static pages (programming, contact, etc.)
 export default function Home(props) {
 	// data passes though in production mode and data is updated to the sidebar data in edit-mode
