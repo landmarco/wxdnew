@@ -4,7 +4,7 @@ import {client} from '../tina/__generated__/client'
 import WeeklySchedule from '../components/WeeklySchedule'
 import { scheduleBuilder } from '../lib/schedule/scheduleBuilder'
 
-import {parseSchedule} from '../lib/scheduleParser'
+import {parseSchedule} from '../lib/schedule/scheduleParser'
 import {lookupFullNames} from '../lib/schedule-fullName-lookup'
 import {lookupDjNames} from '../lib/schedule-djName-lookup'
 
