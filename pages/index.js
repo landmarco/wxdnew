@@ -11,6 +11,7 @@ import CDLink from '../components/homepage/CDLink'
 import IpodWidget from '../components/homepage/IpodWidget'
 import TodaySchedule from '../components/homepage/TodaySchedule'
 import ShowCalendar from "../components/homepage/ShowCalendar"
+import { loadSchedule } from '../lib/schedule'
 
 
 // home page
@@ -35,20 +36,13 @@ export default function Home(props) {
 							<div className="mt-0 w-full" style={{ paddingLeft: '4rem', paddingRight: '4rem' }}>
 								<h1 className="bitcount mx-auto w-full text-center text-base md:mx-0  md:text-3xl lg:text-5xl">
 									Duke and Durham&#39;s alternative, non-commercial radio station
-								</h1>
-							<div className="mt-4 flex flex-row justify-between gap-4 items-start px-2 w-full" style={{ zoom: 1.1 }}>
-								<div className="flex-[5]">
-									<TodaySchedule schedule={schedule} />
-								</div>
-								<div className="flex flex-col items-end gap-2 flex-[2]" style={{ zoom: 0.85 }}>
+								</h3>
+							<div className="flex flex-row justify-center gap-16 mt-16"></div>
+							<div className="mt-4 flex flex-row justify-center gap-4 items-start">
+								<TodaySchedule schedule={schedule} />
+								<div className="flex flex-col items-center gap-2">
 									<IpodWidget />
 									<StreamButton />
-									{/* CDs (fillers for now) that link to important pages */}
-								<div className="flex flex-row justify-between gap-2 mt-4 w-full">
-									<CDLink href="/blog" label="blog posts" image="/CD_1_Filler.jpg" />
-									<CDLink href="/programming" label="programming" image="/CD_2_Filler.jpg" />
-									<CDLink href="/about" label="about" image="/CD_3_Filler.jpg" />
-								</div>
 								</div>
 							</div>
 							</div>
