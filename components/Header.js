@@ -282,6 +282,8 @@ const Header = () => {
 								</a>
 							</Link>
 
+							<Link
+
 							<Link href="/archive">
 								<a className="flex h-12 grow items-center justify-center">
 									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
