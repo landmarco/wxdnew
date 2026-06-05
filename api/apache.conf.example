@@ -10,13 +10,23 @@
 #   4. Test config and reload:
 #        sudo apache2ctl configtest && sudo systemctl reload apache2
 #   5. Get a Let's Encrypt cert (certbot will edit this file automatically):
-#        sudo certbot --apache -d api.wxdu.org
+#        sudo certbot --apache -d api.wxdu.art
 #
 # After step 5, certbot rewrites this file to add the SSL VirtualHost.
 # Existing sites are unaffected — each VirtualHost is independent.
+#
+# --- Switching to api.wxdu.org later ---
+# When Duke IT adds the api.wxdu.org DNS A record (152.3.0.229), do the following:
+#   1. Add a ServerAlias line below the ServerName:
+#        ServerAlias api.wxdu.org
+#   2. Expand the cert to cover both names:
+#        sudo certbot --apache -d api.wxdu.art -d api.wxdu.org
+#   3. Update NEXT_PUBLIC_API_URL in Cloudflare Pages env vars to https://api.wxdu.org
+#      (ALLOWED_ORIGINS in .env already covers both domains — no change needed there)
+#   4. Reload Apache: sudo systemctl reload apache2
 
 <VirtualHost *:80>
-    ServerName api.wxdu.org
+    ServerName api.wxdu.art
 
     ProxyPreserveHost On
     ProxyPass        / http://127.0.0.1:3001/
