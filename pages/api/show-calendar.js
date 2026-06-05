@@ -100,6 +100,7 @@ export default async function handler(req, res) {
 		const calendarByDate = new Map(calendar.map((entry) => [entry.date, entry]))
 
 		rows.forEach((row) => {
+
 			const showStart = formatLocalDate(row.startDate)
 			const showEnd = formatLocalDate(row.endDate)
 
@@ -116,9 +117,9 @@ export default async function handler(req, res) {
 							description: row.description,
 							venue: {
 								id: row.locationId,
-								name: row.venueName || "",
-								city: row.venueCity || "",
-								label: [row.venueName, row.venueCity].filter(Boolean).join(", "),
+								name: venueName,
+								city: venueCity,
+								label: [venueName, venueCity].filter(Boolean).join(", "),
 								url: row.venueUrl || ""
 							}
 						})
