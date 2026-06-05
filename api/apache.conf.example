@@ -1,0 +1,49 @@
+# /etc/apache2/sites-available/wxdu-api.conf
+#
+# Setup steps (on the server, as computing user):
+#   1. Enable required modules (one-time):
+#        sudo a2enmod proxy proxy_http
+#   2. Copy this file:
+#        sudo cp apache.conf.example /etc/apache2/sites-available/wxdu-api.conf
+#   3. Enable the site:
+#        sudo a2ensite wxdu-api
+#   4. Create the webroot directory for certbot challenge files:
+#        sudo mkdir -p /var/www/wxdu-api-webroot
+#   5. Test config and reload:
+#        sudo apache2ctl configtest && sudo systemctl reload apache2
+#   6. Get a Let's Encrypt cert (certbot will edit this file automatically):
+#        sudo certbot --apache -d api.wxdu.art
+#
+# After step 5, certbot rewrites this file to add the SSL VirtualHost.
+# Existing sites are unaffected — each VirtualHost is independent.
+#
+# --- Switching to api.wxdu.org later ---
+# When Duke IT adds the api.wxdu.org DNS A record (152.3.0.229), do the following:
+#   1. Add a ServerAlias line below the ServerName:
+#        ServerAlias api.wxdu.org
+#   2. Expand the cert to cover both names:
+#        sudo certbot --apache -d api.wxdu.art -d api.wxdu.org
+#   3. Update NEXT_PUBLIC_API_URL in Cloudflare Pages env vars to https://api.wxdu.org
+#      (ALLOWED_ORIGINS in .env already covers both domains — no change needed there)
+#   4. Reload Apache: sudo systemctl reload apache2
+
+<VirtualHost 152.3.0.229:80>
+    ServerName api.wxdu.art
+    DocumentRoot /var/www/wxdu-api-webroot
+
+    Alias /.well-known/acme-challenge/ /var/www/wxdu-api-webroot/.well-known/acme-challenge/
+    <Directory "/var/www/wxdu-api-webroot/.well-known/acme-challenge/">
+        Require all granted
+    </Directory>
+
+    ProxyPreserveHost On
+    ProxyPass        /.well-known !
+    ProxyPass        / http://127.0.0.1:3001/
+    ProxyPassReverse / http://127.0.0.1:3001/
+
+    # Reasonable timeouts for DB queries
+    ProxyTimeout 10
+
+    ErrorLog  ${APACHE_LOG_DIR}/wxdu-api-error.log
+    CustomLog ${APACHE_LOG_DIR}/wxdu-api-access.log combined
+</VirtualHost>

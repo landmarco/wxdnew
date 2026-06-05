@@ -112,6 +112,18 @@ const Header = () => {
 
 						<div className="ml-10 flex h-8 text-3xl">
 							<Link
+								href="/current"
+								legacyBehavior={false}
+								className="cursor-pointer"
+								rel="noopener noreferrer"
+								onClick={toggleMenu}
+							>
+								Current
+							</Link>
+						</div>
+
+						<div className="ml-10 mt-8 flex h-8 text-3xl">
+							<Link
 								href="/about"
 								legacyBehavior={false}
 								className="cursor-pointer"
@@ -220,6 +232,14 @@ const Header = () => {
 
 						{/* Links*/}
 						<div className="my-auto flex w-1/2 flex-row">
+							<Link href="/current">
+								<a className="flex h-12 grow items-center justify-center">
+									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
+										Current
+									</p>
+								</a>
+							</Link>
+
 							<Link href="/about">
 								<a className="flex h-12 grow items-center justify-center">
 									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
