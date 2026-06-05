@@ -27,7 +27,7 @@
 #      (ALLOWED_ORIGINS in .env already covers both domains — no change needed there)
 #   4. Reload Apache: sudo systemctl reload apache2
 
-<VirtualHost *:80>
+<VirtualHost 152.3.0.229:80>
     ServerName api.wxdu.art
     DocumentRoot /var/www/wxdu-api-webroot
 
