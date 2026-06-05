@@ -42,3 +42,7 @@ yarn-error.log*
 
 # Local Tina directory
 /my-tina-app
+
+# API server
+/api/node_modules
+/api/.env

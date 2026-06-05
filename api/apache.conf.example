@@ -1,0 +1,30 @@
+# /etc/apache2/sites-available/wxdu-api.conf
+#
+# Setup steps (on the server, as computing user):
+#   1. Enable required modules (one-time):
+#        sudo a2enmod proxy proxy_http
+#   2. Copy this file:
+#        sudo cp apache.conf.example /etc/apache2/sites-available/wxdu-api.conf
+#   3. Enable the site:
+#        sudo a2ensite wxdu-api
+#   4. Test config and reload:
+#        sudo apache2ctl configtest && sudo systemctl reload apache2
+#   5. Get a Let's Encrypt cert (certbot will edit this file automatically):
+#        sudo certbot --apache -d api.wxdu.org
+#
+# After step 5, certbot rewrites this file to add the SSL VirtualHost.
+# Existing sites are unaffected — each VirtualHost is independent.
+
+<VirtualHost *:80>
+    ServerName api.wxdu.org
+
+    ProxyPreserveHost On
+    ProxyPass        / http://127.0.0.1:3001/
+    ProxyPassReverse / http://127.0.0.1:3001/
+
+    # Reasonable timeouts for DB queries
+    ProxyTimeout 10
+
+    ErrorLog  ${APACHE_LOG_DIR}/wxdu-api-error.log
+    CustomLog ${APACHE_LOG_DIR}/wxdu-api-access.log combined
+</VirtualHost>
