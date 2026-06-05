@@ -12,6 +12,7 @@ import IpodWidget from '../components/homepage/IpodWidget'
 import TodaySchedule from '../components/homepage/TodaySchedule'
 import ShowCalendar from "../components/homepage/ShowCalendar"
 import { loadSchedule } from '../lib/schedule'
+import ShowCalendar from "../components/homepage/ShowCalendar"
 
 
 // home page
@@ -76,6 +77,11 @@ export default function Home(props) {
 			</div>
 
 			<div className="mx-auto flex w-full flex-col gap-4">
+<div className="mt-6">
+    <ShowCalendar />
+</div>
+
+			<div className="mx-auto flex w-5/6 flex-col gap-4">
 				<div className="-mt-5 flex w-full flex-col justify-center md:-mt-10 md:mr-10 lg:mt-5">
 					
 					
