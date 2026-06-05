@@ -7,9 +7,11 @@
 #        sudo cp apache.conf.example /etc/apache2/sites-available/wxdu-api.conf
 #   3. Enable the site:
 #        sudo a2ensite wxdu-api
-#   4. Test config and reload:
+#   4. Create the webroot directory for certbot challenge files:
+#        sudo mkdir -p /var/www/wxdu-api-webroot
+#   5. Test config and reload:
 #        sudo apache2ctl configtest && sudo systemctl reload apache2
-#   5. Get a Let's Encrypt cert (certbot will edit this file automatically):
+#   6. Get a Let's Encrypt cert (certbot will edit this file automatically):
 #        sudo certbot --apache -d api.wxdu.art
 #
 # After step 5, certbot rewrites this file to add the SSL VirtualHost.
@@ -27,8 +29,15 @@
 
 <VirtualHost *:80>
     ServerName api.wxdu.art
+    DocumentRoot /var/www/wxdu-api-webroot
+
+    Alias /.well-known/acme-challenge/ /var/www/wxdu-api-webroot/.well-known/acme-challenge/
+    <Directory "/var/www/wxdu-api-webroot/.well-known/acme-challenge/">
+        Require all granted
+    </Directory>
 
     ProxyPreserveHost On
+    ProxyPass        /.well-known !
     ProxyPass        / http://127.0.0.1:3001/
     ProxyPassReverse / http://127.0.0.1:3001/
 
