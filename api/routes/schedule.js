@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
     const pool = getPool();
 
     const [schedRows] = await pool.query(
-      'SELECT * FROM schedules WHERE current = 1 LIMIT 1'
+      'SELECT ID, current FROM schedules WHERE current = 1 LIMIT 1'
     );
     if (!schedRows.length) {
       return res.status(404).json({ error: 'No current schedule' });

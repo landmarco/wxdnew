@@ -12,10 +12,8 @@ router.get('/', async (req, res) => {
     const [rows] = await pool.query(
       `SELECT u.ID, u.defdjname, u.deftitle, u.defsubtitle, u.defothergenre,
               u.defdesc, u.link,
-              CASE WHEN u.emailpublish = 1 THEN u.email ELSE NULL END AS email,
-              l.login
+              CASE WHEN u.emailpublish = 1 THEN u.email ELSE NULL END AS email
        FROM users u
-       JOIN logins l ON u.loginsID = l.ID
        WHERE u.active = 1
        ORDER BY u.defgenre, u.defdjname`
     );
@@ -39,10 +37,8 @@ router.get('/:id', async (req, res) => {
     const [rows] = await pool.query(
       `SELECT u.ID, u.defdjname, u.deftitle, u.defsubtitle, u.defothergenre,
               u.defdesc, u.link,
-              CASE WHEN u.emailpublish = 1 THEN u.email ELSE NULL END AS email,
-              l.login
+              CASE WHEN u.emailpublish = 1 THEN u.email ELSE NULL END AS email
        FROM users u
-       JOIN logins l ON u.loginsID = l.ID
        WHERE u.ID = ?`,
       [id]
     );
