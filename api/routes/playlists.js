@@ -6,7 +6,7 @@ const router = Router();
 // Safe subset of user fields — never return password, email (unless published), etc.
 const DJ_FIELDS = `
   u.ID, u.defdjname, u.deftitle, u.defsubtitle, u.defothergenre,
-  u.defdesc, u.link, u.emailpublish,
+  u.defdesc, u.link,
   CASE WHEN u.emailpublish = 1 THEN u.email ELSE NULL END AS email
 `;
 
@@ -16,7 +16,9 @@ router.get('/current', async (req, res) => {
   try {
     const pool = getPool();
 
-    const [showRows] = await pool.query('SELECT * FROM shows WHERE active = 1 LIMIT 1');
+    const [showRows] = await pool.query(
+      'SELECT ID, starttime, duration, djname, title, subtitle, genre, othergenre, userID, active FROM shows WHERE active = 1 LIMIT 1'
+    );
     if (!showRows.length) {
       return res.status(404).json({ error: 'No active show' });
     }
@@ -75,7 +77,10 @@ router.get('/:id', async (req, res) => {
     const id = parseInt(req.params.id);
     if (!id) return res.status(400).json({ error: 'Invalid id' });
 
-    const [showRows] = await pool.query('SELECT * FROM shows WHERE ID = ?', [id]);
+    const [showRows] = await pool.query(
+      'SELECT ID, starttime, duration, djname, title, subtitle, genre, othergenre, userID, active FROM shows WHERE ID = ?',
+      [id]
+    );
     if (!showRows.length) return res.status(404).json({ error: 'Not found' });
     const show = showRows[0];
 
