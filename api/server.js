@@ -6,10 +6,13 @@ const nowplaying = require('./routes/nowplaying');
 const playlists = require('./routes/playlists');
 const djs = require('./routes/djs');
 const schedule = require('./routes/schedule');
+const requests = require('./routes/requests');
 
 const app = express();
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim());
+
+app.use(express.json());
 
 app.use(
   cors({
@@ -28,6 +31,7 @@ app.use('/api/nowplaying', nowplaying);
 app.use('/api/playlists', playlists);
 app.use('/api/djs', djs);
 app.use('/api/schedule', schedule);
+app.use('/api/requests', requests);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
