@@ -11,8 +11,6 @@ import CDLink from '../components/homepage/CDLink'
 import IpodWidget from '../components/homepage/IpodWidget'
 import TodaySchedule from '../components/homepage/TodaySchedule'
 import ShowCalendar from "../components/homepage/ShowCalendar"
-import { loadSchedule } from '../lib/schedule'
-import ShowCalendar from "../components/homepage/ShowCalendar"
 
 
 // home page
