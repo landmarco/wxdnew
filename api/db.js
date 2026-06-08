@@ -1,7 +1,9 @@
 const mysql = require('mysql2/promise');
+const { MongoClient } = require('mongodb');
 
 let pool;
 let requestsPool;
+let mongoClient;
 
 function getPool() {
   if (!pool) {
@@ -33,4 +35,14 @@ function getRequestsPool() {
   return requestsPool;
 }
 
-module.exports = { getPool, getRequestsPool };
+async function getMongo() {
+  if (!mongoClient) {
+    mongoClient = new MongoClient(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    await mongoClient.connect();
+  }
+  return mongoClient.db();
+}
+
+module.exports = { getPool, getRequestsPool, getMongo };
