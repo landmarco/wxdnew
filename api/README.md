@@ -87,18 +87,56 @@ When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the follo
 | GET | `/api/nowplaying` | Most recently logged track from the active show |
 | GET | `/api/playlists/current` | Full active show with DJ info and all tracks |
 | GET | `/api/playlists/recent` | List of recent shows, newest first. Accepts `?limit=` and `?offset=` |
-| GET | `/api/playlists/:id` | A specific show with its tracks and DJ info |
-| GET | `/api/playlists/dj/:djId` | All shows by a DJ. Accepts `?limit=` and `?offset=` |
-| GET | `/api/djs` | All active DJs |
-| GET | `/api/djs/:id` | A single DJ's public profile |
+| GET | `/api/playlists/:id` | One or more shows with tracks and DJ info. Accepts comma-separated IDs. |
+| GET | `/api/playlists/dj/:djId` | Shows by one or more DJs. Accepts comma-separated IDs, `?limit=`, `?offset=` |
+| GET | `/api/djs` | All active DJs. Accepts `?ids=`, `?firstname=`, `?lastname=` (see below) |
+| GET | `/api/djs/:id` | One or more DJ profiles. Accepts comma-separated IDs. |
 | GET | `/api/schedule` | Current schedule with one row per time slot |
 | GET | `/api/requests` | All listener song requests, newest first. Accepts `?limit=` (max 100) and `?offset=` |
 | POST | `/api/requests` | Submit a song request. Rate-limited to 5 per minute per IP. |
 | GET | `/api/releases` | New music releases, newest first. Accepts `?limit=` (max 100) and `?offset=`. Includes `cover_url` per release. |
-| GET | `/api/releases/:id` | Single release with full detail and linked downloads data (track listing, blurb, cover URL) |
+| GET | `/api/releases/:id` | One or more releases with downloads data and cover URL. Accepts comma-separated IDs. |
 | GET | `/api/releases/:id/cover` | Streams the release cover image directly |
 | GET | `/api/events` | Upcoming events with venue info, ordered by date. Pass `?all=1` to include past events. |
-| GET | `/api/events/:id` | Single event with venue info |
+| GET | `/api/events/:id` | One or more events with venue info. Accepts comma-separated IDs. |
+
+### Multi-ID lookups
+
+Several endpoints accept comma-separated IDs in the path or as a query parameter. A single ID returns a plain object (backward-compatible); multiple IDs return an array.
+
+**DJs — query params on `GET /api/djs`:**
+```
+# Fetch specific DJs by ID
+GET /api/djs?ids=103,278,431
+
+# Look up a DJ by name (searches first/last name; does not return them)
+GET /api/djs?firstname=Jane&lastname=Smith
+GET /api/djs?lastname=Smith        # either param works alone
+```
+
+**DJs — comma-separated path on `GET /api/djs/:id`:**
+```
+GET /api/djs/103,278,431
+```
+
+**Playlists:**
+```
+# One or more shows (each with full track list and DJ info)
+GET /api/playlists/42,87,156
+
+# Shows from one or more DJs
+GET /api/playlists/dj/103,278
+```
+
+**Releases:**
+```
+GET /api/releases/6a262304372acb6bfe63ae5a,6a1f24daf563803ba0ff8a70
+```
+
+**Events:**
+```
+GET /api/events/1,4,7
+```
 
 ### POST `/api/requests`
 

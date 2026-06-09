@@ -70,32 +70,52 @@ router.get('/recent', async (req, res) => {
 });
 
 // GET /api/playlists/:id
-// A specific playlist with tracks and DJ info.
+// Supports comma-separated IDs: /api/playlists/1,2,3
+// Single ID returns {show, dj, tracks}; multiple IDs return an array of the same.
 router.get('/:id', async (req, res) => {
   try {
     const pool = getPool();
-    const id = parseInt(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid id' });
+    const ids = req.params.id.split(',').map(s => parseInt(s.trim())).filter(n => Number.isInteger(n) && n > 0);
+    if (!ids.length) return res.status(400).json({ error: 'Invalid id' });
 
     const [showRows] = await pool.query(
-      'SELECT ID, starttime, duration, djname, title, subtitle, genre, othergenre, userID, active FROM shows WHERE ID = ?',
-      [id]
+      `SELECT ID, starttime, duration, djname, title, subtitle, genre, othergenre, userID, active
+       FROM shows WHERE ID IN (${ids.map(() => '?').join(',')})`,
+      ids
     );
     if (!showRows.length) return res.status(404).json({ error: 'Not found' });
-    const show = showRows[0];
 
-    const [djRows] = await pool.query(
-      `SELECT ${DJ_FIELDS} FROM users u WHERE u.ID = ?`,
-      [show.userID]
+    const showIds = showRows.map(s => s.ID);
+    const djIds = [...new Set(showRows.map(s => s.userID).filter(Boolean))];
+
+    const [allTracks] = await pool.query(
+      `SELECT * FROM playlist WHERE showID IN (${showIds.map(() => '?').join(',')}) ORDER BY showID, orderkey`,
+      showIds
     );
 
-    const [tracks] = await pool.query(
-      'SELECT * FROM playlist WHERE showID = ? ORDER BY orderkey',
-      [show.ID]
-    );
+    const djMap = {};
+    if (djIds.length) {
+      const [djRows] = await pool.query(
+        `SELECT ${DJ_FIELDS} FROM users u WHERE u.ID IN (${djIds.map(() => '?').join(',')})`,
+        djIds
+      );
+      for (const dj of djRows) djMap[dj.ID] = dj;
+    }
+
+    const tracksByShow = {};
+    for (const track of allTracks) {
+      if (!tracksByShow[track.showID]) tracksByShow[track.showID] = [];
+      tracksByShow[track.showID].push(track);
+    }
+
+    const result = showRows.map(show => ({
+      show,
+      dj: djMap[show.userID] ?? null,
+      tracks: tracksByShow[show.ID] ?? [],
+    }));
 
     res.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
-    res.json({ show, dj: djRows[0] ?? null, tracks });
+    res.json(ids.length === 1 ? result[0] : result);
   } catch (err) {
     console.error('playlists/:id error', err);
     res.status(500).json({ error: 'Server error' });
@@ -103,20 +123,22 @@ router.get('/:id', async (req, res) => {
 });
 
 // GET /api/playlists/dj/:djId?limit=20&offset=0
-// All playlists by a specific DJ, newest first.
+// Supports comma-separated DJ IDs: /api/playlists/dj/1,2,3
+// Returns shows for any of the given DJs, newest first.
 router.get('/dj/:djId', async (req, res) => {
   try {
     const pool = getPool();
-    const djId = parseInt(req.params.djId);
-    if (!djId) return res.status(400).json({ error: 'Invalid djId' });
+    const djIds = req.params.djId.split(',').map(s => parseInt(s.trim())).filter(n => Number.isInteger(n) && n > 0);
+    if (!djIds.length) return res.status(400).json({ error: 'Invalid djId' });
 
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const offset = parseInt(req.query.offset) || 0;
 
     const [rows] = await pool.query(
       `SELECT ID, starttime, duration, djname, title, subtitle, genre, othergenre
-       FROM shows WHERE userID = ? ORDER BY starttime DESC LIMIT ? OFFSET ?`,
-      [djId, limit, offset]
+       FROM shows WHERE userID IN (${djIds.map(() => '?').join(',')})
+       ORDER BY starttime DESC LIMIT ? OFFSET ?`,
+      [...djIds, limit, offset]
     );
 
     res.set('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
