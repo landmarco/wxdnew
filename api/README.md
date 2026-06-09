@@ -94,6 +94,9 @@ When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the follo
 | GET | `/api/schedule` | Current schedule with one row per time slot |
 | GET | `/api/requests` | All listener song requests, newest first. Accepts `?limit=` (max 100) and `?offset=` |
 | POST | `/api/requests` | Submit a song request. Rate-limited to 5 per minute per IP. |
+| GET | `/api/releases` | New music releases, newest first. Accepts `?limit=` (max 100) and `?offset=`. Includes `cover_url` per release. |
+| GET | `/api/releases/:id` | Single release with full detail and linked downloads data (track listing, blurb, cover URL) |
+| GET | `/api/releases/:id/cover` | Streams the release cover image directly |
 
 ### POST `/api/requests`
 
@@ -125,6 +128,29 @@ REQUESTS_DB_USER=wxdu_requests
 REQUESTS_DB_PASSWORD=<strong_password>
 REQUESTS_DB_NAME=requests
 ```
+
+### Releases (MongoDB)
+
+The releases endpoints connect to the `wxdu` MongoDB database (collections: `releases`, `downloads`). They use a dedicated read-only MongoDB user. To create it (run in `mongosh`):
+
+```javascript
+use wxdu
+db.createUser({
+  user: "wxdu_api_reader",
+  pwd: "<strong_password>",
+  roles: [{ role: "read", db: "wxdu" }]
+})
+```
+
+Add to `.env`:
+
+```
+MONGO_URI=mongodb://wxdu_api_reader:<strong_password>@localhost:27017/wxdu
+```
+
+The `GET /api/releases/:id/cover` endpoint serves cover images directly from disk at `/mnt/md1/music-database/public/media/{downloads_id}/`. It picks the best available `.jpg` from the release's `nonaudio` file list (prefers a file with "cover" in the name, falls back to `embeddedcover.jpg`).
+
+**Fields stripped from all releases responses:** `review`, `reviewer`, `edits`, `alphabetize_by`, and from linked downloads data: `edits`, `checkedoutby_*`, `reuploader_*`, `assignee_*`, `origfilename`, `dirname`, `rec_alph`, and track `absolute_path` / `itunes_unique_id`.
 
 ## Using the API from the frontend
 

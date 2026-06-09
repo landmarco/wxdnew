@@ -12,6 +12,7 @@ const RELEASE_PROJECTION = {
   edits: 0,
   __v: 0,
   alphabetize_by: 0,
+  review: 0,
 };
 
 const DOWNLOADS_PROJECTION = {
@@ -141,7 +142,10 @@ router.get('/:id/cover', async (req, res) => {
     const dir = path.join(MEDIA_BASE, release.downloads_db_id);
 
     res.sendFile(safeFile, { root: dir }, (err) => {
-      if (err && !res.headersSent) res.status(404).json({ error: 'Cover art not found on disk' });
+      if (err && !res.headersSent) {
+        console.error(`cover sendFile failed — root: ${dir}, file: ${safeFile}`, err.message);
+        res.status(404).json({ error: 'Cover art not found on disk' });
+      }
     });
   } catch (err) {
     console.error('releases/:id/cover GET error', err);
