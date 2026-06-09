@@ -14,8 +14,9 @@ Apache reverse proxy (port 443 → 3001)
         v
 Node/Express API  (127.0.0.1:3001)
         |
-        v
-MySQL plmanager  (localhost:3306)
+        +──→ MySQL plmanager  (localhost:3306)   read-only DJ/playlist/schedule data
+        |
+        +──→ MySQL requests   (localhost:3306)   listener song requests (SELECT, INSERT only)
 ```
 
 ## Server setup
@@ -29,7 +30,7 @@ npm install
 
 # 2. Configure environment
 cp .env.example .env
-# Edit .env — set DB_PASSWORD
+# Edit .env — set DB_PASSWORD, REQUESTS_DB_PASSWORD
 # ALLOWED_ORIGINS already includes both wxdu.art and wxdu.org
 
 # 3. Start with PM2
@@ -91,6 +92,65 @@ When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the follo
 | GET | `/api/djs` | All active DJs |
 | GET | `/api/djs/:id` | A single DJ's public profile |
 | GET | `/api/schedule` | Current schedule with one row per time slot |
+| GET | `/api/requests` | All listener song requests, newest first. Accepts `?limit=` (max 100) and `?offset=` |
+| POST | `/api/requests` | Submit a song request. Rate-limited to 5 per minute per IP. |
+| GET | `/api/releases` | New music releases, newest first. Accepts `?limit=` (max 100) and `?offset=`. Includes `cover_url` per release. |
+| GET | `/api/releases/:id` | Single release with full detail and linked downloads data (track listing, blurb, cover URL) |
+| GET | `/api/releases/:id/cover` | Streams the release cover image directly |
+
+### POST `/api/requests`
+
+**Request body** (JSON):
+
+| Field | Required | Max length | Notes |
+|-------|----------|------------|-------|
+| `text` | Yes | 500 chars | The request text |
+| `user_name` | No | 100 chars | Requester's display name |
+| `email` | No | 200 chars | Stored but never returned by the GET endpoint |
+
+**Response:** `201 {"ok":true}` on success, `400` for validation errors, `429` if rate-limited.
+
+### Database access for requests
+
+The requests endpoints use a dedicated MySQL user with only `SELECT` and `INSERT` on `requests.request`. To create it:
+
+```sql
+CREATE USER 'wxdu_requests'@'localhost' IDENTIFIED BY '<strong_password>';
+GRANT SELECT, INSERT ON requests.request TO 'wxdu_requests'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+Add the corresponding credentials to `.env`:
+
+```
+REQUESTS_DB_HOST=localhost
+REQUESTS_DB_USER=wxdu_requests
+REQUESTS_DB_PASSWORD=<strong_password>
+REQUESTS_DB_NAME=requests
+```
+
+### Releases (MongoDB)
+
+The releases endpoints connect to the `wxdu` MongoDB database (collections: `releases`, `downloads`). They use a dedicated read-only MongoDB user. To create it (run in `mongosh`):
+
+```javascript
+use wxdu
+db.createUser({
+  user: "wxdu_api_reader",
+  pwd: "<strong_password>",
+  roles: [{ role: "read", db: "wxdu" }]
+})
+```
+
+Add to `.env`:
+
+```
+MONGO_URI=mongodb://wxdu_api_reader:<strong_password>@localhost:27017/wxdu
+```
+
+The `GET /api/releases/:id/cover` endpoint serves cover images directly from disk at `/mnt/md1/music-database/public/media/{downloads_id}/`. It picks the best available `.jpg` from the release's `nonaudio` file list (prefers a file with "cover" in the name, falls back to `embeddedcover.jpg`).
+
+**Fields stripped from all releases responses:** `review`, `reviewer`, `edits`, `alphabetize_by`, and from linked downloads data: `edits`, `checkedoutby_*`, `reuploader_*`, `assignee_*`, `origfilename`, `dirname`, `rec_alph`, and track `absolute_path` / `itunes_unique_id`.
 
 ## Using the API from the frontend
 
@@ -178,7 +238,47 @@ export default function CurrentPlaylist() {
 }
 ```
 
-### 5. Example: schedule grid
+### 5. Example: song request form
+
+```jsx
+import { useState } from 'react';
+import { apiFetch } from '../lib/api';
+
+export default function RequestForm() {
+  const [text, setText] = useState('');
+  const [name, setName] = useState('');
+  const [status, setStatus] = useState(null); // 'ok' | 'error' | 'ratelimit'
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    try {
+      await apiFetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, user_name: name }),
+      });
+      setStatus('ok');
+      setText('');
+      setName('');
+    } catch (err) {
+      setStatus(err.status === 429 ? 'ratelimit' : 'error');
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name (optional)" />
+      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Request a song..." required maxLength={500} />
+      <button type="submit">Submit</button>
+      {status === 'ok' && <p>Request sent!</p>}
+      {status === 'ratelimit' && <p>Too many requests — try again in a minute.</p>}
+      {status === 'error' && <p>Something went wrong, please try again.</p>}
+    </form>
+  );
+}
+```
+
+### 6. Example: schedule grid
 
 ```jsx
 import { useState, useEffect } from 'react';
@@ -202,11 +302,11 @@ export default function Schedule() {
       {DAYS.map((day, i) => (
         <div key={day}>
           <h2>{day}</h2>
-          {data.slots
+          {data
             .filter((s) => s.day === i)
             .map((s) => (
               <div key={s.ID}>
-                {s.start}–{s.end}: {s.defdjname || s.title}
+                {s.start}–{s.end}: {s.title}
               </div>
             ))}
         </div>
