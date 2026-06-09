@@ -85,31 +85,42 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/releases/:id
+// Supports comma-separated IDs: /api/releases/abc,def,ghi
+// Single ID returns an object; multiple IDs return an array.
 router.get('/:id', async (req, res) => {
   try {
     const db = await getMongo();
-    let id;
-    try { id = new ObjectId(req.params.id); } catch { return res.status(400).json({ error: 'Invalid id' }); }
-
-    const release = await db
-      .collection('releases')
-      .findOne({ _id: id }, { projection: RELEASE_PROJECTION });
-    if (!release) return res.status(404).json({ error: 'Not found' });
-
-    let downloads = null;
-    let coverUrl = null;
-    if (release.downloads_db_id) {
-      downloads = await db
-        .collection('downloads')
-        .findOne({ _id: new ObjectId(release.downloads_db_id) }, { projection: DOWNLOADS_PROJECTION });
-      if (downloads) {
-        const coverFile = pickCoverFile(downloads.nonaudio);
-        if (coverFile) coverUrl = `/api/releases/${release._id}/cover`;
-      }
+    const parts = req.params.id.split(',').map(s => s.trim());
+    const ids = [];
+    for (const p of parts) {
+      try { ids.push(new ObjectId(p)); }
+      catch { return res.status(400).json({ error: `Invalid id: ${p}` }); }
     }
 
+    const releases = await db
+      .collection('releases')
+      .find({ _id: { $in: ids } }, { projection: RELEASE_PROJECTION })
+      .toArray();
+    if (!releases.length) return res.status(404).json({ error: 'Not found' });
+
+    const downloadsIds = releases.filter(r => r.downloads_db_id).map(r => new ObjectId(r.downloads_db_id));
+    const downloadsMap = {};
+    if (downloadsIds.length) {
+      const docs = await db
+        .collection('downloads')
+        .find({ _id: { $in: downloadsIds } }, { projection: DOWNLOADS_PROJECTION })
+        .toArray();
+      for (const d of docs) downloadsMap[d._id.toString()] = d;
+    }
+
+    const result = releases.map(release => {
+      const downloads = release.downloads_db_id ? (downloadsMap[release.downloads_db_id] ?? null) : null;
+      const coverFile = downloads ? pickCoverFile(downloads.nonaudio) : null;
+      return { ...release, cover_url: coverFile ? `/api/releases/${release._id}/cover` : null, downloads };
+    });
+
     res.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
-    res.json({ ...release, cover_url: coverUrl, downloads });
+    res.json(ids.length === 1 ? result[0] : result);
   } catch (err) {
     console.error('releases/:id GET error', err);
     res.status(500).json({ error: 'Server error' });

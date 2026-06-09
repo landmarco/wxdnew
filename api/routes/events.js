@@ -37,23 +37,25 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/events/:id
+// Supports comma-separated IDs: /api/events/1,2,3
+// Single ID returns an object; multiple IDs return an array.
 router.get('/:id', async (req, res) => {
   try {
     const pool = getTicketsPool();
-    const id = parseInt(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid id' });
+    const ids = req.params.id.split(',').map(s => parseInt(s.trim())).filter(n => Number.isInteger(n) && n > 0);
+    if (!ids.length) return res.status(400).json({ error: 'Invalid id' });
 
     const [rows] = await pool.query(
       `SELECT ${EVENT_FIELDS}
        ${EVENT_JOIN}
-       WHERE e.event_ID = ?`,
-      [id]
+       WHERE e.event_ID IN (${ids.map(() => '?').join(',')})`,
+      ids
     );
 
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
 
     res.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
-    res.json(rows[0]);
+    res.json(ids.length === 1 ? rows[0] : rows);
   } catch (err) {
     console.error('events/:id GET error', err);
     res.status(500).json({ error: 'Server error' });
