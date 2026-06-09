@@ -8,6 +8,7 @@ const djs = require('./routes/djs');
 const schedule = require('./routes/schedule');
 const requests = require('./routes/requests');
 const releases = require('./routes/releases');
+const events = require('./routes/events');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/djs', djs);
 app.use('/api/schedule', schedule);
 app.use('/api/requests', requests);
 app.use('/api/releases', releases);
+app.use('/api/events', events);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 

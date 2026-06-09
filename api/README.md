@@ -97,6 +97,8 @@ When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the follo
 | GET | `/api/releases` | New music releases, newest first. Accepts `?limit=` (max 100) and `?offset=`. Includes `cover_url` per release. |
 | GET | `/api/releases/:id` | Single release with full detail and linked downloads data (track listing, blurb, cover URL) |
 | GET | `/api/releases/:id/cover` | Streams the release cover image directly |
+| GET | `/api/events` | Upcoming events with venue info, ordered by date. Pass `?all=1` to include past events. |
+| GET | `/api/events/:id` | Single event with venue info |
 
 ### POST `/api/requests`
 
@@ -128,6 +130,28 @@ REQUESTS_DB_USER=wxdu_requests
 REQUESTS_DB_PASSWORD=<strong_password>
 REQUESTS_DB_NAME=requests
 ```
+
+### Events (MySQL `tickets` database)
+
+The events endpoints use a dedicated MySQL user with `SELECT` on both `tickets.event` and `tickets.location`. To create it:
+
+```sql
+CREATE USER 'wxdu_tickets'@'localhost' IDENTIFIED BY '<strong_password>';
+GRANT SELECT ON tickets.event TO 'wxdu_tickets'@'localhost';
+GRANT SELECT ON tickets.location TO 'wxdu_tickets'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+Add to `.env`:
+
+```
+TICKETS_DB_HOST=localhost
+TICKETS_DB_USER=wxdu_tickets
+TICKETS_DB_PASSWORD=<strong_password>
+TICKETS_DB_NAME=tickets
+```
+
+Each event response includes `location_name`, `location_city`, and `location_url` joined from the `location` table. The location `phone`, `email`, and `callin_pref` fields are never returned.
 
 ### Releases (MongoDB)
 
