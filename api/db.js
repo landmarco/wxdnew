@@ -3,6 +3,7 @@ const { MongoClient } = require('mongodb');
 
 let pool;
 let requestsPool;
+let ticketsPool;
 let mongoClient;
 
 function getPool() {
@@ -35,6 +36,21 @@ function getRequestsPool() {
   return requestsPool;
 }
 
+function getTicketsPool() {
+  if (!ticketsPool) {
+    ticketsPool = mysql.createPool({
+      host: process.env.TICKETS_DB_HOST,
+      user: process.env.TICKETS_DB_USER,
+      password: process.env.TICKETS_DB_PASSWORD,
+      database: process.env.TICKETS_DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0,
+    });
+  }
+  return ticketsPool;
+}
+
 async function getMongo() {
   if (!mongoClient) {
     mongoClient = new MongoClient(process.env.MONGO_URI, {
@@ -45,4 +61,4 @@ async function getMongo() {
   return mongoClient.db();
 }
 
-module.exports = { getPool, getRequestsPool, getMongo };
+module.exports = { getPool, getRequestsPool, getTicketsPool, getMongo };
