@@ -19,7 +19,6 @@ const DOWNLOADS_PROJECTION = {
   edits: 0,
   __v: 0,
   origfilename: 0,
-  dirname: 0,
   filename: 0,
   rec_alph: 0,
   assignee_id: 0,
@@ -131,15 +130,15 @@ router.get('/:id/cover', async (req, res) => {
 
     const downloads = await db
       .collection('downloads')
-      .findOne({ _id: new ObjectId(release.downloads_db_id) }, { projection: { nonaudio: 1 } });
-    if (!downloads) return res.status(404).json({ error: 'Not found' });
+      .findOne({ _id: new ObjectId(release.downloads_db_id) }, { projection: { nonaudio: 1, dirname: 1 } });
+    if (!downloads?.dirname) return res.status(404).json({ error: 'Not found' });
 
     const coverFile = pickCoverFile(downloads.nonaudio);
     if (!coverFile) return res.status(404).json({ error: 'No cover art' });
 
     // path.basename prevents directory traversal via filenames in the nonaudio array
     const safeFile = path.basename(coverFile);
-    const dir = path.join(MEDIA_BASE, release.downloads_db_id);
+    const dir = path.join(MEDIA_BASE, downloads.dirname);
 
     res.sendFile(safeFile, { root: dir }, (err) => {
       if (err && !res.headersSent) {
