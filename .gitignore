@@ -48,3 +48,5 @@ yarn-error.log*
 /api/.env
 .agents
 .codex
+
+/sqldocker/
