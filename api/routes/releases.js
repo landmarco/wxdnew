@@ -1,11 +1,21 @@
 const { Router } = require('express');
 const path = require('path');
+const fs = require('fs');
+const sharp = require('sharp');
 const { ObjectId } = require('mongodb');
 const { getMongo } = require('../db');
 
 const router = Router();
 
 const MEDIA_BASE = '/mnt/md1/music-database/public/media';
+const COVER_CACHE_DIR = '/tmp/wxdu-covers';
+
+const SIZES = {
+  small:  { width: 300, quality: 80 },
+  medium: { width: 600, quality: 85 },
+};
+
+if (!fs.existsSync(COVER_CACHE_DIR)) fs.mkdirSync(COVER_CACHE_DIR, { recursive: true });
 
 const RELEASE_PROJECTION = {
   reviewer: 0,
@@ -153,14 +163,37 @@ router.get('/:id/cover', async (req, res) => {
 
     // path.basename prevents directory traversal via filenames in the nonaudio array
     const safeFile = path.basename(coverFile);
-    const dir = path.join(MEDIA_BASE, downloads.dirname);
+    const fullPath = path.join(MEDIA_BASE, downloads.dirname, safeFile);
 
-    res.sendFile(safeFile, { root: dir }, (err) => {
-      if (err && !res.headersSent) {
-        console.error(`cover sendFile failed — root: ${dir}, file: ${safeFile}`, err.message);
-        res.status(404).json({ error: 'Cover art not found on disk' });
-      }
-    });
+    const size = SIZES[req.query.size];
+    if (!size) {
+      // No size param — serve original file directly
+      return res.sendFile(safeFile, { root: path.join(MEDIA_BASE, downloads.dirname) }, (err) => {
+        if (err && !res.headersSent) {
+          console.error(`cover sendFile failed — path: ${fullPath}`, err.message);
+          res.status(404).json({ error: 'Cover art not found on disk' });
+        }
+      });
+    }
+
+    // Resized — check disk cache first
+    const cacheKey = `${downloads.dirname}-${req.query.size}.jpg`;
+    const cachePath = path.join(COVER_CACHE_DIR, cacheKey);
+
+    if (fs.existsSync(cachePath)) {
+      return res.sendFile(cachePath);
+    }
+
+    try {
+      await sharp(fullPath)
+        .resize({ width: size.width, withoutEnlargement: true })
+        .jpeg({ quality: size.quality })
+        .toFile(cachePath);
+      res.sendFile(cachePath);
+    } catch (err) {
+      console.error(`cover resize failed — path: ${fullPath}`, err.message);
+      if (!res.headersSent) res.status(404).json({ error: 'Cover art not found on disk' });
+    }
   } catch (err) {
     console.error('releases/:id/cover GET error', err);
     res.status(500).json({ error: 'Server error' });
