@@ -266,6 +266,14 @@ const Header = () => {
 
 						{/* Links*/}
 						<div className="my-auto flex w-1/2 flex-row">
+							<Link href="/current">
+								<a className="flex h-12 grow items-center justify-center">
+									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
+										Current
+									</p>
+								</a>
+							</Link>
+
 							<Link href="/about">
 								<a className="flex h-12 grow items-center justify-center">
 									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
