@@ -1,11 +1,21 @@
 const { Router } = require('express');
 const path = require('path');
+const fs = require('fs');
+const sharp = require('sharp');
 const { ObjectId } = require('mongodb');
 const { getMongo } = require('../db');
 
 const router = Router();
 
 const MEDIA_BASE = '/mnt/md1/music-database/public/media';
+const COVER_CACHE_DIR = '/tmp/wxdu-covers';
+
+const SIZES = {
+  small:  { width: 300, quality: 80 },
+  medium: { width: 600, quality: 85 },
+};
+
+if (!fs.existsSync(COVER_CACHE_DIR)) fs.mkdirSync(COVER_CACHE_DIR, { recursive: true });
 
 const RELEASE_PROJECTION = {
   reviewer: 0,
@@ -42,16 +52,20 @@ function pickCoverFile(nonaudio) {
   return jpgs[0] ?? null;
 }
 
-// GET /api/releases?limit=20&offset=0
+// GET /api/releases?limit=20&offset=0&artist=X&title=Y
 router.get('/', async (req, res) => {
   try {
     const db = await getMongo();
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const offset = parseInt(req.query.offset) || 0;
 
+    const filter = {};
+    if (req.query.artist) filter.artist = { $regex: req.query.artist.trim(), $options: 'i' };
+    if (req.query.title) filter.title = { $regex: req.query.title.trim(), $options: 'i' };
+
     const releases = await db
       .collection('releases')
-      .find({}, { projection: RELEASE_PROJECTION })
+      .find(filter, { projection: RELEASE_PROJECTION })
       .sort({ playlist_date: -1 })
       .skip(offset)
       .limit(limit)
@@ -149,14 +163,37 @@ router.get('/:id/cover', async (req, res) => {
 
     // path.basename prevents directory traversal via filenames in the nonaudio array
     const safeFile = path.basename(coverFile);
-    const dir = path.join(MEDIA_BASE, downloads.dirname);
+    const fullPath = path.join(MEDIA_BASE, downloads.dirname, safeFile);
 
-    res.sendFile(safeFile, { root: dir }, (err) => {
-      if (err && !res.headersSent) {
-        console.error(`cover sendFile failed — root: ${dir}, file: ${safeFile}`, err.message);
-        res.status(404).json({ error: 'Cover art not found on disk' });
-      }
-    });
+    const size = SIZES[req.query.size];
+    if (!size) {
+      // No size param — serve original file directly
+      return res.sendFile(safeFile, { root: path.join(MEDIA_BASE, downloads.dirname) }, (err) => {
+        if (err && !res.headersSent) {
+          console.error(`cover sendFile failed — path: ${fullPath}`, err.message);
+          res.status(404).json({ error: 'Cover art not found on disk' });
+        }
+      });
+    }
+
+    // Resized — check disk cache first
+    const cacheKey = `${downloads.dirname}-${req.query.size}.jpg`;
+    const cachePath = path.join(COVER_CACHE_DIR, cacheKey);
+
+    if (fs.existsSync(cachePath)) {
+      return res.sendFile(cachePath);
+    }
+
+    try {
+      await sharp(fullPath)
+        .resize({ width: size.width, withoutEnlargement: true })
+        .jpeg({ quality: size.quality })
+        .toFile(cachePath);
+      res.sendFile(cachePath);
+    } catch (err) {
+      console.error(`cover resize failed — path: ${fullPath}`, err.message);
+      if (!res.headersSent) res.status(404).json({ error: 'Cover art not found on disk' });
+    }
   } catch (err) {
     console.error('releases/:id/cover GET error', err);
     res.status(500).json({ error: 'Server error' });

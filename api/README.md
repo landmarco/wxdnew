@@ -94,9 +94,10 @@ When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the follo
 | GET | `/api/schedule` | Current schedule with one row per time slot |
 | GET | `/api/requests` | All listener song requests, newest first. Accepts `?limit=` (max 100) and `?offset=` |
 | POST | `/api/requests` | Submit a song request. Rate-limited to 5 per minute per IP. |
-| GET | `/api/releases` | New music releases, newest first. Accepts `?limit=` (max 100) and `?offset=`. Includes `cover_url` per release. |
+| GET | `/api/releases` | New music releases, newest first. Accepts `?limit=` (max 100), `?offset=`, `?artist=`, `?title=` (case-insensitive partial match). Includes `cover_url` per release. |
 | GET | `/api/releases/:id` | One or more releases with downloads data and cover URL. Accepts comma-separated IDs. |
-| GET | `/api/releases/:id/cover` | Streams the release cover image directly |
+| GET | `/api/releases/:id/cover` | Streams the release cover image. Accepts `?size=small` (300px) or `?size=medium` (600px) for resized JPEG output; resized images are disk-cached. |
+| GET | `/api/recenttracks` | Most recently played tracks across all shows, with cover art resolved from MongoDB. Accepts `?limit=` (max 50, default 10). |
 | GET | `/api/events` | Upcoming events with venue info, ordered by date. Pass `?all=1` to include past events. |
 | GET | `/api/events/:id` | One or more events with venue info. Accepts comma-separated IDs. |
 
@@ -128,10 +129,35 @@ GET /api/playlists/42,87,156
 GET /api/playlists/dj/103,278
 ```
 
-**Releases:**
+**Releases — search by artist/title on `GET /api/releases`:**
+```
+GET /api/releases?artist=magic+tuber
+GET /api/releases?title=heavy+water
+GET /api/releases?artist=magic+tuber&title=heavy+water
+```
+Matches are case-insensitive and partial — `artist=magic` matches "Magic Tuber Stringband". Combines with `?limit=` and `?offset=` for pagination.
+
+**Cover image resizing** — append `?size=` to the cover endpoint:
+```
+GET /api/releases/6a262304.../cover?size=small    # 300px wide, quality 80
+GET /api/releases/6a262304.../cover?size=medium   # 600px wide, quality 85
+GET /api/releases/6a262304.../cover               # original file, no processing
+```
+Resized images are cached to disk (`/tmp/wxdu-covers/`) and served from cache on subsequent requests.
+
+**Recent tracks with cover art:**
+```
+GET /api/recenttracks          # last 10 played tracks
+GET /api/recenttracks?limit=5  # last 5
+```
+Each track includes `artist`, `song`, `album`, `label`, `starttime`, and `cover_url`. Append `?size=small` to `cover_url` when rendering on the homepage widget.
+
+**Releases — comma-separated IDs:**
 ```
 GET /api/releases/6a262304372acb6bfe63ae5a,6a1f24daf563803ba0ff8a70
 ```
+
+The `:id` in `/api/releases/:id/cover` is always the `releases` collection `_id`, not the downloads ID.
 
 **Events:**
 ```
