@@ -1,6 +1,7 @@
 import React, {useState} from 'react'
 import Link from 'next/link'
 import DropdownMenu from './DropdownMenu'
+import DropdownAbout from './DropdownAbout'
 import photo from '../images/logo.png'
 import Image from 'next/image'
 import AudioPlayerStream from '../components/audioplayers/AudioPlayerStream'
@@ -9,10 +10,35 @@ import {Menu} from '@headlessui/react'
 import {IoIosArrowDown, IoIosArrowUp} from 'react-icons/io'
 
 const Header = () => {
+	const navLinks = [
+		{href: '/programming', label: 'Programming'},
+		{href: '/archive', label: 'Archive'},
+		{href: '/blog', label: 'Blog'},
+		{href: '/contact', label: 'Contact'},
+	]
+
+	const listenLinks = [
+		{href: 'https://apps.apple.com/us/app/wxyc-radio/id353182815', label: 'iPhone app', external: true},
+		{href: 'https://stream.wxdu.art/wxdu192.mp3', label: 'Streaming', external: true},
+		{href: 'https://wxdu.org/plmanager/world/last10.php', label: 'Live playlist', external: true},
+		{href: 'https://archive.wxyc.org', label: 'Archive', external: true},
+	]
+
+	const aboutLinks = [
+		{href: '/about', label: 'About Us', external: false},
+		{href: '/faq', label: 'FAQ', external: false},
+	]
+
 	const [submenuOpen, setSubmenuOpen] = useState(false)
 
 	const toggleSubmenu = () => {
 		setSubmenuOpen(!submenuOpen)
+	}
+
+	const [aboutOpen, setAboutOpen] = useState(false)
+
+	const toggleAbout = () => {
+		setAboutOpen(!aboutOpen)
 	}
 
 	const [isOpen, setIsOpen] = useState(false)
@@ -81,7 +107,7 @@ const Header = () => {
 										<Menu.Item>
 											<Link
 												//href="https://audio-mp3.ibiblio.org/wxyc.mp3"
-												href="https://stream.wxdu.art/wxdu192.mp3" // TODO: will need to change this to wxdu.org
+												href="https://stream.wxdu.art/wxdu192.mp3" // changed to WXDU
 												target="_blank"
 											>
 												Streaming
@@ -91,7 +117,7 @@ const Header = () => {
 									<div className="mb-2 flex w-full text-nowrap text-white">
 										<Menu.Item>
 											<Link
-												href="http://www.wxyc.info/playlists/recent"
+												href="https://wxdu.org/plmanager/world/last10.php"
 												target="_blank"
 											>
 												Live playlist
@@ -110,28 +136,36 @@ const Header = () => {
 							</Menu>
 						</div>
 
-						<div className="ml-10 flex h-8 text-3xl">
-							<Link
-								href="/current"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={toggleMenu}
-							>
-								Current
-							</Link>
-						</div>
+						<div className="w-full">
+							<Menu as="div" className="relative w-full">
+								<Menu.Button
+									onClick={toggleAbout}
+									className="ml-10 mt-8 flex h-8 text-3xl"
+								>
+									About
+									{aboutOpen ? (
+										<IoIosArrowUp size={24} className="ml-1 mt-2 md:ml-3" />
+									) : (
+										<IoIosArrowDown size={24} className="ml-1 mt-2 md:ml-3" />
+									)}
+								</Menu.Button>
 
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/about"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={toggleMenu}
-							>
-								About
-							</Link>
+								<div
+									className={`duration-450 my-5 ml-14 overflow-hidden text-2xl transition-all ease-in-out focus:outline-none focus:ring-0 md:text-3xl ${
+									aboutOpen ? 'max-h-[400px]' : 'max-h-0'
+								}`}
+								>
+									{aboutLinks.map((link) => (
+										<div key={link.label} className="mb-2 flex w-full text-nowrap text-white">
+											<Menu.Item>
+												<Link href={link.href} legacyBehavior={false}>
+													{link.label}
+												</Link>
+											</Menu.Item>
+										</div>
+									))}
+								</div>
+							</Menu>
 						</div>
 
 						<div className="ml-10 mt-8 flex h-8 text-3xl">
@@ -243,7 +277,7 @@ const Header = () => {
 							<Link href="/about">
 								<a className="flex h-12 grow items-center justify-center">
 									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										About
+										<DropdownAbout />
 									</p>
 								</a>
 							</Link>
