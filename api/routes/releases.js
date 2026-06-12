@@ -1,8 +1,10 @@
 const { Router } = require('express');
 const path = require('path');
 const fs = require('fs');
-const sharp = require('sharp');
 const { ObjectId } = require('mongodb');
+
+let sharp;
+try { sharp = require('sharp'); } catch { sharp = null; }
 const { getMongo } = require('../db');
 
 const router = Router();
@@ -166,8 +168,8 @@ router.get('/:id/cover', async (req, res) => {
     const fullPath = path.join(MEDIA_BASE, downloads.dirname, safeFile);
 
     const size = SIZES[req.query.size];
-    if (!size) {
-      // No size param — serve original file directly
+    // Serve original if no size param, or if sharp isn't installed
+    if (!size || !sharp) {
       return res.sendFile(safeFile, { root: path.join(MEDIA_BASE, downloads.dirname) }, (err) => {
         if (err && !res.headersSent) {
           console.error(`cover sendFile failed — path: ${fullPath}`, err.message);
@@ -190,8 +192,8 @@ router.get('/:id/cover', async (req, res) => {
         .jpeg({ quality: size.quality })
         .toFile(cachePath);
       res.sendFile(cachePath);
-    } catch (err) {
-      console.error(`cover resize failed — path: ${fullPath}`, err.message);
+    } catch (sharpErr) {
+      console.error(`cover resize failed — path: ${fullPath}`, sharpErr.message);
       if (!res.headersSent) res.status(404).json({ error: 'Cover art not found on disk' });
     }
   } catch (err) {
