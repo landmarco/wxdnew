@@ -94,7 +94,7 @@ When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the follo
 | GET | `/api/schedule` | Current schedule with one row per time slot |
 | GET | `/api/requests` | All listener song requests, newest first. Accepts `?limit=` (max 100) and `?offset=` |
 | POST | `/api/requests` | Submit a song request. Rate-limited to 5 per minute per IP. |
-| GET | `/api/releases` | New music releases, newest first. Accepts `?limit=` (max 100) and `?offset=`. Includes `cover_url` per release. |
+| GET | `/api/releases` | New music releases, newest first. Accepts `?limit=` (max 100), `?offset=`, `?artist=`, `?title=` (case-insensitive partial match). Includes `cover_url` per release. |
 | GET | `/api/releases/:id` | One or more releases with downloads data and cover URL. Accepts comma-separated IDs. |
 | GET | `/api/releases/:id/cover` | Streams the release cover image directly |
 | GET | `/api/events` | Upcoming events with venue info, ordered by date. Pass `?all=1` to include past events. |
@@ -128,10 +128,20 @@ GET /api/playlists/42,87,156
 GET /api/playlists/dj/103,278
 ```
 
-**Releases:**
+**Releases — search by artist/title on `GET /api/releases`:**
+```
+GET /api/releases?artist=magic+tuber
+GET /api/releases?title=heavy+water
+GET /api/releases?artist=magic+tuber&title=heavy+water
+```
+Matches are case-insensitive and partial — `artist=magic` matches "Magic Tuber Stringband". Combines with `?limit=` and `?offset=` for pagination.
+
+**Releases — comma-separated IDs:**
 ```
 GET /api/releases/6a262304372acb6bfe63ae5a,6a1f24daf563803ba0ff8a70
 ```
+
+The `:id` in `/api/releases/:id/cover` is always the `releases` collection `_id`, not the downloads ID.
 
 **Events:**
 ```

@@ -42,16 +42,20 @@ function pickCoverFile(nonaudio) {
   return jpgs[0] ?? null;
 }
 
-// GET /api/releases?limit=20&offset=0
+// GET /api/releases?limit=20&offset=0&artist=X&title=Y
 router.get('/', async (req, res) => {
   try {
     const db = await getMongo();
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const offset = parseInt(req.query.offset) || 0;
 
+    const filter = {};
+    if (req.query.artist) filter.artist = { $regex: req.query.artist.trim(), $options: 'i' };
+    if (req.query.title) filter.title = { $regex: req.query.title.trim(), $options: 'i' };
+
     const releases = await db
       .collection('releases')
-      .find({}, { projection: RELEASE_PROJECTION })
+      .find(filter, { projection: RELEASE_PROJECTION })
       .sort({ playlist_date: -1 })
       .skip(offset)
       .limit(limit)
