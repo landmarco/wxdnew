@@ -55,11 +55,11 @@ router.get('/mostplayed', async (req, res) => {
     const isChartFlag =
       String(isChart || '').toLowerCase() === 'true' || isChart === '1';
 
-    // Default limit is 10. Clamp it between 1 and 50.
-    const parsedLimit = Number(limit || 10);
+    // Default limit is 50. Clamp it between 1 and 500.
+    const parsedLimit = Number(limit || 50);
     const safeLimit = Number.isInteger(parsedLimit)
-      ? Math.min(Math.max(parsedLimit, 1), 50)
-      : 10;
+      ? Math.min(Math.max(parsedLimit, 1), 500)
+      : 50;
 
     // Chart mode groups by album.
     // Non-chart mode groups by song.
