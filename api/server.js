@@ -10,6 +10,7 @@ const requests = require('./routes/requests');
 const releases = require('./routes/releases');
 const events = require('./routes/events');
 const recenttracks = require('./routes/recenttracks');
+const charts = require('./routes/charts');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/requests', requests);
 app.use('/api/releases', releases);
 app.use('/api/events', events);
 app.use('/api/recenttracks', recenttracks);
+app.use('/api/charts', charts);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
