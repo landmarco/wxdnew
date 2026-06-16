@@ -1,4 +1,4 @@
-import getAlbumCover from "./albumCover";
+import { getAlbumCover } from "./albumCover";
 
 // URL for the WXDU hosted API (replaces direct MySQL connection)
 // reads from .env.local locally, or Cloudflare Pages env vars in production

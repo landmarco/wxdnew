@@ -1,5 +1,5 @@
-import db from '../../lib/db/plmanager';
-import ChartEntryRow from '../../components/charts/ChartEntryRow';
+import db from '@/lib/db/plmanager';
+import ChartEntryRow from '@/components/charts/ChartEntryRow';
 import { useState, useEffect } from 'react';
 
 //initalChart and latestDate come from getServerSideProps below

@@ -6,7 +6,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.wxdu.art';
 
 const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN || null;
 
-export default async function getAlbumCover(artist, song, album){
+// tests all other functions and returns the cover
+export async function getAlbumCover(artist, song, album){
     if (!artist || !album || !song) return null;
 
   // starts by using local discogs through Jake's metadata, then api.wxdu.art API, then final Discogs own API
@@ -16,6 +17,34 @@ export default async function getAlbumCover(artist, song, album){
     await useDiscogsAPI(artist, song, album);
 
   return cover;
+}
+
+// Handles request made to the API
+export default async function handler(req, res) {
+  const { artist, song, album } = req.query;
+
+  if (!artist || !song || !album) {
+    return res.status(400).json({
+      error: "artist, song and album are required",
+    });
+  }
+
+  try {
+    const coverUrl = await getAlbumCover(
+      artist,
+      song,
+      album
+    );
+
+    return res.status(200).json(coverUrl);
+  } catch (err) {
+    console.error("[albumCover API]", err);
+
+    return res.status(500).json({
+      error: "Failed to fetch album cover",
+      coverUrl: null,
+    });
+  }
 }
 
 // given an artist, song and album name, searches Discogs and returns an album cover URL

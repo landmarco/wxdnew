@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { getCurrentPlaylist } from "@/lib/playlists";
+import { apiFetch } from "../lib/api";
+
+const SOURCE_PATH = "/api/playlists/current";
 
 // function to get the current playlist
 export default function useCurrentPlaylist() {

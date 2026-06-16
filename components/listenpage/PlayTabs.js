@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import NowPlaying from "./NowPlaying";
-import LastPlayed from "./LastPlayed";
+import CurrentPlaylist from "./CurrentPlaylist";
 
 export default function PlayTabs({ nowPlaying = {}, currentPlaylist = {}}) {
     const [activeTab, setActiveTab] = useState("nowplaying");
@@ -11,10 +11,10 @@ export default function PlayTabs({ nowPlaying = {}, currentPlaylist = {}}) {
     function renderTab() {
         if (activeTab === "nowplaying") {
             return <NowPlaying currentPlaylist={currentPlaylist} />
-        } else if (activeTab === "lastplayed") {
-            return <LastPlayed currentPlaylist={currentPlaylist}/>
+        } else if (activeTab === "currentPlaylist") {
+            return <CurrentPlaylist currentPlaylist={currentPlaylist}/>
         }
-    } 
+    }
 
     return(
         <div className="w-full max-w-[360px] mx-auto">
@@ -22,8 +22,8 @@ export default function PlayTabs({ nowPlaying = {}, currentPlaylist = {}}) {
                 <button role="tab" onClick={() => setActiveTab("nowplaying")} aria-selected={activeTab === 'nowplaying'} className={activeTab === "nowplaying" ? "text-white border-b-2 border-blue-400 px-4 py-2 text-lg" : "text-gray-300 hover:text-white transition-colors duration-150 px-4 py-2 text-lg"}>
                     Now Playing
                 </button>
-                <button role="tab" onClick={() => setActiveTab("lastplayed")} aria-selected={activeTab === 'lastplayed'} className={activeTab === "lastplayed" ? "text-white border-b-2 border-blue-400 px-4 py-2 text-lg" : "text-gray-300 hover:text-white transition-colors duration-150 px-4 py-2 text-lg"}>
-                    Last Played
+                <button role="tab" onClick={() => setActiveTab("currentPlaylist")} aria-selected={activeTab === 'currentPlaylist'} className={activeTab === "currentPlaylist" ? "text-white border-b-2 border-blue-400 px-4 py-2 text-lg" : "text-gray-300 hover:text-white transition-colors duration-150 px-4 py-2 text-lg"}>
+                    Current Playlist
                 </button>
             </div>
 

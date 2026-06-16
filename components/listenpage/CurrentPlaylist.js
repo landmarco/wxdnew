@@ -1,9 +1,7 @@
-// This component displayed the last played songs of the entire day.
-
-import StreamButton from "../audioplayers/StreamButton";
+// This component displayed the current playlist.
 import SongRow from "./songRow"
 
-export default function LastPlayed({ currentPlaylist = {}}) {
+export default function CurrentPlaylist({ currentPlaylist = {}}) {
 
 
     // getting current playlist track and reversing it so that the latest song shows first
