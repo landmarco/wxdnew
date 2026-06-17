@@ -13,8 +13,7 @@ export async function getAlbumCover(artist, song, album){
   // starts by using local discogs through Jake's metadata, then api.wxdu.art API, then final Discogs own API
   const cover =
     await useDiscogsLocal(artist, song, album) ||
-    await useMongodb(artist, song, album) ||
-    await useDiscogsAPI(artist, song, album);
+    await useMongodb(artist, song, album);
 
   return cover;
 }

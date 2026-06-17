@@ -2,14 +2,14 @@
 
 import SongAlbumCover from "./songAlbumCover"
 
-export default function SongRow({song, artist, album, songStart}) {
+export default function SongRow({song, artist, album, songStart, cover}) {
       function formatTime(iso) {
             return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
 
     return (
         <div className="flex items-center gap-4 border-b border-zinc-800 py-3">
-            <SongAlbumCover artist={artist} album={album}/>
+            <SongAlbumCover artist={artist} album={album} cover={cover} />
             <div className = "w-16 flex-shrink-0 text-center text-sm text-zinc-400">
                 Played at {formatTime(songStart)}
             </div>
