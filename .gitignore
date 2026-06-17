@@ -47,3 +47,6 @@ yarn-error.log*
 .codex
 
 /sqldocker/
+# API server
+/api/node_modules
+/api/.env
