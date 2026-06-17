@@ -43,7 +43,7 @@ export function useMostPlayed({
             cover:
               (await getCovers(
                 item.artist,
-                item.song,
+                item?.song || null,
                 item.album
               )) || "/CD_1_Filler.jpg",
           }))
@@ -71,5 +71,5 @@ export function useMostPlayed({
     };
   }, [isChart, dateStart, dateEnd, limit]);
 
-  return { mostplayed };
+  return { mostplayed, loading, error };
 }

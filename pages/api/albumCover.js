@@ -8,7 +8,7 @@ const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN || null;
 
 // tests all other functions and returns the cover
 export async function getAlbumCover(artist, song, album){
-    if (!artist || !album || !song) return null;
+    if (!artist || !album) return null;
 
   // starts by using local discogs through Jake's metadata, then api.wxdu.art API, then final Discogs own API
   const cover =
@@ -23,16 +23,16 @@ export async function getAlbumCover(artist, song, album){
 export default async function handler(req, res) {
   const { artist, song, album } = req.query;
 
-  if (!artist || !song || !album) {
+  if (!artist || !album) {
     return res.status(400).json({
-      error: "artist, song and album are required",
+      error: "artist and album are required",
     });
   }
 
   try {
     const coverUrl = await getAlbumCover(
       artist,
-      song,
+      song || null,
       album
     );
 
@@ -49,6 +49,9 @@ export default async function handler(req, res) {
 
 // given an artist, song and album name, searches Discogs and returns an album cover URL
 async function useDiscogsLocal(artist, song, album) {
+
+  // This is Temporary
+  if (!song) return null
 
   try {
     // step 1: search Discogs for releases that contain this track

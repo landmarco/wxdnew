@@ -35,11 +35,14 @@ export default function ExploreTab() {
 
 
     // Getting the most played songs
-    const { mostplayed } = useMostPlayed({dateStart: dateStart, dateEnd: dateEnd, limit:12});
+    const { mostplayed, loading, error } = useMostPlayed({dateStart: dateStart, dateEnd: dateEnd, limit:12});
     
     return (
         <div className="w-full">
             <h4 className="text-2xl font-light text-white text-center mb-4">Explore New Music</h4>
+            <p className="text-base text-center text-gray-300 tracking-wide">
+                Most Played Songs in the
+            </p>
             <div className="flex items-center justify-center gap-3 mb-4">
                 <label htmlFor="rangeSelect" className="text-white sr-only">Range</label>
                 <select
@@ -55,11 +58,18 @@ export default function ExploreTab() {
                     <option value={365}>Last year</option>
                 </select>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 justify-items-center">
-                {mostplayed.map((item, i) => (
-                    <ExploreSong key={i} rank={item.rank} info={item} />
-                ))}
-            </div>
+            {loading ? (
+                <p className="text-zinc-400">Loading...</p>
+            ) : mostplayed.length === 0 ? (
+                <p className="text-zinc-400">Most played songs not found.</p>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 justify-items-center">
+                    {mostplayed.map((item, i) => (
+                        <ExploreSong key={i} rank={item.rank} info={item} />
+                    ))}
+                </div>
+            )
+            }
         </div>
     );
 }
