@@ -33,7 +33,7 @@ export default function ArchiveHistoryIndex() {
 						</Link>
 					</h2>
 					<p className="mt-2 text-sm text-gray-300 md:text-base">
-						yeah that's a smart statement right there.
+						yeah that&apos;s a smart statement right there.
 					</p>
 				</div>
 

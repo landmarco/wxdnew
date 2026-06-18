@@ -11,15 +11,15 @@ export default async function getAlbumCover(artist, song, album){
 
   // starts by using local discogs through Jake's metadata, then api.wxdu.art API, then final Discogs own API
   const cover =
-    await useDiscogsLocal(artist, song, album) ||
-    await useMongodb(artist, song, album) ||
-    await useDiscogsAPI(artist, song, album);
+    await fetchDiscogsLocal(artist, song, album) ||
+    await fetchMongodb(artist, song, album) ||
+    await fetchDiscogsAPI(artist, song, album);
 
   return cover;
 }
 
 // given an artist, song and album name, searches Discogs and returns an album cover URL
-async function useDiscogsLocal(artist, song, album) {
+async function fetchDiscogsLocal(artist, song, album) {
 
   try {
     // step 1: search Discogs for releases that contain this track
@@ -49,7 +49,7 @@ async function useDiscogsLocal(artist, song, album) {
 }
 
 // calling the wxdu.art release API to get album covers from Mongodb
-async function useMongodb(artist, song, album){
+async function fetchMongodb(artist, song, album){
     let url;
 
     try{
@@ -68,7 +68,7 @@ async function useMongodb(artist, song, album){
 //using Discogs API direcly instead of Jake's metadata.
 // error 429 may occur if two many requests are sent. so use this rarely.
 // Precieux: I'm using my Discogs account TOKEN which is not a good idea for deployment or use by many people
-async function useDiscogsAPI(artist, song, album){
+async function fetchDiscogsAPI(artist, song, album){
   if (!DISCOGS_TOKEN){
     return null
   }
@@ -105,7 +105,7 @@ async function useDiscogsAPI(artist, song, album){
 
 // using MBID to get album cover
 // works but requires User-Agent through the server
-async function useMBID(artist, song, album){
+async function fetchMBID(artist, song, album){
 
   const query = `artist:${artist} AND release:"${album}"`;
 

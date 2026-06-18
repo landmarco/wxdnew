@@ -73,7 +73,7 @@ export default function TodaySchedule({ schedule }) {
 
 	return (
 		<div className="text-lg text-[#e0ff05] w-full tracking-[-0.07em]">
-			<h1 className="bitcount mb-2 text-center lg:text-left text-2xl lg:text-5xl text-white">Today's Schedule</h1>
+			<h1 className="bitcount mb-2 text-center lg:text-left text-2xl lg:text-5xl text-white">Today&apos;s Schedule</h1>
 			{shows.map(({ startLabel, endLabel, show }, i) => (
 				show ? (
 					<div key={`${startLabel}-${endLabel}-${i}`} className="flex gap-4 py-3 border-b border-gray-300">
