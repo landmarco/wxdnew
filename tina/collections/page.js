@@ -22,6 +22,89 @@ export default {
 						},
 					],
 				},
+				{
+					name: 'weeklySchedule',
+					label: 'Weekly Schedule',
+					fields: [ // placeholder field is necessary for Tina to recognise this
+						{
+							name: 'placeholder',
+							label: 'Placeholder',
+							type: 'string',
+							ui: {
+								component: 'hidden',
+							},
+						},
+					],
+				}
+			],
+		},
+		{
+			name: 'homepageBanner',
+			label: 'Homepage Banner',
+			type: 'object',
+			fields: [
+				{
+					name: 'columns',
+					label: 'Columns',
+					type: 'object',
+					list: true,
+					fields: [
+						{
+							name: 'images',
+							label: 'Images',
+							type: 'object',
+							list: true,
+							fields: [
+								{
+									name: 'image',
+									label: 'Image',
+									type: 'image',
+								},
+								{
+									name: 'alt',
+									label: 'Alt Text',
+									type: 'string',
+								},
+							],
+						},
+					],
+				},
+				{
+					name: 'aboveLogo',
+					label: 'Columns Above Logo',
+					type: 'object',
+					list: true,
+					fields: [
+						{
+							name: 'images',
+							label: 'Images',
+							type: 'object',
+							list: true,
+							fields: [
+								{ name: 'image', label: 'Image', type: 'image' },
+								{ name: 'alt', label: 'Alt Text', type: 'string' },
+							],
+						},
+					],
+				},
+				{
+					name: 'belowLogo',
+					label: 'Columns Below Logo',
+					type: 'object',
+					list: true,
+					fields: [
+						{
+							name: 'images',
+							label: 'Images',
+							type: 'object',
+							list: true,
+							fields: [
+								{ name: 'image', label: 'Image', type: 'image' },
+								{ name: 'alt', label: 'Alt Text', type: 'string' },
+							],
+						},
+					],
+				},
 			],
 		},
 	],

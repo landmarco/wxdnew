@@ -5,6 +5,9 @@ import {PostHogProvider} from 'posthog-js/react'
 import {useEffect} from 'react'
 import {Router} from 'next/router'
 import posthog from 'posthog-js'
+import { AudioProvider } from '../components/AudioContext'
+import NavPlayer from '../components/audioplayers/NavPlayer'
+import DJRequestWidget from '../components/DJRequestWidget'
 
 const App = ({Component, pageProps}) => {
 	useEffect(() => {
@@ -28,13 +31,21 @@ const App = ({Component, pageProps}) => {
 	}, [])
 	return (
 		<PostHogProvider client={posthog}>
-			<div className="flex flex-col lg:items-center">
-				<div className="m-0 flex h-full w-full flex-col overflow-hidden bg-black font-poppins text-base text-white">
-					<Layout>
-						<Component {...pageProps} />
-					</Layout>
+			<AudioProvider>
+				<div className="flex flex-col lg:items-center">
+					<div className="m-0 flex h-full w-full flex-col overflow-hidden bg-black font-courierprime text-base text-white">
+						{/* show skip-to-main-content link in a button only on keyboard focus. */}
+						<a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-black">
+							Skip to main content
+						</a>
+						<NavPlayer />
+						<Layout>
+							<Component {...pageProps} />
+						</Layout>
+					</div>
 				</div>
-			</div>
+				<DJRequestWidget />
+			</AudioProvider>
 		</PostHogProvider>
 	)
 }

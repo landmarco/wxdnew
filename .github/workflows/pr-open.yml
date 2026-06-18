@@ -57,12 +57,40 @@ jobs:
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build TinaCMS
+        id: tina-build
+        continue-on-error: true
         env:
           TINA_PUBLIC_CLIENT_ID: ${{ secrets.TINA_PUBLIC_CLIENT_ID }}
           TINA_TOKEN: ${{ secrets.TINA_TOKEN }}
           SEARCH_TOKEN: ${{ secrets.SEARCH_TOKEN }}
         run: npx tinacms build
+      - name: Notify Tina build failure
+        if: steps.tina-build.outcome == 'failure'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **TinaCMS build failed.** This is expected if this PR introduces schema changes (Tina Cloud schema is based on `main`). If you did *not* change the Tina schema, there may be a real error — check the [build logs](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ') for details.'
+            })
       - name: Build with Next.js
+        id: next-build
+        continue-on-error: true
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
       - name: Static HTML export with Next.js
+        id: next-export
+        continue-on-error: true
         run: ${{ steps.detect-package-manager.outputs.runner }} next export
+      - name: Notify Next.js build failure
+        if: steps.next-build.outcome == 'failure' || steps.next-export.outcome == 'failure'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Next.js build failed.** This is expected if this PR adds new Tina schema fields — those fields won\'t exist in Tina Cloud until the PR is merged to `main`. If you did *not* change the Tina schema, there may be a real error — check the [build logs](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ') for details.'
+            })

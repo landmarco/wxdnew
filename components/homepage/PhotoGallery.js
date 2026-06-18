@@ -1,6 +1,5 @@
 import React, {useState} from 'react'
 import {IoIosArrowDropright, IoIosArrowDropleft} from 'react-icons/io'
-import slamDanceBracket from '../../images/Slam_Dance_2012.jpg'
 import slamDanceLogo from '../../images/WXDUslamdance.jpg'
 import getSome from '../../images/get_some.jpg'
 import ostraca from '../../images/ostraca.jpg'
@@ -21,7 +20,6 @@ const images = [
     djing,
     bivins,
     slamDanceLogo,
-    slamDanceBracket,
     wdbsCollage,
     getSome,
 ]
@@ -48,18 +46,20 @@ export const PhotoGallery = () => {
 			</div>
 
 			<div className="arrows">
-				<button
-					onClick={goToPrevious}
-					className="absolute left-2 top-1/2 z-10 -translate-y-1/2 transform cursor-pointer text-2xl"
-				>
-					<IoIosArrowDropleft size={42} />
-				</button>
-				<button
-					onClick={goToNext}
-					className="absolute right-2 top-1/2 z-10 -translate-y-1/2 transform cursor-pointer text-2xl"
-				>
-					<IoIosArrowDropright size={42} />
-				</button>
+					<button
+						onClick={goToPrevious}
+						className="absolute left-2 top-1/2 z-10 -translate-y-1/2 transform cursor-pointer text-2xl"
+						aria-label="Show previous gallery image"
+					>
+						<IoIosArrowDropleft size={42} />
+					</button>
+					<button
+						onClick={goToNext}
+						className="absolute right-2 top-1/2 z-10 -translate-y-1/2 transform cursor-pointer text-2xl"
+						aria-label="Show next gallery image"
+					>
+						<IoIosArrowDropright size={42} />
+					</button>
 			</div>
 		</div>
 	)
