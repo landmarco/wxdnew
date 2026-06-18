@@ -29,10 +29,8 @@ export default function AboutPage(props) {
 }
 
 export const getStaticPaths = async () => {
-	const paths = [{params: {slug: 'mission'}}, {params: {slug: 'history'}}]
-
 	return {
-		paths,
+		paths: [],
 		fallback: 'blocking',
 	}
 }
