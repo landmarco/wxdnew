@@ -43,6 +43,11 @@ export default async function handler(req, res){
 }
 
 async function findChart(){
+	const [[latestRow]] = await db.query(
+		`SELECT DATE_FORMAT(MAX(songstart), '%Y-%m-%d') as latestDate FROM playlist`
+	);
+	const latestDate = latestRow.latestDate;
+
 	const [rows] = await db.query(`
 			SELECT artist, album, MIN(label) as label, COUNT(*) as spins
 			FROM playlist
@@ -70,8 +75,8 @@ async function findChart(){
 		)) || '/CD_1_Filler.jpg',
 	}))
 	);
-	
-	return chart;
+
+	return { chart, latestDate };
 }
 
 async function findRange(range, rangeNum){

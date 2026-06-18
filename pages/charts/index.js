@@ -1,16 +1,28 @@
-import db from '../../lib/db/plmanager';
 import ChartEntryRow from '../../components/charts/ChartEntryRow';
 import { useState, useEffect } from 'react';
 
-//initalChart and latestDate come from getServerSideProps below
-export default function ChartsPage({ initialChart, latestDate }) {
-    const [chart, setChart] = useState(initialChart);  //chart data currently shown
-    const [selectedDate, setSelectedDate] = useState(latestDate); //date the user has picked
-    const [loading, setLoading] = useState(false);
+export default function ChartsPage() {
+    const [chart, setChart] = useState([]);
+    const [latestDate, setLatestDate] = useState('');
+    const [selectedDate, setSelectedDate] = useState('');
+    const [loading, setLoading] = useState(true);
+
+    // fetch the latest chart and date on mount
+    useEffect(() => {
+        fetch('/api/charts?isChart=true')
+            .then(r => r.json())
+            .then(data => {
+                setChart(Array.isArray(data.chart) ? data.chart : []);
+                setLatestDate(data.latestDate || '');
+                setSelectedDate(data.latestDate || '');
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+    }, []);
 
     //runs whenever selectedDate changes - fetches chart for the new date from the api
     useEffect(() => {
-        if (selectedDate === latestDate) return; //skip fetch on first load, we already have the data
+        if (!selectedDate || selectedDate === latestDate) return; //skip fetch on first load, we already have the data
         setLoading(true);
         fetch(`/api/charts/${selectedDate}`)
             .then(r => r.json())
@@ -63,43 +75,3 @@ export default function ChartsPage({ initialChart, latestDate }) {
         </div>
     );
 }
-
-//runs on the server before the page loads - fetches the default chart (most recent week)
-export async function getServerSideProps() {
-    try {
-        //gets most recent date in the db to be default
-        const [[latestRow]] = await db.query(
-            `SELECT DATE_FORMAT(MAX(songstart), '%Y-%m-%d') as latestDate FROM playlist`
-        );
-        const latestDate = latestRow.latestDate
-
-        //fetch the top 10 for the 7 days ending on that date
-        const [rows] = await db.query(`
-            SELECT artist, album, MIN(label) as label, COUNT(*) as spins
-            FROM playlist
-            WHERE playlist IN ('red', 'black', 'red/nonrock', 'black/nonrock')
-            AND songstart >= DATE_SUB((SELECT MAX(songstart) FROM playlist), INTERVAL 7 DAY)
-            AND artist != '*****'
-            AND album IS NOT NULL AND album != ''
-            GROUP BY artist, album
-            ORDER BY spins DESC
-            LIMIT 10
-        `);
-
-        //add rank 1-10 to each row
-        const initialChart = rows.map((row, index) => ({
-            rank: index + 1,
-            spins: row.spins,
-            artist: row.artist,
-            album: row.album,
-            label: row.label || '',
-        }));
-
-        return { props: { initialChart, latestDate } };
-        
-    } catch (error) {
-        console.error('[charts page]', error);
-        return { props: { initialChart: [], latestDate: '' } };
-    }
-}
-
