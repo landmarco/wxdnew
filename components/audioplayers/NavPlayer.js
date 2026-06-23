@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { useAudio } from "../AudioContext";
+import { getNowPlaying } from "../../lib/nowPlaying";
 
 const NavPlayer = () => {
     const { isPlaying, togglePlayPause } = useAudio();
@@ -21,11 +22,12 @@ const NavPlayer = () => {
         dj: "mystery dj"
     });
 
-    // polls the local API wrapper route that proxies api.wxdu.art atm
+    // fetches directly from the external WXDU API (api.wxdu.art / api.wxdu.org).
+    // the old /api/now-playing Next route doesn't exist in the static export,
+    // so we call the API straight through the domain-aware apiFetch wrapper.
     async function fetchNowPlaying() {
         try {
-            const response = await fetch("/api/now-playing");
-            const data = await response.json();
+            const data = await getNowPlaying();
 
             setNowPlaying({
                 artist: data.artist,
