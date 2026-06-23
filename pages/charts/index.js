@@ -1,33 +1,52 @@
 import ChartEntryRow from '../../components/charts/ChartEntryRow';
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../../lib/api';
+
+function formatLocalDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function addDays(dateString, days) {
+    const [y, m, d] = dateString.split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    date.setUTCDate(date.getUTCDate() + days);
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
 
 export default function ChartsPage() {
     const [chart, setChart] = useState([]);
-    const [latestDate, setLatestDate] = useState('');
-    const [selectedDate, setSelectedDate] = useState('');
+    const [selectedDate, setSelectedDate] = useState(formatLocalDate(new Date()));
     const [loading, setLoading] = useState(true);
 
-    // fetch the latest chart and date on mount
+    // fetch chart for the selected week-ending date
     useEffect(() => {
-        fetch('/api/charts?isChart=true')
-            .then(r => r.json())
-            .then(data => {
-                setChart(Array.isArray(data.chart) ? data.chart : []);
-                setLatestDate(data.latestDate || '');
-                setSelectedDate(data.latestDate || '');
+        if (!selectedDate) return;
+        async function loadChart() {
+            try {
+                setLoading(true);
+                const dateStart = addDays(selectedDate, -7);
+                const rows = await apiFetch(
+                    `/api/charts/mostplayed?isChart=true&limit=10&dateStart=${encodeURIComponent(dateStart)}&dateEnd=${encodeURIComponent(selectedDate)}`
+                );
+                const normalized = (Array.isArray(rows) ? rows : []).map((row, index) => ({
+                    rank: index + 1,
+                    spins: row.spins || 0,
+                    artist: row.artist || '',
+                    album: row.album || '',
+                    label: row.label || '',
+                }));
+                setChart(normalized);
+            } catch {
+                setChart([]);
+            } finally {
                 setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, []);
+            }
+        }
 
-    //runs whenever selectedDate changes - fetches chart for the new date from the api
-    useEffect(() => {
-        if (!selectedDate || selectedDate === latestDate) return; //skip fetch on first load, we already have the data
-        setLoading(true);
-        fetch(`/api/charts/${selectedDate}`)
-            .then(r => r.json())
-            .then(data => { setChart(Array.isArray(data) ? data : []); setLoading(false); })
-            .catch(() => setLoading(false));
+        loadChart();
     }, [selectedDate]);
 
     return (

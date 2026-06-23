@@ -2,17 +2,24 @@
 
 import ExploreSong from './ExploreSong';
 import { useState, useEffect } from 'react';
-import getAlbumCover from "../../pages/api/albumCover";
+import { apiFetch } from '../../lib/api';
+import { getReleaseCoverUrl } from '../../lib/releaseCover';
 
-// function to get the album cover for each song.
-async function getCovers(album, artist){
-    const res = await fetch(`/api/albumCover?artist=${encodeURIComponent(artist)}&album=${encodeURIComponent(album)}`);
-    if (!res.ok) {
-        throw new Error(`Cover search failed: ${res.status}`);
-    }
+function formatDateUTC(date) {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
-    const cover = await res.json();
-    return cover.coverUrl;
+function getDateRange(days) {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setUTCDate(endDate.getUTCDate() - Number(days));
+    return {
+        dateStart: formatDateUTC(startDate),
+        dateEnd: formatDateUTC(endDate),
+    };
 }
 
 export default function ExploreTab() {
@@ -25,13 +32,20 @@ export default function ExploreTab() {
         setLoading(true);
 
         try {
-            // fetching the api
-            const res = await fetch(`/api/charts?range=${encodeURIComponent(range)}`);
-            if (!res.ok) throw new Error(`Charts fetch failed: ${res.status}`);
-            const raw = await res.json();
-            const items = Array.isArray(raw) ? raw : []; // storing the result as an array
+            const { dateStart, dateEnd } = getDateRange(range);
+            const raw = await apiFetch(
+                `/api/charts/mostplayed?limit=12&dateStart=${encodeURIComponent(dateStart)}&dateEnd=${encodeURIComponent(dateEnd)}`
+            );
+            const items = Array.isArray(raw) ? raw : [];
+            const withCovers = await Promise.all(
+                items.map(async (item, index) => ({
+                    ...item,
+                    rank: index + 1,
+                    cover: (await getReleaseCoverUrl(item.artist, item.album)) || '/CD_1_Filler.jpg',
+                }))
+            );
 
-            setSongs(items); // updating the songs variable.
+            setSongs(withCovers);
         } catch (err) {
             console.error('fetchSongs error', err);
             setSongs([]);
@@ -61,7 +75,7 @@ export default function ExploreTab() {
                     aria-label="Select range in days"
                 >
                     <option value={1}>Last 1 day</option>
-                    <option value={7} selected>Last 7 days</option>
+                    <option value={7}>Last 7 days</option>
                     <option value={30}>Last 30 days</option>
                     <option value={365}>Last year</option>
                 </select>

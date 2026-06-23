@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from "next/image"
 import StreamButton from "../audioplayers/StreamButton"
+import { getReleaseCoverUrl } from '../../lib/releaseCover';
 
 export default function NowPlaying({ currentPlaylist = {} }) {
 
@@ -18,13 +19,16 @@ export default function NowPlaying({ currentPlaylist = {} }) {
     // looking for the cover of the currently playing song.
     useEffect(()=> {
         if (!artist && !album) return;
-
-        fetch(`/api/charts/cover?artist=${encodeURIComponent(artist)}&album=${encodeURIComponent(album)}`)
-        .then(r=> r.ok ? r.json() : Promise.reject())
-        .then(data=> data.coverUrl 
-            ? setCover(data.coverUrl) 
-            : setCover('/CD_1_Filler.jpg')) // default cover if none was found through the api
-        .catch(() => {});
+        let mounted = true;
+        async function loadCover() {
+            const coverUrl = await getReleaseCoverUrl(artist, album);
+            if (!mounted) return;
+            setCover(coverUrl || '/CD_1_Filler.jpg');
+        }
+        loadCover();
+        return () => {
+            mounted = false;
+        };
     }, [track])
 
     return(
@@ -49,4 +53,3 @@ export default function NowPlaying({ currentPlaylist = {} }) {
         
     )
 }
-

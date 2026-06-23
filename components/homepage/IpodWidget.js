@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { IoIosArrowDropleft, IoIosArrowDropright } from 'react-icons/io'
 import cardinalsFallback from '../../images/cardinals.jpg'
+import { apiFetch, toApiUrl } from '../../lib/api'
 
 export default function IpodWidget() {
   const [songs, setSongs] = useState([])
@@ -9,11 +10,24 @@ export default function IpodWidget() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchPlaylist = () => {
-      fetch('/api/current-playlist')
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(data => { setSongs(data); setLoading(false) })
-        .catch(() => setLoading(false))
+    const fetchPlaylist = async () => {
+      try {
+        const rows = await apiFetch('/api/recenttracks?limit=5')
+        const mapped = Array.isArray(rows)
+          ? rows.map((track) => ({
+              song: track.song,
+              artist: track.artist,
+              album: track.album,
+              songstart: track.starttime,
+              albumArt: toApiUrl(track.cover_url),
+            }))
+          : []
+        setSongs(mapped)
+      } catch {
+        setSongs([])
+      } finally {
+        setLoading(false)
+      }
     }
     fetchPlaylist()
     const id = setInterval(fetchPlaylist, 30000)

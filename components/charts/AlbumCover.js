@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
+import { getReleaseCoverUrl } from '../../lib/releaseCover';
 
 export default function AlbumCover({ artist, album, rank }) {
     const [coverUrl, setCoverUrl] = useState(null);
     const fillerNum = (parseInt(rank) % 3) + 1;
     const fillerSrc = `/CD_${fillerNum}_Filler.jpg`
     useEffect(() => {
-        if(!artist || !album) return;
-        fetch(`/api/charts/cover?artist=${encodeURIComponent(artist)}&album=${encodeURIComponent(album)}`)
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(data => {
-            if (data.coverUrl) setCoverUrl(data.coverUrl);
-        })
-        .catch(() => {});
+        let mounted = true;
+        async function loadCover() {
+            const cover = await getReleaseCoverUrl(artist, album);
+            if (mounted && cover) {
+                setCoverUrl(cover);
+            }
+        }
+        loadCover();
+        return () => {
+            mounted = false;
+        };
     }, [artist, album]);
     return (
         <img

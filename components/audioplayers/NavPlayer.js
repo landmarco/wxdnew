@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { useAudio } from "../AudioContext";
+import { apiFetch } from "../../lib/api";
 
 const NavPlayer = () => {
     const { isPlaying, togglePlayPause } = useAudio();
@@ -21,11 +22,10 @@ const NavPlayer = () => {
         dj: "mystery dj"
     });
 
-    // polls the local API wrapper route that proxies api.wxdu.art atm
+    // poll external API directly from static frontend
     async function fetchNowPlaying() {
         try {
-            const response = await fetch("/api/now-playing");
-            const data = await response.json();
+            const data = await apiFetch("/api/nowplaying");
 
             setNowPlaying({
                 artist: data.artist,

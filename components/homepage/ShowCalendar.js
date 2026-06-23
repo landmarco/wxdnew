@@ -10,6 +10,7 @@ skip days with no shows listed
 */
 
 import { useEffect, useMemo, useState } from "react"
+import { apiFetch } from "../../lib/api"
 
 // formats local browser date into YYYY-MM-DD for the API query
 function formatLocalDate(date) {
@@ -30,6 +31,42 @@ function prettyDayLabel(isoDate) {
 	})
 }
 
+function formatEventDate(value) {
+	if (typeof value === "string" && value.length >= 10) {
+		return value.slice(0, 10)
+	}
+	return formatLocalDate(new Date(value))
+}
+
+function addDays(dateString, daysToAdd) {
+	const [year, month, day] = dateString.split("-").map(Number)
+	const date = new Date(Date.UTC(year, month - 1, day))
+	date.setUTCDate(date.getUTCDate() + daysToAdd)
+	const y = date.getUTCFullYear()
+	const m = String(date.getUTCMonth() + 1).padStart(2, "0")
+	const d = String(date.getUTCDate()).padStart(2, "0")
+	return `${y}-${m}-${d}`
+}
+
+function enumerateDays(startDate, days) {
+	const output = []
+	for (let i = 0; i < days; i += 1) {
+		output.push(addDays(startDate, i))
+	}
+	return output
+}
+
+function fixMojibake(str) {
+	if (!str) return ""
+	return str
+		.replace(/â€™/g, "’")
+		.replace(/â€œ/g, "“")
+		.replace(/â€/g, "”")
+		.replace(/â€"/g, "—")
+		.replace(/â€“/g, "–")
+		.replace(/Â/g, "")
+}
+
 export default function ShowCalendar() {
 	const [rows, setRows] = useState([])
 	const [loading, setLoading] = useState(true)
@@ -43,14 +80,60 @@ export default function ShowCalendar() {
 			try {
 				setLoading(true)
 				setError(null)
-				// request a 10-day window per homepage requirements
-				const response = await fetch(`api/show-calendar?start=${start}&days=10`)
-				if (!response.ok) {
-					throw new Error("Calendar fetch failed")
-				}
-				const data = await response.json()
+
+				const dayList = enumerateDays(start, 10)
+				const end = dayList[dayList.length - 1]
+				const rows = await apiFetch("/api/events")
+				const calendar = dayList.map((date) => ({ date, shows: [] }))
+				const calendarByDate = new Map(calendar.map((entry) => [entry.date, entry]))
+
+				;(Array.isArray(rows) ? rows : []).forEach((row) => {
+					if (!row || !String(row.description || "").trim()) {
+						return
+					}
+
+					const eventId = row.event_ID
+					const showStart = formatEventDate(row.start_date)
+					const showEnd = formatEventDate(row.end_date || row.start_date)
+					if (!showStart || !showEnd || showStart > end || showEnd < start) {
+						return
+					}
+
+					dayList.forEach((date) => {
+						if (date >= showStart && date <= showEnd) {
+							const dayEntry = calendarByDate.get(date)
+							if (!dayEntry) return
+							const venueName = fixMojibake(row.location_name || "")
+							const venueCity = fixMojibake(row.location_city || "")
+							dayEntry.shows.push({
+								eventId,
+								startDate: showStart,
+								endDate: showEnd,
+								description: fixMojibake(String(row.description || "")),
+								venue: {
+									id: row.location_ID,
+									name: venueName,
+									city: venueCity,
+									label: [venueName, venueCity].filter(Boolean).join(", "),
+									url: row.location_url || "",
+								},
+							})
+						}
+					})
+				})
+
+				calendar.forEach((entry) => {
+					entry.shows.sort((a, b) => {
+						const venueA = (a.venue.label || "").toLowerCase()
+						const venueB = (b.venue.label || "").toLowerCase()
+						if (venueA < venueB) return -1
+						if (venueA > venueB) return 1
+						return a.eventId - b.eventId
+					})
+				})
+
 				if (!cancelled) {
-					setRows(Array.isArray(data.calendar) ? data.calendar : [])
+					setRows(calendar)
 				}
 			} catch (err) {
 				if (!cancelled) {
