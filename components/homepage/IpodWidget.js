@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { IoIosArrowDropleft, IoIosArrowDropright } from 'react-icons/io'
 import cardinalsFallback from '../../images/cardinals.jpg'
+import { getRecentlyPlayed } from '../../lib/recentlyPlayed'
 
 export default function IpodWidget() {
   const [songs, setSongs] = useState([])
@@ -9,9 +10,11 @@ export default function IpodWidget() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // fetch directly from the external WXDU API (api.wxdu.art / api.wxdu.org).
+    // the old /api/current-playlist Next route doesn't exist in the static
+    // export, so the assembly now happens client-side in getRecentlyPlayed().
     const fetchPlaylist = () => {
-      fetch('/api/current-playlist')
-        .then(r => r.ok ? r.json() : Promise.reject())
+      getRecentlyPlayed()
         .then(data => { setSongs(data); setLoading(false) })
         .catch(() => setLoading(false))
     }
