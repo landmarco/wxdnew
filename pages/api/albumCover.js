@@ -6,20 +6,51 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.wxdu.art';
 
 const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN || null;
 
-export default async function getAlbumCover(artist, song, album){
-    if (!artist || !album || !song) return null;
+// tests all other functions and returns the cover
+export async function getAlbumCover(artist, song, album){
+    if (!artist || !album) return null;
 
   // starts by using local discogs through Jake's metadata, then api.wxdu.art API, then final Discogs own API
   const cover =
-    await fetchDiscogsLocal(artist, song, album) ||
-    await fetchMongodb(artist, song, album) ||
-    await fetchDiscogsAPI(artist, song, album);
+    await useDiscogsLocal(artist, song, album) ||
+    await useMongodb(artist, song, album);
 
   return cover;
 }
 
+// Handles request made to the API
+export default async function handler(req, res) {
+  const { artist, song, album } = req.query;
+
+  if (!artist || !album) {
+    return res.status(400).json({
+      error: "artist and album are required",
+    });
+  }
+
+  try {
+    const coverUrl = await getAlbumCover(
+      artist,
+      song || null,
+      album
+    );
+
+    return res.status(200).json(coverUrl);
+  } catch (err) {
+    console.error("[albumCover API]", err);
+
+    return res.status(500).json({
+      error: "Failed to fetch album cover",
+      coverUrl: null,
+    });
+  }
+}
+
 // given an artist, song and album name, searches Discogs and returns an album cover URL
-async function fetchDiscogsLocal(artist, song, album) {
+async function useDiscogsLocal(artist, song, album) {
+
+  // This is Temporary
+  if (!song) return null
 
   try {
     // step 1: search Discogs for releases that contain this track
@@ -49,7 +80,7 @@ async function fetchDiscogsLocal(artist, song, album) {
 }
 
 // calling the wxdu.art release API to get album covers from Mongodb
-async function fetchMongodb(artist, song, album){
+async function useMongodb(artist, song, album){
     let url;
 
     try{
@@ -68,7 +99,7 @@ async function fetchMongodb(artist, song, album){
 //using Discogs API direcly instead of Jake's metadata.
 // error 429 may occur if two many requests are sent. so use this rarely.
 // Precieux: I'm using my Discogs account TOKEN which is not a good idea for deployment or use by many people
-async function fetchDiscogsAPI(artist, song, album){
+async function useDiscogsAPI(artist, song, album){
   if (!DISCOGS_TOKEN){
     return null
   }
@@ -105,7 +136,7 @@ async function fetchDiscogsAPI(artist, song, album){
 
 // using MBID to get album cover
 // works but requires User-Agent through the server
-async function fetchMBID(artist, song, album){
+async function useMBID(artist, song, album){
 
   const query = `artist:${artist} AND release:"${album}"`;
 
