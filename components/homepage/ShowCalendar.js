@@ -11,6 +11,7 @@ skip days with no shows listed
 
 import { useEffect, useMemo, useState } from "react"
 import { apiFetch } from "../../lib/api"
+import { fixEncodingDeep } from "../../lib/fixEncoding"
 
 // formats local browser date into YYYY-MM-DD for the API query
 function formatLocalDate(date) {
@@ -138,7 +139,7 @@ export default function ShowCalendar() {
 				setError(null)
 				// call the Express API directly — Next.js API routes don't exist in the static export
 				const events = await apiFetch("/api/events")
-				const eventsArray = Array.isArray(events) ? events : []
+				const eventsArray = fixEncodingDeep(Array.isArray(events) ? events : [])
 				if (!cancelled) {
 					setRows(buildCalendar(eventsArray, start, 10))
 				}

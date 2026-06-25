@@ -1,4 +1,5 @@
-import {useState} from "react"
+import Link from "next/link"
+import { djHref } from "@/lib/djLink"
 
 /*
 Receives parsed CSV data from lib/scheduleParser.js and renders a weekly grid.
@@ -54,7 +55,7 @@ function whichRowsCollapse(hourRows) {
 				),
 			})
 		} else {
-			rows.push({ type: "normal", row: hourRows[i] })
+			rows.push({ type: "normal", row: hourRows[i], originalRowIndex: i })
 		}
 
 		i = j
@@ -72,8 +73,8 @@ export default function WeeklySchedule({schedule}) {
 		...schedule[3].map((row, i) => [schedule[1][i], ...row])
 	];
 
-	// for temp button functionality
-	const [selectedDj, setSelectedDj] = useState(null)
+	// MySQL id grid aligned with the dj-name grid (schedule[3]); used to link cells
+	const idGrid = Array.isArray(schedule[4]) ? schedule[4] : []
 
 	// make sure we aren"t passing in non-arrays or nothing
 	if (!Array.isArray(reconstructedSchedule) || reconstructedSchedule.length === 0) {
@@ -176,22 +177,13 @@ export default function WeeklySchedule({schedule}) {
 												<td
 													key={`lunokhod-${dayIndex}`}
 													rowSpan={rowSpan}
-													className={`border border-gray-300 bg-black px-4 py-2 text-center align-middle ${
-														selectedDj === djName ? "bg-yellow-200 text-black" : ""
-													}`}
+													className="border border-gray-300 bg-black px-4 py-2 text-center align-middle"
 												>
 													{djName && (
-														<button
-															type="button"
-															onClick={() =>
-																setSelectedDj((currentDj) =>
-																	currentDj === djName ? null : djName
-																)
-															}
-															// className="underline hover:no-underline"
-														>
+														// otto rows are the auto-DJ — link to the auto-DJ show list
+														<Link href={djHref(null)} legacyBehavior={false} className="hover:underline">
 															{djName}
-														</button>
+														</Link>
 													)}
 												</td>
 											)
@@ -200,7 +192,7 @@ export default function WeeklySchedule({schedule}) {
 								</tr>
 							)
 						}
-					
+
 						// these are normal, non-collapsing rows
 						const hourRow = collapseAwareHourRow.row
 						const hour = hourRow[0]
@@ -242,28 +234,20 @@ export default function WeeklySchedule({schedule}) {
 											rowSpan += 1
 										}
 
+										// resolved MySQL id for this cell (falls back to auto-DJ in djHref)
+										const djId = idGrid?.[collapseAwareHourRow.originalRowIndex]?.[dayIndex]
+
 										return (
 											<td
 												key={`${hour}-${dayIndex}`}
 												rowSpan={rowSpan}
 												className={`border border-gray-300 px-4 py-2 text-center align-middle ${
 													specialtyShow ? "bg-[#e0ff05] text-black" : "bg-black" // HIGHLIGHT SPECIALTY SHOWS!!!
-												} ${
-													selectedDj === djName ? "bg-yellow-200 text-black" : ""
 												}`}
 											>
-                                            {/* placeholder onClick which is just a button. will eventually redirect to DJ pages */}
-											<button
-												type="button"
-												onClick={() =>
-													setSelectedDj((currentDj) =>
-														currentDj === djName ? null : djName
-													)
-												}
-												// className="underline hover:no-underline"
-											>
+											<Link href={djHref(djId)} legacyBehavior={false} className="hover:underline">
 												{djName}
-											</button>
+											</Link>
 										</td>
 									)
 								})}

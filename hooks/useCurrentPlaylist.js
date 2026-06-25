@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import getCovers from "@/lib/getCovers";
+import { fixEncodingDeep } from "@/lib/fixEncoding";
 
 // external API path for the current playlist
 const SOURCE_PATH = "/api/playlists/current";
@@ -19,7 +20,7 @@ export default function useCurrentPlaylist() {
     async function fetchPlaylist() {
       try {
         setLoading(true);
-        const result = await apiFetch(SOURCE_PATH);
+        const result = fixEncodingDeep(await apiFetch(SOURCE_PATH));
 
         // reverse so the most recently played track appears first
         const reversedTracks = Array.isArray(result.tracks)

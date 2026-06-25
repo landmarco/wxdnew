@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import getCovers from "@/lib/getCovers"
+import { fixEncodingDeep } from "@/lib/fixEncoding";
 
 const SOURCE_PATH = "/api/charts/mostplayed"
 
@@ -32,9 +33,9 @@ export function useMostPlayed({
           limit: String(limit),
         });
 
-        const result = await apiFetch(
+        const result = fixEncodingDeep(await apiFetch(
           `${SOURCE_PATH}?${params}`
-        );
+        ));
         
         // adding album covers
         const withCovers = await Promise.all(

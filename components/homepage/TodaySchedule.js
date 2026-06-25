@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react"
+import Link from "next/link"
+import { djHref } from "@/lib/djLink"
 
 // Receives parsed CSV data from lib/schedule.js and renders today's schedule.
 export default function TodaySchedule({ schedule }) {
@@ -17,6 +19,8 @@ export default function TodaySchedule({ schedule }) {
 	const headerRow = Array.isArray(schedule?.[0]) ? schedule[0] : []
 	const hourColumn = Array.isArray(schedule?.[1]) ? schedule[1] : []
 	const showGrid = Array.isArray(schedule?.[3]) ? schedule[3] : []
+	// [4] idGrid: MySQL ids aligned with showGrid, used to link each show to its DJ page
+	const idGrid = Array.isArray(schedule?.[4]) ? schedule[4] : []
 
 	if (!headerRow.length || !hourColumn.length || !showGrid.length || !today) {
 		return null
@@ -65,6 +69,8 @@ export default function TodaySchedule({ schedule }) {
 			// each block starts from this row's start/end labels
 			shows.push({
 				show,
+				// MySQL id for this show's DJ (first row of the block); used for the link
+				id: idGrid[i]?.[showColIndex],
 				startLabel: parsedHour.startLabel,
 				endLabel: parsedHour.endLabel,
 			})
@@ -74,14 +80,16 @@ export default function TodaySchedule({ schedule }) {
 	return (
 		<div className="text-lg text-[#e0ff05] w-full tracking-[-0.07em]">
 			<h1 className="bitcount mb-2 text-center lg:text-left text-2xl lg:text-5xl text-white">Today&apos;s Schedule</h1>
-			{shows.map(({ startLabel, endLabel, show }, i) => (
+			{shows.map(({ startLabel, endLabel, show, id }, i) => (
 				show ? (
 					<div key={`${startLabel}-${endLabel}-${i}`} className="flex gap-4 py-3 border-b border-gray-300">
 						<span className="w-24 text-right">
 							{startLabel === endLabel ? (startLabel) : (<>{startLabel}–<br />{endLabel}</>)}
 						</span>
 						<span className="border-l font-bold border-gray-300 pl-4 flex-1">
-							{show}
+							<Link href={djHref(id)} legacyBehavior={false} className="hover:underline">
+								{show}
+							</Link>
 						</span>
 					</div>
 				) : null
