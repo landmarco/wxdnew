@@ -7,6 +7,8 @@
 		"dev3001": "tinacms dev -c \"next dev -p 3001\"",
 		"build": "tinacms build && next build && next export",
 		"build-notina": "next build && next export",
+		"preview": "tinacms build --local --skip-cloud-checks --skip-search-index -c \"next build && next export\" && npm run serve",
+		"serve": "serve out -l 3000",
 		"start": "tinacms build && next start",
 		"lint": "next lint",
 		"check-format": "prettier --check .",
@@ -48,6 +50,7 @@
 		"postcss": "^8.4.24",
 		"prettier": "^3.1.1",
 		"prettier-plugin-tailwindcss": "^0.5.9",
+		"serve": "^14.2.4",
 		"tailwindcss": "^3.3.2"
 	}
 }
