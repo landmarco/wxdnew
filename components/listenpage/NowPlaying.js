@@ -21,7 +21,7 @@ export default function NowPlaying({ currentPlaylist = {} }) {
         <div className="w-full max-w-[320px] mx-auto">
             <Image
                 src={cover}
-                alt="Album Art"
+                alt={song ? `Album cover for ${song} by ${artist}` : 'Album cover art'} // to be replaced with VLM tool
                 width={150}
                 height={150}
                 className="w-full h-auto object-cover rounded-sm"

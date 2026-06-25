@@ -74,17 +74,18 @@ const AudioPlayerMP3 = ({url}) => {
 		<div className="audioPlayer flex w-full items-center">
 			<div className="flex gap-3">
 				<audio ref={audioPlayer} src={url}></audio>
-				<button className="forwardBackward" onClick={backThirty}>
-					<BsArrowLeftShort /> 30
+				<button className="forwardBackward" onClick={backThirty} aria-label="Rewind 30 seconds">
+					<BsArrowLeftShort aria-hidden="true" /> 30
 				</button>
 				<button
 					className="rounded-lg bg-pink-700 p-3 text-gray-200"
 					onClick={togglePlayPause}
+					aria-label={isPlaying ? 'Pause' : 'Play'}
 				>
-					{isPlaying ? <FaPause /> : <FaPlay className="relative pl-0.5" />}
+					{isPlaying ? <FaPause aria-hidden="true" /> : <FaPlay aria-hidden="true" className="relative pl-0.5" />}
 				</button>
-				<button className="forwardBackward" onClick={forwardThirty}>
-					30 <BsArrowRightShort />
+				<button className="forwardBackward" onClick={forwardThirty} aria-label="Skip forward 30 seconds">
+					30 <BsArrowRightShort aria-hidden="true" />
 				</button>
 			</div>
 
@@ -99,6 +100,7 @@ const AudioPlayerMP3 = ({url}) => {
 					defaultValue="0"
 					ref={progressBar}
 					onChange={changeRange}
+					aria-label="Seek"
 				/>
 			</div>
 

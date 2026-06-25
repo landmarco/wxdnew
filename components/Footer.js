@@ -73,18 +73,13 @@ const Footer = () => {
 			<div className="px-5">
 				<p className="text-lg font-bold md:text-xl">Contact</p>
 
-					<a target="_blank" rel="noopener noreferrer" href="mailto:gm@wxdu.org">
-					<div className="mt-2 flex items-center ">
-						<FiMail size={20} className="mr-2" />
-						<p>gm@wxdu.org</p>
-					</div>
+					<a target="_blank" rel="noopener noreferrer" href="mailto:gm@wxdu.org" className="mt-2 flex items-center">
+					<FiMail size={20} className="mr-2" aria-hidden="true" />
+					<span>gm@wxdu.org</span>
 				</a>
-					<a target="_blank" rel="noopener noreferrer" href="tel:9196848870">
-					<div className="mt-2 flex items-center ">
-						<FaPhone size={20} className="mr-2" />
-
-						<p>(919) 684-8870</p>
-					</div>
+				<a target="_blank" rel="noopener noreferrer" href="tel:9196848870" className="mt-2 flex items-center">
+					<FaPhone size={20} className="mr-2" aria-hidden="true" />
+					<span>(919) 684-8870</span>
 				</a>
 
 				<p className="mt-5">

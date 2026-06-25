@@ -47,7 +47,7 @@ export default function EventList(props) {
 						{"."}
 						<br></br>
 						<Link href="/archive/legacy" className="underline">
-							Click here to browse historical collections
+							Browse historical collections
 						</Link>
 					{"."}
 				</div>
@@ -58,12 +58,12 @@ export default function EventList(props) {
 
 			{/* Desktop banner image */}
 			<div className="relative z-5 -mt-10 hidden md:block">
-				<Image src={photo} alt="A crowded dancefloor at a WXYC event." />
+				<Image src={photo} alt="A crowded dancefloor at a WXDU event." />
 			</div>
 
 			{/* Mobile banner image */}
 			<div className="relative z-10 -mt-10 md:hidden">
-				<Image src={mobilephoto} alt="A crowded dancefloor at a WXYC event." />
+				<Image src={mobilephoto} alt="A crowded dancefloor at a WXDU event." />
 			</div>
 
 			<div className="archive-grid mx-auto lg:max-w-screen-xl">

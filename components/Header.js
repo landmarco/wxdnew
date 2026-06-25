@@ -33,9 +33,9 @@ const Header = () => {
 							aria-label={isOpen ? 'Close main menu' : 'Open main menu'}
 						>
 						{isOpen ? (
-							<AiOutlineClose size={32} className="ml-4 mt-1 md:ml-6" />
+							<AiOutlineClose size={32} className="ml-4 mt-1 md:ml-6" aria-hidden="true" />
 						) : (
-							<AiOutlineMenu size={32} className="ml-4 mt-1 md:ml-6" />
+							<AiOutlineMenu size={32} className="ml-4 mt-1 md:ml-6" aria-hidden="true" />
 						)}
 					</button>
 				</div>
@@ -51,9 +51,9 @@ const Header = () => {
 								>
 									Listen
 									{submenuOpen ? (
-										<IoIosArrowUp size={24} className="ml-1 mt-2 md:ml-3" />
+										<IoIosArrowUp size={24} className="ml-1 mt-2 md:ml-3" aria-hidden="true" />
 									) : (
-										<IoIosArrowDown size={24} className="ml-1 mt-2 md:ml-3" />
+										<IoIosArrowDown size={24} className="ml-1 mt-2 md:ml-3" aria-hidden="true" />
 									)}
 								</Menu.Button>
 
@@ -198,52 +198,28 @@ const Header = () => {
 
 						{/* Links*/}
 						<div className="my-auto flex w-1/2 flex-row">
-							<Link href="/about">
-								<a className="flex h-12 grow items-center justify-center">
-									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										About
-									</p>
-								</a>
+							<Link href="/about" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								About
 							</Link>
 
-							<Link href="/programming">
-								<a className="flex h-12 grow items-center justify-center">
-									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										Programming
-									</p>
-								</a>
+							<Link href="/programming" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Programming
 							</Link>
 
-							<Link href="/charts">
-								<a className="flex h-12 grow items-center justify-center">
-									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										Charts
-										</p>
-									</a>
-								</Link>
-
-							<Link href="/archive">
-								<a className="flex h-12 grow items-center justify-center">
-									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										Archive
-									</p>
-								</a>
+							<Link href="/charts" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Charts
 							</Link>
 
-							<Link href="/blog">
-								<a className="flex h-12 grow items-center justify-center ">
-									<p className="cursor-pointer text-base no-underline hover:text-blue-300">
-										Blog
-									</p>
-								</a>
+							<Link href="/archive" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Archive
 							</Link>
 
-							<Link href="/contact">
-								<a className="flex h-12 grow items-center justify-center ">
-									<p className="cursor-pointer text-base no-underline hover:text-blue-300">
-										Contact
-									</p>
-								</a>
+							<Link href="/blog" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Blog
+							</Link>
+
+							<Link href="/contact" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Contact
 							</Link>
 
 							<div className="flex h-12 grow items-center justify-center ">

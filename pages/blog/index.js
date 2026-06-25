@@ -51,14 +51,14 @@ export default function PostList(props) {
 
 				{/* Desktop banner image */}
 				<div className="relative z-10 mx-auto -mt-20 mb-5 hidden w-5/6 md:block">
-					<Image src={photo} alt="A crowded dancefloor at a WXYC event." />
+					<Image src={photo} alt="A crowded dancefloor at a WXDU event." />
 				</div>
 
 				{/* Mobile banner image */}
 				<div className="relative z-10 mx-auto -mt-20 mb-5 w-5/6 md:-mt-20 md:hidden">
 					<Image
 						src={mobilephoto}
-						alt="A crowded dancefloor at a WXYC event."
+						alt="A crowded dancefloor at a WXDU event."
 					/>
 				</div>
 

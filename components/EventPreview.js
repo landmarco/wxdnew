@@ -10,7 +10,7 @@ const EventPreview = (props) => {
 					<div className="mb-5 flex w-72 cursor-pointer flex-col gap-2 lg:w-[22rem]">
 						<img
 							src={props.cover}
-							alt=""
+							alt={props.title || ''}
 							className="h-72 w-72 object-cover lg:h-[22rem] lg:w-[22rem]"
 						/>
 						<a className="text-center text-xl font-bold">{props.title}</a>

@@ -18,11 +18,11 @@ export default function Entry() {
 				<meta httpEquiv="refresh" content={`0; url=${index_path}`} />
 			</Head>
 			<div className="mx-auto mt-32 w-5/6 text-white">
-				<p>Redirecting to charts...</p>
+				<p>Redirecting to old charts...</p>
 				<p className="mt-4">
-					If you are not redirected, click{' '}
+					If you are not redirected,{' '}
 					<Link href={index_path} className="underline">
-						here
+						go to old charts
 					</Link>
 					.
 				</p>
