@@ -23,12 +23,6 @@ export default function IpodWidget() {
     return () => clearInterval(id)
   }, [])
 
-  useEffect(() => {
-    if (songs.length <= 1) return
-    const id = setInterval(() => setCurrent(i => (i + 1) % songs.length), 6000)
-    return () => clearInterval(id)
-  }, [songs.length])
-
   const prev = () => setCurrent(i => (i - 1 + songs.length) % songs.length)
   const next = () => setCurrent(i => (i + 1) % songs.length)
 
