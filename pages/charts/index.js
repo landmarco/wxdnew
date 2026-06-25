@@ -1,34 +1,20 @@
-import ChartEntryRow from '../../components/charts/ChartEntryRow';
-import { useState, useEffect } from 'react';
+import ChartEntryRow from '@/components/charts/ChartEntryRow';
+import { useState } from 'react';
+import { useMostPlayed } from "@/hooks/useMostPlayed"
 
+const today = new Date().toISOString().split('T')[0];
+
+//initalChart and latestDate come from getServerSideProps below
 export default function ChartsPage() {
-    const [chart, setChart] = useState([]);
-    const [latestDate, setLatestDate] = useState('');
-    const [selectedDate, setSelectedDate] = useState('');
-    const [loading, setLoading] = useState(true);
 
-    // fetch the latest chart and date on mount
-    useEffect(() => {
-        fetch('/api/charts?isChart=true')
-            .then(r => r.json())
-            .then(data => {
-                setChart(Array.isArray(data.chart) ? data.chart : []);
-                setLatestDate(data.latestDate || '');
-                setSelectedDate(data.latestDate || '');
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, []);
+    const [selectedDate, setSelectedDate] = useState(today); //date the user has picked
 
-    //runs whenever selectedDate changes - fetches chart for the new date from the api
-    useEffect(() => {
-        if (!selectedDate || selectedDate === latestDate) return; //skip fetch on first load, we already have the data
-        setLoading(true);
-        fetch(`/api/charts/${selectedDate}`)
-            .then(r => r.json())
-            .then(data => { setChart(Array.isArray(data) ? data : []); setLoading(false); })
-            .catch(() => setLoading(false));
-    }, [selectedDate]);
+    const date = new Date(selectedDate)
+    date.setDate(date.getDate() - 7);
+    const dateStart = date.toISOString().split('T')[0];
+
+    // Getting the most played albums
+    const { mostplayed, loading, error } = useMostPlayed({dateStart: dateStart, dateEnd: selectedDate, limit:10, isChart: true});
 
     return (
         <div className="min-h-screen text-white px-4 py-8 max-w-3xl mx-auto">
@@ -56,11 +42,11 @@ export default function ChartsPage() {
 
             {loading ? (
                 <p className="text-zinc-400">Loading...</p>
-            ) : chart.length === 0 ? (
+            ) : mostplayed.length === 0 ? (
                 <p className="text-zinc-400">No chart data available</p>
             ) : (
                 <div>
-                    {chart.map(entry => (
+                    {mostplayed.map(entry => (
                         <ChartEntryRow
                             key={entry.rank}
                             rank={entry.rank}
@@ -68,6 +54,7 @@ export default function ChartsPage() {
                             artist={entry.artist}
                             album={entry.album}
                             label={entry.label}
+                            cover={entry.cover}
                         />
                     ))}
                 </div>
