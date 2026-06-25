@@ -34,7 +34,7 @@ export default function NowPlaying({ currentPlaylist = {} }) {
                 </>
                 ) : 
                 (
-                    <p className="mt-4 text-xl text-white">it's a secret... tune in to find out</p>
+                    <p className="mt-4 text-xl text-white">it&apos;s a secret... tune in to find out</p>
                 )
             }
 
