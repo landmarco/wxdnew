@@ -1,5 +1,11 @@
+// Hook function to get the current playlist
+
 import { useState, useEffect } from "react";
-import { getCurrentPlaylist } from "@/lib/playlists";
+import { apiFetch } from "../lib/api";
+import getCovers from "@/lib/getCovers"
+
+const SOURCE_PATH = "/api/playlists/current";
+const FILLER_IMAGE = '/CD_1_Filler.jpg';
 
 // function to get the current playlist
 export default function useCurrentPlaylist() {
@@ -11,7 +17,33 @@ export default function useCurrentPlaylist() {
     // fetching the playlist
     async function fetchPlaylist() {
       try {
-        const data = await getCurrentPlaylist();
+        setLoading(true);
+        const result = await apiFetch(SOURCE_PATH);
+
+        // reversing result.tracks so that the most recent track is first 
+        const reversedTracks = Array.isArray(result.tracks)
+          ? [...result.tracks].reverse()
+          : [];
+
+        // adding covers for each track / song
+        const withCovers = await Promise.all(
+          reversedTracks.map(async (item) => ({
+            ...item,
+            cover:
+              (await getCovers(
+                item.artist,
+                item.song ?? null,
+                item.album
+              )) || FILLER_IMAGE,
+          }))
+        );
+
+        // combining result with cover for each track
+        const data = {
+          ...result,
+          tracks: withCovers,
+        };
+
         setCurrentPlaylist(data);
       } catch (error) {
         console.error(
