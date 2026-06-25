@@ -10,6 +10,7 @@ skip days with no shows listed
 */
 
 import { useEffect, useMemo, useState } from "react"
+import { getShowCalendar } from "@/lib/showCalendar"
 
 // formats local browser date into YYYY-MM-DD for the API query
 function formatLocalDate(date) {
@@ -43,14 +44,11 @@ export default function ShowCalendar() {
 			try {
 				setLoading(true)
 				setError(null)
-				// request a 10-day window per homepage requirements
-				const response = await fetch(`api/show-calendar?start=${start}&days=10`)
-				if (!response.ok) {
-					throw new Error("Calendar fetch failed")
-				}
-				const data = await response.json()
+				// request a 10-day window per homepage requirements, calling the
+				// public events API directly (no internal /api route in static export)
+				const calendar = await getShowCalendar(start, 10)
 				if (!cancelled) {
-					setRows(Array.isArray(data.calendar) ? data.calendar : [])
+					setRows(Array.isArray(calendar) ? calendar : [])
 				}
 			} catch (err) {
 				if (!cancelled) {
