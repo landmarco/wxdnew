@@ -57,7 +57,7 @@ export default function useCurrentPlaylist() {
 
     fetchPlaylist();
 
-    const interval = setInterval(fetchPlaylist, 30000);
+    const interval = setInterval(fetchPlaylist, 10000);
 
     return () => clearInterval(interval);
   }, []);

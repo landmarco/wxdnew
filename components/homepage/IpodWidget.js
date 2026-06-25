@@ -19,7 +19,7 @@ export default function IpodWidget() {
         .catch(() => setLoading(false))
     }
     fetchPlaylist()
-    const id = setInterval(fetchPlaylist, 30000)
+    const id = setInterval(fetchPlaylist, 10000)
     return () => clearInterval(id)
   }, [])
 
