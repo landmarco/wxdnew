@@ -4,7 +4,9 @@
 	"private": true,
 	"scripts": {
 		"dev": "tinacms dev -c \"next dev\"",
+		"dev3001": "tinacms dev -c \"next dev -p 3001\"",
 		"build": "tinacms build && next build && next export",
+		"build-notina": "next build && next export",
 		"start": "tinacms build && next start",
 		"lint": "next lint",
 		"check-format": "prettier --check .",
