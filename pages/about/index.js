@@ -1,8 +1,7 @@
-import {TinaMarkdown} from 'tinacms/dist/rich-text'
 import {tinaField, useTina} from 'tinacms/dist/react'
 import {client} from '../../tina/__generated__/client'
 import AboutLayout from '../../components/AboutLayout'
-import {markdownComponents} from '../../components/markdownComponents'
+import RichText from '../../components/RichText'
 
 // about default page itself
 export default function About(props) {
@@ -19,7 +18,7 @@ export default function About(props) {
 			<div data-tina-field={tinaField(data.page, 'body')} className="w-full">
 				<div className="mx-auto flex w-5/6 flex-row justify-center pb-10">
 					<article className="prose prose-lg text-white prose-h1:font-kallisto prose-h1:text-5xl prose-h1:font-normal prose-h1:text-white prose-h3:font-normal prose-h3:text-white prose-a:text-blue-500">
-						<TinaMarkdown content={content} components={markdownComponents} />
+						<RichText content={content} />
 					</article>
 				</div>
 			</div>

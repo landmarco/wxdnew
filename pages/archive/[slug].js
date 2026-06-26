@@ -1,9 +1,8 @@
 import {useTina} from 'tinacms/dist/react'
 import {client} from '../../tina/__generated__/client'
-import {TinaMarkdown} from 'tinacms/dist/rich-text'
 import Link from 'next/link'
 import ArchiveLayout from '../../components/ArchiveLayout'
-import {markdownComponents} from '../../components/markdownComponents'
+import RichText from '../../components/RichText'
 import {AiFillTag} from 'react-icons/ai'
 import Head from 'next/head'
 
@@ -46,7 +45,7 @@ const EventPage = (props) => {
 						/>
 
 						<article className="prose mt-3 text-white prose-a:text-slate-700 prose-strong:text-slate-700">
-							<TinaMarkdown content={data.archive.description} components={markdownComponents} />
+							<RichText content={data.archive.description} />
 						</article>
 
 						{data.archive.categories && (

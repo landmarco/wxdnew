@@ -1,9 +1,8 @@
 import {useTina} from 'tinacms/dist/react'
 import {client} from '../../tina/__generated__/client'
-import {TinaMarkdown} from 'tinacms/dist/rich-text'
 import Link from 'next/link'
 import BlogLayout from '../../components/BlogLayout'
-import {markdownComponents} from '../../components/markdownComponents'
+import RichText from '../../components/RichText'
 
 // const components = {
 // 	// google drive embedded iframe mp3
@@ -61,7 +60,7 @@ const PostPage = (props) => {
 					{/* Increase dark-on-dark text contrast for article content. */}
 					<article className="prose lg:max-w-[60%] bg-neutral-800 bg-opacity-70 px-5 py-2 prose-lg text-white prose-h3:text-white prose-a:text-blue-300 prose-strong:text-slate-200 prose-h1:text-slate-200 prose-h2:text-slate-200 prose-em:italic prose-li:mb-1">
 					{/* <TinaMarkdown content={data.blog.body} components={components} /> */}
-					<TinaMarkdown content={data.blog.body} components={markdownComponents} />
+					<RichText content={data.blog.body} />
 				</article>
 		
 			</div>
