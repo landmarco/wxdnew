@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getDj, getDjShows, DJ_SHOWS_PAGE_SIZE } from "@/lib/djShows";
-import { showDate } from "@/lib/showFormat";
+import { showDate, showTime } from "@/lib/showFormat";
 
 export default function DjPage() {
     const router = useRouter();
@@ -91,6 +91,11 @@ export default function DjPage() {
                                 >
                                     <span className="w-44 flex-shrink-0 text-sm text-zinc-400">
                                         {showDate(show.starttime)}
+                                        {show.starttime ? (
+                                            <span className="block text-xs text-zinc-500">
+                                                {showTime(show.starttime)}
+                                            </span>
+                                        ) : null}
                                     </span>
                                     <span className="font-courierprime text-white">
                                         {show.title || "Untitled show"}

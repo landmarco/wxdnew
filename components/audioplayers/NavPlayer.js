@@ -50,8 +50,8 @@ const NavPlayer = () => {
 
     // only show track info when artist/song/album are all present
     const currentTrack =
-        nowPlaying.artist && nowPlaying.song && nowPlaying.album
-            ? `${nowPlaying.artist} — ${nowPlaying.song} ... ${nowPlaying.album}`
+        nowPlaying.artist && nowPlaying.song
+            ? `${nowPlaying.artist} — ${nowPlaying.song}`
             : "it's a secret... tune in to find out";
 
     // measure text and container widths so animation distance is exact
