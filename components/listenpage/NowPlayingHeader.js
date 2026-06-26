@@ -20,7 +20,7 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
             <h1 className="text-5xl text-center font-light leading-tight">
                 DJ:{" "}
                 {djId && djname ? (
-                    <Link href={`/dj?id=${djId}`} legacyBehavior={false} className="underline hover:no-underline">
+                    <Link href={`/dj/?id=${djId}`} legacyBehavior={false} className="underline hover:no-underline">
                         {djname}
                     </Link>
                 ) : (

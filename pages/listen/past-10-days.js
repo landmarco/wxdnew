@@ -65,7 +65,7 @@ export default function PastTenDays() {
             <div className="text-center py-6">
                 <h1 className="text-4xl font-light leading-tight">Past 10 Days</h1>
                 <p className="text-base text-gray-300 mt-1">
-                    <Link href="/listen" legacyBehavior={false} className="underline hover:no-underline">
+                    <Link href="/listen/" legacyBehavior={false} className="underline hover:no-underline">
                         ← Back to Listen
                     </Link>
                 </p>
@@ -89,7 +89,7 @@ export default function PastTenDays() {
                                         className="border-b border-zinc-800 last:border-b-0"
                                     >
                                         <Link
-                                            href={`/show?id=${show.ID}`}
+                                            href={`/show/?id=${show.ID}`}
                                             legacyBehavior={false}
                                             className="flex flex-col gap-1 px-4 py-3 hover:bg-zinc-900 sm:flex-row sm:items-baseline sm:gap-4"
                                         >

@@ -85,7 +85,7 @@ export default function DjPage() {
                                 className="border-b border-zinc-800 last:border-b-0"
                             >
                                 <Link
-                                    href={`/show?id=${show.ID}`}
+                                    href={`/show/?id=${show.ID}`}
                                     legacyBehavior={false}
                                     className="flex flex-col gap-1 px-4 py-3 hover:bg-zinc-900 sm:flex-row sm:items-baseline sm:gap-4"
                                 >
@@ -110,7 +110,7 @@ export default function DjPage() {
                     <div className="mt-6 flex items-center justify-between">
                         {hasPrev ? (
                             <Link
-                                href={`/dj?id=${djId}&page=${page - 1}`}
+                                href={`/dj/?id=${djId}&page=${page - 1}`}
                                 legacyBehavior={false}
                                 className="underline hover:no-underline"
                             >
@@ -121,7 +121,7 @@ export default function DjPage() {
                         )}
                         {hasNext ? (
                             <Link
-                                href={`/dj?id=${djId}&page=${page + 1}`}
+                                href={`/dj/?id=${djId}&page=${page + 1}`}
                                 legacyBehavior={false}
                                 className="underline hover:no-underline"
                             >

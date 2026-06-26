@@ -17,7 +17,7 @@ export default function Listen() {
             <NowPlayingHeader currentPlaylist={currentPlaylist} />
 
             <p className="text-center mt-2">
-                <Link href="/listen/past-10-days" legacyBehavior={false} className="underline hover:no-underline text-gray-300">
+                <Link href="/listen/past-10-days/" legacyBehavior={false} className="underline hover:no-underline text-gray-300">
                     Past 10 days
                 </Link>
             </p>

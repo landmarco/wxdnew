@@ -2,6 +2,7 @@ import {TinaMarkdown} from 'tinacms/dist/rich-text'
 import {tinaField, useTina} from 'tinacms/dist/react'
 import {client} from '../tina/__generated__/client'
 import WeeklySchedule from '../components/WeeklySchedule'
+import {markdownComponents} from '../components/markdownComponents'
 import { scheduleBuilder } from '../lib/schedule/scheduleBuilder'
 
 //editable static pages (programming, contact, etc.)
@@ -19,6 +20,7 @@ export default function Home(props) {
 
 	// adds a Tina component for weekly schedule
 	const components = {
+		...markdownComponents,
 		weeklySchedule: () => isProgrammingPage ? (
 			<div className="not-prose relative left-1/2 mt-8 w-[80vw] -translate-x-1/2">
 				<WeeklySchedule schedule={props.schedule} />

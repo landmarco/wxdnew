@@ -39,7 +39,7 @@ export default function ShowPage() {
                     DJ:{" "}
                     {djId ? (
                         <Link
-                            href={`/dj?id=${djId}`}
+                            href={`/dj/?id=${djId}`}
                             legacyBehavior={false}
                             className="underline hover:no-underline"
                         >
