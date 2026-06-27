@@ -36,7 +36,10 @@ const Header = () => {
 
 				{/* Collapsible menu for mobile*/}
 				{isOpen && (
-					<ul className="duration-450 h-screen w-screen flex-col justify-start bg-black/90 backdrop-blur-md transition-all ease-in-out md:gap-6">
+					<ul
+						className="duration-450 h-screen w-screen flex-col justify-start bg-black/90 backdrop-blur-md transition-all ease-in-out md:gap-6"
+						onClick={() => setIsOpen(false)}
+					>
 						<div className="ml-10 mt-16 flex h-8 text-3xl">
 							<Link
 								href="/listen"
