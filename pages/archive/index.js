@@ -41,7 +41,7 @@ export default function EventList(props) {
 						An archive of WXDU&apos;s activities (WIP):{""}
 						<br></br>
 						{/* Use Link for internal nav to preserve SPA navigation + semantics. */}
-						<Link href="/programming" className="underline">
+						<Link href="/schedule" className="underline">
 							Learn more about WXDU&apos;s specialty programming
 						</Link>
 						{"."}

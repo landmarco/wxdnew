@@ -40,7 +40,7 @@ const SpecialtyShowsPage = (props) => {
 		<ArchiveLayout specialtyShows={specialtyShows}>
 			<h1 className="kallisto my-2 text-5xl">All Specialty Shows</h1>
 			<p className="mb-10 text-lg">
-				<Link href="../programming" className="underline">
+				<Link href="../schedule" className="underline">
 					View all specialty shows and their descriptions
 				</Link>
 				.

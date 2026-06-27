@@ -51,7 +51,7 @@ export default function Home(props) {
 									{/* CDs (fillers for now) that link to important pages */}
 								<div className="flex flex-row justify-between gap-2 mt-4 w-full">
 									<CDLink href="/blog" label="blog posts" image="/CD_1_Filler.jpg" />
-									<CDLink href="/programming" label="programming" image="/CD_2_Filler.jpg" />
+									<CDLink href="/schedule" label="schedule" image="/CD_2_Filler.jpg" />
 									<CDLink href="/about" label="about" image="/CD_3_Filler.jpg" />
 								</div>
 								
@@ -72,7 +72,7 @@ export default function Home(props) {
 				<TodaySchedule schedule={schedule} />
 				<div className="flex flex-row justify-between gap-1 mt-4 w-full">
 						<CDLink href="/blog" label="blog posts" image="/CD_1_Filler.jpg" />
-						<CDLink href="/programming" label="programming" image="/CD_2_Filler.jpg" />
+						<CDLink href="/schedule" label="schedule" image="/CD_2_Filler.jpg" />
 						<CDLink href="/about" label="about" image="/CD_3_Filler.jpg" />
 				</div>
 				

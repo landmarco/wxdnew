@@ -5,7 +5,7 @@ import WeeklySchedule from '../components/WeeklySchedule'
 import {markdownComponents} from '../components/markdownComponents'
 import { scheduleBuilder } from '../lib/schedule/scheduleBuilder'
 
-//editable static pages (programming, contact, etc.)
+//editable static pages (schedule, contact, etc.)
 export default function Home(props) {
 	// data passes though in production mode and data is updated to the sidebar data in edit-mode
 	const {data} = useTina({
@@ -16,12 +16,12 @@ export default function Home(props) {
 
 	// store whatever is in rich text editor for that page in variable content
 	const content = data.page.body
-	const isProgrammingPage = props.slug === 'programming'
+	const isSchedulePage = props.slug === 'schedule'
 
 	// adds a Tina component for weekly schedule
 	const components = {
 		...markdownComponents,
-		weeklySchedule: () => isProgrammingPage ? (
+		weeklySchedule: () => isSchedulePage ? (
 			<div className="not-prose relative left-1/2 mt-8 w-[80vw] -translate-x-1/2">
 				<WeeklySchedule schedule={props.schedule} />
 			</div>
@@ -43,7 +43,7 @@ export default function Home(props) {
 
 // build all the editable static pages ahead of time via github action
 export const getStaticPaths = async () => {
-	const paths = [{params: {slug: 'programming'}}]
+	const paths = [{params: {slug: 'schedule'}}]
 
 	return {
 		paths,
@@ -57,10 +57,10 @@ export const getStaticProps = async (ctx) => {
 		const {data, query, variables} = await client.queries.page({
 		relativePath: ctx.params.slug + '.mdx',
 		})
-		// loads schedule data from csv file (via lib/schedule.js) if on programming page
+		// loads schedule data from csv file (via lib/schedule.js) if on schedule page
 		// otherwise schedule is null and WeeklySchedule component won't render!
 		let schedule = null
-		if (ctx.params.slug === 'programming') {
+		if (ctx.params.slug === 'schedule') {
 			schedule = await scheduleBuilder()
 		}
 

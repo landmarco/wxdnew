@@ -128,13 +128,13 @@ const Header = () => {
 
 						<div className="ml-10 mt-8 flex h-8 text-3xl">
 							<Link
-								href="/programming"
+								href="/schedule"
 								legacyBehavior={false}
 								className="cursor-pointer"
 								rel="noopener noreferrer"
 								onClick={toggleMenu}
 							>
-								Programming
+								Schedule
 							</Link>
 						</div>
 
@@ -224,8 +224,8 @@ const Header = () => {
 								About
 							</Link>
 
-							<Link href="/programming" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
-								Programming
+							<Link href="/schedule" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Schedule
 							</Link>
 
 							<Link href="/charts" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
