@@ -3,12 +3,44 @@ import {IoIosCloseCircle} from 'react-icons/io'
 import logo from '../images/logo.png'
 import {useAudio} from './AudioContext'
 
+// Treat any banner image whose filename looks like a WXDU logo as a stream
+// play/pause control. This keeps the behavior correct even if editors reorder
+// the CMS images, as long as the logos keep recognizable filenames.
+const isLogoImage = src => typeof src === 'string' && /orangelogo-trans|wxdu_circle/i.test(src)
+
 const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 	const [isClosed, setIsClosed] = useState(false)
 	const {isPlaying, togglePlayPause} = useAudio()
 
 	if (isClosed || columns.length === 0) {
 		return null
+	}
+
+	// Render a banner image, wrapping it in a play/pause button when it's a logo.
+	const renderBannerImage = (item, imgIndex) => {
+		const img = (
+			<img
+				src={item.image}
+				alt={item.alt || `Image ${imgIndex + 1}`}
+				className="w-full h-auto rounded-lg md:rounded-3xl"
+			/>
+		)
+
+		if (!isLogoImage(item.image)) {
+			return img
+		}
+
+		return (
+			<button
+				type="button"
+				onClick={togglePlayPause}
+				aria-label={isPlaying ? 'Pause WXDU stream' : 'Play WXDU stream'}
+				title={isPlaying ? 'Pause stream' : 'Play stream'}
+				className="block w-full cursor-pointer border-0 bg-transparent p-0"
+			>
+				{img}
+			</button>
+		)
 	}
 
 	const midIndex = Math.floor(columns.length / 2)
@@ -31,11 +63,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 						<div key={colIndex} className={`flex-1 flex flex-col gap-1 md:gap-3 ${colIndex > 0 ? 'hidden lg:flex' : ''}`}>
 							{column.images?.map((item, imgIndex) => (
 								<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl bg-neutral-800">
-									<img
-										src={item.image}
-										alt={item.alt || `Image ${imgIndex + 1}`}
-										className="w-full h-auto rounded-lg md:rounded-3xl"
-									/>
+									{renderBannerImage(item, imgIndex)}
 								</div>
 							))}
 						</div>
@@ -58,7 +86,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 									<div key={colIndex} className="flex-1 flex flex-col-reverse gap-1 md:gap-3">
 										{column.images?.map((item, imgIndex) => (
 											<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl bg-neutral-800">
-												<img src={item.image} alt={item.alt || `Image ${imgIndex + 1}`} className="w-full h-auto rounded-lg md:rounded-3xl" />
+												{renderBannerImage(item, imgIndex)}
 											</div>
 										))}
 									</div>
@@ -91,7 +119,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 									<div key={colIndex} className="flex-1 flex flex-col gap-1 md:gap-3">
 										{column.images?.map((item, imgIndex) => (
 											<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl bg-neutral-800">
-												<img src={item.image} alt={item.alt || `Image ${imgIndex + 1}`} className="w-full h-auto rounded-lg md:rounded-3xl" />
+												{renderBannerImage(item, imgIndex)}
 											</div>
 										))}
 									</div>
@@ -112,11 +140,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 						<div key={colIndex} className={`flex-1 flex flex-col gap-1 md:gap-3 ${colIndex > 0 ? 'hidden lg:flex' : ''}`}>
 							{column.images?.map((item, imgIndex) => (
 								<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl bg-neutral-800">
-									<img
-										src={item.image}
-										alt={item.alt || `Image ${imgIndex + 1}`}
-										className="w-full h-auto rounded-lg md:rounded-3xl"
-									/>
+									{renderBannerImage(item, imgIndex)}
 								</div>
 							))}
 						</div>
