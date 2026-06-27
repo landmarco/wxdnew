@@ -177,11 +177,13 @@ export default function WeeklySchedule({schedule}) {
 												<td
 													key={`lunokhod-${dayIndex}`}
 													rowSpan={rowSpan}
-													className="border border-gray-300 bg-black px-4 py-2 text-center align-middle"
+													// h-px gives the cell a definite height so the Link's h-full can fill the whole (taller) cell
+													className="h-px border border-gray-300 bg-black text-center align-middle"
 												>
 													{djName && (
 														// otto rows are the auto-DJ — link to the auto-DJ show list
-														<Link href={djHref(null)} legacyBehavior={false} className="hover:underline">
+														// Link fills the whole cell so the entire cell is clickable, not just the text.
+														<Link href={djHref(null)} legacyBehavior={false} className="flex h-full items-center justify-center px-4 py-2 hover:underline">
 															{djName}
 														</Link>
 													)}
@@ -241,11 +243,13 @@ export default function WeeklySchedule({schedule}) {
 											<td
 												key={`${hour}-${dayIndex}`}
 												rowSpan={rowSpan}
-												className={`border border-gray-300 px-4 py-2 text-center align-middle ${
+												// h-px gives the cell a definite height so the Link's h-full can fill the whole (taller) cell
+												className={`h-px border border-gray-300 text-center align-middle ${
 													specialtyShow ? "bg-[#e0ff05] text-black" : "bg-black" // HIGHLIGHT SPECIALTY SHOWS!!!
 												}`}
 											>
-											<Link href={djHref(djId)} legacyBehavior={false} className="hover:underline">
+											{/* Link fills the whole cell so the entire cell is clickable, not just the text. */}
+											<Link href={djHref(djId)} legacyBehavior={false} className="flex h-full items-center justify-center px-4 py-2 hover:underline">
 												{djName}
 											</Link>
 										</td>

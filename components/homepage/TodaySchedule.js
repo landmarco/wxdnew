@@ -82,16 +82,19 @@ export default function TodaySchedule({ schedule }) {
 			<h1 className="bitcount mb-2 text-center lg:text-left text-2xl lg:text-5xl text-white">Today&apos;s Schedule</h1>
 			{shows.map(({ startLabel, endLabel, show, id }, i) => (
 				show ? (
-					<div key={`${startLabel}-${endLabel}-${i}`} className="flex gap-4 py-3 border-b border-gray-300">
+					<Link
+						key={`${startLabel}-${endLabel}-${i}`}
+						href={djHref(id)}
+						legacyBehavior={false}
+						className="group flex gap-4 py-3 border-b border-gray-300"
+					>
 						<span className="w-24 text-right">
 							{startLabel === endLabel ? (startLabel) : (<>{startLabel}–<br />{endLabel}</>)}
 						</span>
-						<span className="border-l font-bold border-gray-300 pl-4 flex-1">
-							<Link href={djHref(id)} legacyBehavior={false} className="hover:underline">
-								{show}
-							</Link>
+						<span className="border-l font-bold border-gray-300 pl-4 flex-1 group-hover:underline">
+							{show}
 						</span>
-					</div>
+					</Link>
 				) : null
 			))}
 		</div>
