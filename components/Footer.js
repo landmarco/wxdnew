@@ -11,8 +11,11 @@ import {FaPhone} from 'react-icons/fa6'
 
 import {AiFillGithub} from 'react-icons/ai'
 import {FaTumblr, FaBandcamp} from "react-icons/fa6";
+import {useAudio} from './AudioContext'
+import Emerald from './Emerald'
 
 const Footer = () => {
+	const {isHighQuality, setHighQuality, isPlaying} = useAudio()
 	return (
 		// Footer is formatted as a column on phone screen and as a row on tablet+desktop screens
 		<footer className="mx-auto mb-3 mt-10 px-2 lg:mt-36 lg:px-24">
@@ -110,6 +113,12 @@ const Footer = () => {
 				<a target="_blank" rel="noopener noreferrer" href="https://publicfiles.fcc.gov/fm-profile/wxdu" className="mt-4 inline-block underline hover:no-underline">
 					View the WXDU Public File
 				</a>
+
+				{isHighQuality && (
+					<div className="mt-4">
+						<Emerald size={72} animated={isPlaying} onClick={() => setHighQuality(false)} label="Revert to standard quality stream" />
+					</div>
+				)}
 			</div>
 			</div>
 		</footer>

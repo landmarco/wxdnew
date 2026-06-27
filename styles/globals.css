@@ -272,12 +272,30 @@ body::-webkit-scrollbar-thumb {
 	animation: sparkle 1.4s ease-in-out 1;
 }
 
+/* Sparkling glow for the 320 kbps easter-egg emerald. */
+@keyframes emerald-glow {
+	0%,
+	100% {
+		filter: drop-shadow(0 0 2px rgba(16, 255, 120, 0.5));
+		transform: scale(1);
+	}
+	50% {
+		filter: drop-shadow(0 0 11px rgba(16, 255, 120, 0.95));
+		transform: scale(1.06);
+	}
+}
+
+.animate-emerald-glow {
+	animation: emerald-glow 1.8s ease-in-out infinite;
+}
+
 /* Respect reduced-motion user preference for marquee/hover-heavy UI. */
 @media (prefers-reduced-motion: reduce) {
 	.animate-conveyor,
 	.animate-ticker-pingpong,
 	.animate-shimmer,
-	.animate-sparkle {
+	.animate-sparkle,
+	.animate-emerald-glow {
 		animation: none !important;
 	}
 }

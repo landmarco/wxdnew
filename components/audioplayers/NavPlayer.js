@@ -3,9 +3,10 @@ import Link from "next/link";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { useAudio } from "../AudioContext";
 import { getNowPlaying } from "../../lib/nowPlaying";
+import Emerald from "../Emerald";
 
 const NavPlayer = () => {
-    const { isPlaying, togglePlayPause } = useAudio();
+    const { isPlaying, togglePlayPause, isHighQuality } = useAudio();
 
     // refs for measuring available ticker width vs text width
     const tickerContainerRef = useRef(null);
@@ -113,11 +114,17 @@ const NavPlayer = () => {
                     Stream Here
                 </span>
 
-                <span className="hidden shrink-0 items-center lg:flex">
+                <span className="relative hidden shrink-0 items-center lg:flex">
+                    {isHighQuality && (
+                        <span className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+                            <Emerald size={60} animated={isPlaying} />
+                        </span>
+                    )}
                     <img
                         src={isPlaying ? "/soundwaves.gif" : "/staticsoundwave.gif"}
                         alt=""
                         aria-hidden="true"
+                        className="relative z-10"
                         style={{ height: "75px", width: "175px", objectFit: "cover" }}
                     />
                 </span>
