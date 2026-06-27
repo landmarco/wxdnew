@@ -96,61 +96,63 @@ const NavPlayer = () => {
 
     return (
         <div className="fixed top-0 left-0 z-50 flex h-16 w-full flex-row items-center overflow-hidden border-b-2 border-[#e0ff05] bg-black">
-            <div className="flex shrink-0 flex-row items-center gap-2 border-r border-[#e0ff05] px-4">
-                {/* Icon-only control needs an explicit name for screen readers. */}
-                <button
-                    onClick={togglePlayPause}
-                    className="text-[#e0ff05] hover:text-yellow-200"
-                    aria-label={isPlaying ? 'Pause stream' : 'Play stream'}
-                    title={isPlaying ? 'Pause stream' : 'Play stream'}
-                >
+            {/* The whole left box toggles the stream: from the page's left edge,
+                across the label and waveform, up to the dividing border. */}
+            <button
+                type="button"
+                onClick={togglePlayPause}
+                aria-label={isPlaying ? 'Pause stream' : 'Play stream'}
+                title={isPlaying ? 'Pause stream' : 'Play stream'}
+                className="group flex h-full shrink-0 flex-row items-center gap-2 border-r border-[#e0ff05] px-4 transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            >
+                <span className="text-[#e0ff05] group-hover:text-yellow-200">
                     {isPlaying ? <FaPause size={18} /> : <FaPlay size={18} />}
-                </button>
+                </span>
 
                 <span className="bitcount text-base uppercase tracking-widest text-[#e0ff05]">
                     Stream Here
                 </span>
 
-                <div className="hidden shrink-0 items-center lg:flex">
+                <span className="hidden shrink-0 items-center lg:flex">
                     <img
                         src={isPlaying ? "/soundwaves.gif" : "/staticsoundwave.gif"}
                         alt=""
                         aria-hidden="true"
                         style={{ height: "75px", width: "175px", objectFit: "cover" }}
                     />
-                </div>
-            </div>
+                </span>
+            </button>
 
-            <div ref={tickerContainerRef} className="flex-1 overflow-hidden">
-                <Link href="/listen" legacyBehavior>
-                    <a
-                        className="group block h-full w-full cursor-pointer rounded transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                        aria-label="Open listen page"
-                        title="Open listen page"
-                        onClick={(event) => {
-                            event.currentTarget.blur();
-                        }}
-                    >
-                        <div className="flex-1 overflow-hidden">
-                            <div
-                                className={`inline-block whitespace-nowrap ${
-                                    shouldScrollTicker ? "animate-ticker-pingpong" : ""
-                                }`}
-                                style={{
-                                    "--ticker-distance": `${tickerDistance}px`
-                                }}
+            {/* The rest of the bar — all the blank space around the ticker —
+                opens the /listen page, not just the text. */}
+            <Link href="/listen" legacyBehavior>
+                <a
+                    className="group flex h-full min-w-0 flex-1 items-center overflow-hidden cursor-pointer transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                    aria-label="Open listen page"
+                    title="Open listen page"
+                    onClick={(event) => {
+                        event.currentTarget.blur();
+                    }}
+                >
+                    <div ref={tickerContainerRef} className="w-full overflow-hidden">
+                        <div
+                            className={`inline-block whitespace-nowrap ${
+                                shouldScrollTicker ? "animate-ticker-pingpong" : ""
+                            }`}
+                            style={{
+                                "--ticker-distance": `${tickerDistance}px`
+                            }}
+                        >
+                            <span
+                                ref={tickerTextRef}
+                                className="px-8 text-base font-semibold tracking-widest text-[#e0ff05] group-hover:text-white group-hover:underline group-focus:text-white group-focus:underline"
                             >
-                                <span
-                                    ref={tickerTextRef}
-                                    className="px-8 text-base font-semibold tracking-widest text-[#e0ff05] group-hover:text-white group-hover:underline group-focus:text-white group-focus:underline"
-                                >
-                                    Currently Playing: {currentTrack} &nbsp;&nbsp;&nbsp;&nbsp; DJ ON AIR: {nowPlaying.dj}
-                                </span>
-                            </div>
+                                Currently Playing: {currentTrack} &nbsp;&nbsp;&nbsp;&nbsp; DJ ON AIR: {nowPlaying.dj}
+                            </span>
                         </div>
-                    </a>
-                </Link>
-            </div>
+                    </div>
+                </a>
+            </Link>
         </div>
     );
 };
