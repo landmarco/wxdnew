@@ -35,6 +35,28 @@ function formatDate(unix) {
 
 const albumKey = (t) => (t?.artist && t?.album ? `${t.artist}|${t.album}` : null)
 
+// The fixed NavPlayer bar overlaps the top of the page; treat content beneath it
+// as "off screen" and offset scroll targets so they aren't hidden under it.
+const HEADER_OFFSET = 80
+// Give a smooth scroll time to settle before playing the highlight animation.
+const SCROLL_SETTLE_MS = 450
+
+const isOnScreen = (el) => {
+	if (!el) return false
+	const r = el.getBoundingClientRect()
+	return r.bottom > HEADER_OFFSET && r.top < window.innerHeight
+}
+
+const scrollRowToCenter = (el) => {
+	el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+const scrollElToTop = (el) => {
+	if (!el) return
+	const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET
+	window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' })
+}
+
 export default function PlaylistView({ show, tracks, djNode }) {
 	const showTitle = show?.title || show?.othergenre || 'Playlist'
 	const endTime = show?.duration ? show.starttime + show.duration * 3600 : null
@@ -45,6 +67,10 @@ export default function PlaylistView({ show, tracks, djNode }) {
 	// given album is only fetched once; coverMap is the render-visible snapshot.
 	const coverCacheRef = useRef(new Map())
 	const [coverMap, setCoverMap] = useState(new Map())
+
+	// Element refs so a click can scroll its counterpart into view first.
+	const gridWrapperRef = useRef(null)
+	const rowElsRef = useRef(new Map()) // rowId -> <tr> element
 
 	useEffect(() => {
 		let cancelled = false
@@ -94,6 +120,8 @@ export default function PlaylistView({ show, tracks, djNode }) {
 	const [sparkle, setSparkle] = useState({ key: null, nonce: 0 })
 	const shimmerTimer = useRef(null)
 	const sparkleTimer = useRef(null)
+	const deferShimmerTimer = useRef(null)
+	const deferSparkleTimer = useRef(null)
 
 	const triggerShimmer = (key) => {
 		setShimmer((s) => ({ key, nonce: s.nonce + 1 }))
@@ -109,17 +137,53 @@ export default function PlaylistView({ show, tracks, djNode }) {
 		if (sparkleTimer.current) clearTimeout(sparkleTimer.current)
 		sparkleTimer.current = setTimeout(
 			() => setSparkle((s) => ({ key: null, nonce: s.nonce })),
-			900
+			1400
 		)
 	}
 
 	useEffect(
 		() => () => {
-			if (shimmerTimer.current) clearTimeout(shimmerTimer.current)
-			if (sparkleTimer.current) clearTimeout(sparkleTimer.current)
+			;[shimmerTimer, sparkleTimer, deferShimmerTimer, deferSparkleTimer].forEach(
+				(r) => {
+					if (r.current) clearTimeout(r.current)
+				}
+			)
 		},
 		[]
 	)
+
+	// Clicking an album tile: if none of that album's rows are on screen, scroll
+	// the first one to the center of the viewport, then shimmer.
+	const handleAlbumClick = (key) => {
+		const els = []
+		visibleTracks.forEach((t, i) => {
+			if (albumKey(t) === key) {
+				const el = rowElsRef.current.get(t.ID ?? i)
+				if (el) els.push(el)
+			}
+		})
+
+		if (els.length > 0 && !els.some(isOnScreen)) {
+			scrollRowToCenter(els[0])
+			if (deferShimmerTimer.current) clearTimeout(deferShimmerTimer.current)
+			deferShimmerTimer.current = setTimeout(() => triggerShimmer(key), SCROLL_SETTLE_MS)
+		} else {
+			triggerShimmer(key)
+		}
+	}
+
+	// Clicking a track row: if the album grid isn't on screen, scroll it to the
+	// top of the viewport, then sparkle the album's tile.
+	const handleRowClick = (key) => {
+		const gridEl = gridWrapperRef.current
+		if (gridEl && !isOnScreen(gridEl)) {
+			scrollElToTop(gridEl)
+			if (deferSparkleTimer.current) clearTimeout(deferSparkleTimer.current)
+			deferSparkleTimer.current = setTimeout(() => triggerSparkle(key), SCROLL_SETTLE_MS)
+		} else {
+			triggerSparkle(key)
+		}
+	}
 
 	return (
 		<>
@@ -143,10 +207,10 @@ export default function PlaylistView({ show, tracks, djNode }) {
 					</div>
 
 					{albums.length > 0 && (
-						<div className="w-full min-w-0 flex-1">
+						<div ref={gridWrapperRef} className="w-full min-w-0 flex-1">
 							<AlbumArtGrid
 								albums={albums}
-								onAlbumClick={triggerShimmer}
+								onAlbumClick={handleAlbumClick}
 								sparkleKey={sparkle.key}
 								sparkleNonce={sparkle.nonce}
 							/>
@@ -178,7 +242,11 @@ export default function PlaylistView({ show, tracks, djNode }) {
 								return (
 									<tr
 										key={isShimmering ? `${base}-${shimmer.nonce}` : base}
-										onClick={key ? () => triggerSparkle(key) : undefined}
+										ref={(el) => {
+											if (el) rowElsRef.current.set(base, el)
+											else rowElsRef.current.delete(base)
+										}}
+										onClick={key ? () => handleRowClick(key) : undefined}
 										className={`border-b border-neutral-800 hover:bg-neutral-900 ${
 											key ? 'cursor-pointer' : ''
 										} ${isShimmering ? 'animate-shimmer' : ''}`}

@@ -269,7 +269,7 @@ body::-webkit-scrollbar-thumb {
 }
 
 .animate-sparkle {
-	animation: sparkle 0.9s ease-in-out 1;
+	animation: sparkle 1.4s ease-in-out 1;
 }
 
 /* Respect reduced-motion user preference for marquee/hover-heavy UI. */
