@@ -1,9 +1,11 @@
 import React, {useState} from 'react'
 import {IoIosCloseCircle} from 'react-icons/io'
 import logo from '../images/logo.png'
+import {useAudio} from './AudioContext'
 
 const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 	const [isClosed, setIsClosed] = useState(false)
+	const {isPlaying, togglePlayPause} = useAudio()
 
 	if (isClosed || columns.length === 0) {
 		return null
@@ -67,7 +69,15 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 
 					{/* Middle row: logo + subheader, always fixed at the true center */}
 					<div className="flex flex-col items-center py-2">
-						<img src={logo.src} alt="WXDU Logo" className="w-full h-auto object-contain" />
+						<button
+							type="button"
+							onClick={togglePlayPause}
+							aria-label={isPlaying ? 'Pause WXDU stream' : 'Play WXDU stream'}
+							title={isPlaying ? 'Pause stream' : 'Play stream'}
+							className="w-full cursor-pointer border-0 bg-transparent p-0"
+						>
+							<img src={logo.src} alt="WXDU Logo" className="w-full h-auto object-contain" />
+						</button>
 						<h1 className="courier-prime w-full text-center text-[0.6rem] sm:text-xs md:text-lg lg:text-3xl mt-2 leading-tight md:leading-normal">
 							Duke and Durham&#39;s alternative, non-commercial radio station
 						</h1>
