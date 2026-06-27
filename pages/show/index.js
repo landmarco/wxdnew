@@ -1,11 +1,11 @@
 // Single show playlist page (the printplaylist.php analog).
 // URL: /show?id=<showID> — client-fetched so it works in the static export.
+// Renders in the same format as /current (a show-info card + dark track table).
 
 import { useRouter } from "next/router";
 import Link from "next/link";
 import useShowPlaylist from "@/hooks/useShowPlaylist";
-import CurrentPlaylist from "@/components/listenpage/CurrentPlaylist";
-import { showDateTime } from "@/lib/showFormat";
+import PlaylistView from "@/components/PlaylistView";
 
 export default function ShowPage() {
     const router = useRouter();
@@ -24,53 +24,35 @@ export default function ShowPage() {
         return <Message>Playlist not found.</Message>;
     }
 
-    const { show, dj } = playlist;
+    const { show, dj, tracks } = playlist;
     const djId = dj?.ID ?? show.userID;
     const djName = show.djname || dj?.defdjname || "Unknown DJ";
+    const djNode = djId ? (
+        <Link
+            href={`/dj/?id=${djId}`}
+            legacyBehavior={false}
+            className="underline hover:text-blue-300"
+        >
+            {djName}
+        </Link>
+    ) : (
+        djName
+    );
 
     return (
-        <div id="main-content" className="min-h-screen text-white pb-6">
-            <div className="text-center py-6">
-                <p className="text-base text-gray-300 tracking-wide">Playlist</p>
-                <h1 className="text-4xl font-light leading-tight">
-                    {show.title || "Untitled show"}
-                </h1>
-                <h2 className="text-xl text-gray-300 mt-1">
-                    DJ:{" "}
-                    {djId ? (
-                        <Link
-                            href={`/dj/?id=${djId}`}
-                            legacyBehavior={false}
-                            className="underline hover:no-underline"
-                        >
-                            {djName}
-                        </Link>
-                    ) : (
-                        djName
-                    )}
-                </h2>
-                <p className="text-sm text-gray-400 mt-1">
-                    {showDateTime(show.starttime)}
-                </p>
+        <div className="mx-auto w-5/6 pb-16 text-white">
+            <div className="mb-8 mt-4">
+                <h1 className="kallisto text-4xl lg:text-5xl">Playlist</h1>
             </div>
 
-            {playlist.tracks.length ? (
-                <CurrentPlaylist currentPlaylist={playlist} />
-            ) : (
-                <p className="text-center text-zinc-400">
-                    No tracks were logged for this show.
-                </p>
-            )}
+            <PlaylistView show={show} tracks={tracks} djNode={djNode} />
         </div>
     );
 }
 
 function Message({ children }) {
     return (
-        <div
-            id="main-content"
-            className="min-h-screen text-white flex items-center justify-center"
-        >
+        <div className="min-h-screen text-white flex items-center justify-center">
             <p className="kallisto text-lg">{children}</p>
         </div>
     );
