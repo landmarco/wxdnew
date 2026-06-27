@@ -230,10 +230,54 @@ body::-webkit-scrollbar-thumb {
   animation: ticker-pingpong 20s ease-in-out infinite;
 }
 
+/* Brief highlight sweep across a playlist row when its album tile is clicked. */
+@keyframes shimmer {
+	0% {
+		background-position: -150% 0;
+	}
+	100% {
+		background-position: 250% 0;
+	}
+}
+
+.animate-shimmer {
+	background-image: linear-gradient(
+		100deg,
+		transparent 20%,
+		rgba(224, 255, 5, 0.25) 50%,
+		transparent 80%
+	);
+	background-size: 200% 100%;
+	background-repeat: no-repeat;
+	animation: shimmer 1s ease-in-out 1;
+}
+
+/* Brief twinkle for the sparkle elements drawn around an album tile. */
+@keyframes sparkle {
+	0% {
+		transform: scale(0) rotate(0deg);
+		opacity: 0;
+	}
+	50% {
+		transform: scale(1) rotate(90deg);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(0) rotate(180deg);
+		opacity: 0;
+	}
+}
+
+.animate-sparkle {
+	animation: sparkle 0.9s ease-in-out 1;
+}
+
 /* Respect reduced-motion user preference for marquee/hover-heavy UI. */
 @media (prefers-reduced-motion: reduce) {
 	.animate-conveyor,
-	.animate-ticker-pingpong {
+	.animate-ticker-pingpong,
+	.animate-shimmer,
+	.animate-sparkle {
 		animation: none !important;
 	}
 }

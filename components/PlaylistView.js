@@ -1,7 +1,20 @@
-// Shared playlist presentation: a show-info card plus a dark track table.
-// Used by /current (live) and /show (a single finished show) so both render
-// identically. The caller passes the already-rendered DJ link/name as `djNode`
-// since /current links out to dj.link while /show links to /dj/?id=<id>.
+// Shared playlist presentation and the standard way to render a WXDU playlist:
+// a show-info card (with an album-art grid pulled from the tracks) plus a dark
+// track table. Used by /current (live) and /show (a finished show), and meant to
+// be dropped into /listen next. The caller passes the already-rendered DJ
+// link/name as `djNode` since /current links out to dj.link while /show links to
+// /dj/?id=<id>.
+//
+// Album art is fetched lazily — after the table has painted — so playlist text
+// shows instantly. Covers are deduped/cached by album so live polling on
+// /current only fetches genuinely new albums. The grid and the table are wired
+// together: clicking an album tile shimmers that album's rows, and clicking a
+// row sparkles that album's tile. Rows and tiles are matched by the album key
+// ("artist|album").
+
+import { useEffect, useRef, useState } from 'react'
+import getCovers from '../lib/getCovers'
+import AlbumArtGrid from './AlbumArtGrid'
 
 function formatTime(unix) {
 	if (!unix) return ''
@@ -20,29 +33,126 @@ function formatDate(unix) {
 	})
 }
 
+const albumKey = (t) => (t?.artist && t?.album ? `${t.artist}|${t.album}` : null)
+
 export default function PlaylistView({ show, tracks, djNode }) {
 	const showTitle = show?.title || show?.othergenre || 'Playlist'
 	const endTime = show?.duration ? show.starttime + show.duration * 3600 : null
 
 	const visibleTracks = tracks?.filter((t) => t.artist !== '*****') ?? []
 
+	// Deferred album-art lookup. coverCacheRef persists across renders/polls so a
+	// given album is only fetched once; coverMap is the render-visible snapshot.
+	const coverCacheRef = useRef(new Map())
+	const [coverMap, setCoverMap] = useState(new Map())
+
+	useEffect(() => {
+		let cancelled = false
+		const cache = coverCacheRef.current
+
+		// Unique album keys we haven't looked up yet.
+		const pending = []
+		const seen = new Set()
+		for (const t of tracks ?? []) {
+			if (t.artist === '*****') continue
+			const key = albumKey(t)
+			if (!key || seen.has(key)) continue
+			seen.add(key)
+			if (!cache.has(key)) pending.push({ key, artist: t.artist, album: t.album })
+		}
+
+		if (pending.length === 0) return
+
+		;(async () => {
+			const entries = await Promise.all(
+				pending.map(async (p) => [p.key, await getCovers(p.artist, null, p.album)])
+			)
+			if (cancelled) return
+			for (const [key, url] of entries) cache.set(key, url)
+			setCoverMap(new Map(cache))
+		})()
+
+		return () => {
+			cancelled = true
+		}
+	}, [tracks])
+
+	// One tile per unique album that actually resolved a cover, in playlist order.
+	const albums = []
+	const seenAlbum = new Set()
+	for (const t of visibleTracks) {
+		const key = albumKey(t)
+		if (!key || seenAlbum.has(key)) continue
+		seenAlbum.add(key)
+		const cover = coverMap.get(key)
+		if (cover) albums.push({ key, cover, artist: t.artist, album: t.album })
+	}
+
+	// Brief, replayable highlight animations. The nonce changes every trigger so
+	// re-clicking the same album restarts the animation (via React key remount).
+	const [shimmer, setShimmer] = useState({ key: null, nonce: 0 })
+	const [sparkle, setSparkle] = useState({ key: null, nonce: 0 })
+	const shimmerTimer = useRef(null)
+	const sparkleTimer = useRef(null)
+
+	const triggerShimmer = (key) => {
+		setShimmer((s) => ({ key, nonce: s.nonce + 1 }))
+		if (shimmerTimer.current) clearTimeout(shimmerTimer.current)
+		shimmerTimer.current = setTimeout(
+			() => setShimmer((s) => ({ key: null, nonce: s.nonce })),
+			1000
+		)
+	}
+
+	const triggerSparkle = (key) => {
+		setSparkle((s) => ({ key, nonce: s.nonce + 1 }))
+		if (sparkleTimer.current) clearTimeout(sparkleTimer.current)
+		sparkleTimer.current = setTimeout(
+			() => setSparkle((s) => ({ key: null, nonce: s.nonce })),
+			900
+		)
+	}
+
+	useEffect(
+		() => () => {
+			if (shimmerTimer.current) clearTimeout(shimmerTimer.current)
+			if (sparkleTimer.current) clearTimeout(sparkleTimer.current)
+		},
+		[]
+	)
+
 	return (
 		<>
-			{/* Show info */}
+			{/* Show info + album grid */}
 			<div className="mb-8 rounded-lg bg-neutral-900 px-6 py-5">
-				<h2 className="kallisto text-2xl lg:text-3xl">{showTitle}</h2>
-				{show?.subtitle && (
-					<p className="mt-1 text-neutral-400 italic">{show.subtitle}</p>
-				)}
-				{djNode && (
-					<p className="mt-2 text-lg text-neutral-300">with {djNode}</p>
-				)}
-				{show?.starttime && (
-					<p className="mt-1 text-sm text-neutral-500">
-						{formatDate(show.starttime)} &middot; {formatTime(show.starttime)}
-						{endTime && <> &ndash; {formatTime(endTime)}</>}
-					</p>
-				)}
+				<div className="flex flex-col gap-4 md:flex-row md:items-start">
+					<div className="shrink-0 md:max-w-sm">
+						<h2 className="kallisto text-2xl lg:text-3xl">{showTitle}</h2>
+						{show?.subtitle && (
+							<p className="mt-1 text-neutral-400 italic">{show.subtitle}</p>
+						)}
+						{djNode && (
+							<p className="mt-2 text-lg text-neutral-300">with {djNode}</p>
+						)}
+						{show?.starttime && (
+							<p className="mt-1 text-sm text-neutral-500">
+								{formatDate(show.starttime)} &middot; {formatTime(show.starttime)}
+								{endTime && <> &ndash; {formatTime(endTime)}</>}
+							</p>
+						)}
+					</div>
+
+					{albums.length > 0 && (
+						<div className="w-full min-w-0 flex-1">
+							<AlbumArtGrid
+								albums={albums}
+								onAlbumClick={triggerShimmer}
+								sparkleKey={sparkle.key}
+								sparkleNonce={sparkle.nonce}
+							/>
+						</div>
+					)}
+				</div>
 			</div>
 
 			{/* Track list */}
@@ -61,24 +171,32 @@ export default function PlaylistView({ show, tracks, djNode }) {
 							</tr>
 						</thead>
 						<tbody>
-							{visibleTracks.map((t, i) => (
-								<tr
-									key={t.ID ?? i}
-									className="border-b border-neutral-800 hover:bg-neutral-900"
-								>
-									<td className="py-2 pr-6">{t.artist}</td>
-									<td className="py-2 pr-6">{t.song}</td>
-									<td className="hidden py-2 pr-6 text-neutral-400 md:table-cell">
-										{t.album}
-									</td>
-									<td className="hidden py-2 pr-6 text-neutral-400 lg:table-cell">
-										{t.label}
-									</td>
-									<td className="hidden py-2 text-neutral-500 lg:table-cell">
-										{t.request ? 'R' : ''}
-									</td>
-								</tr>
-							))}
+							{visibleTracks.map((t, i) => {
+								const key = albumKey(t)
+								const base = t.ID ?? i
+								const isShimmering = shimmer.key != null && key === shimmer.key
+								return (
+									<tr
+										key={isShimmering ? `${base}-${shimmer.nonce}` : base}
+										onClick={key ? () => triggerSparkle(key) : undefined}
+										className={`border-b border-neutral-800 hover:bg-neutral-900 ${
+											key ? 'cursor-pointer' : ''
+										} ${isShimmering ? 'animate-shimmer' : ''}`}
+									>
+										<td className="py-2 pr-6">{t.artist}</td>
+										<td className="py-2 pr-6">{t.song}</td>
+										<td className="hidden py-2 pr-6 text-neutral-400 md:table-cell">
+											{t.album}
+										</td>
+										<td className="hidden py-2 pr-6 text-neutral-400 lg:table-cell">
+											{t.label}
+										</td>
+										<td className="hidden py-2 text-neutral-500 lg:table-cell">
+											{t.request ? 'R' : ''}
+										</td>
+									</tr>
+								)
+							})}
 						</tbody>
 					</table>
 				</div>
