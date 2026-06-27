@@ -150,7 +150,10 @@ export default function DJRequestWidget() {
 
             {/* Modal */}
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+                    onClick={() => setIsOpen(false)}
+                >
                     {/* Dialog semantics are required for screen readers. */}
                     <div
                         ref={modalRef}
@@ -158,6 +161,7 @@ export default function DJRequestWidget() {
                         aria-modal="true"
                         aria-labelledby="dj-request-title"
                         className="w-96 rounded-lg bg-zinc-900 p-6"
+                        onClick={(e) => e.stopPropagation()}
                     >
 
                         {/* Header */}
@@ -311,6 +315,9 @@ export default function DJRequestWidget() {
                                         Something went wrong. Please try again.
                                     </p>
                                 )}
+                        <p className="font-courierprime mt-5 text-center text-sm text-gray-400">
+                            or call it in at (919) 684-8870
+                        </p>
                     </div>
                 </div>
             )}
