@@ -133,11 +133,12 @@ export default function DJRequestWidget() {
                 onMouseLeave={() => setIsHovered(false)}
                 aria-label="Open DJ request modal"
             >
+                {/* Keep the phone "off the hook" while the request overlay is open. */}
                 <img
-                    src={isHovered ? '/requestwidget_hover_bg.png' : '/requestwidget_bg.png'}
+                    src={isHovered || isOpen ? '/requestwidget_hover_bg.png' : '/requestwidget_bg.png'}
                     alt="Send DJ Request"
                     className={
-                        isHovered ? "w-[10vw]" : "w-[9.5vw]"
+                        isHovered || isOpen ? "w-[10vw]" : "w-[9.5vw]"
                     }
                     style={{
                         height: 'auto',
