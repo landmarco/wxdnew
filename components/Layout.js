@@ -26,7 +26,9 @@ export const Layout = (props) => {
 				</header>
 
 				{/* Main skip-link target for keyboard users. */}
-				<main id="main-content" tabIndex="-1">{props.children}</main>
+				{/* On mobile the header is fixed (NavPlayer + nav bar, ~104px tall), so pad the
+				    content down to clear it. Desktop nav is in-flow, so no offset needed there. */}
+				<main id="main-content" tabIndex="-1" className="pt-[104px] lg:pt-0">{props.children}</main>
 				<Footer />
 			</div>
 		)
