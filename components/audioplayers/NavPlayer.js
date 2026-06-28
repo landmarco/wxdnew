@@ -3,7 +3,14 @@ import Link from "next/link";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { useAudio } from "../AudioContext";
 import { getNowPlaying } from "../../lib/nowPlaying";
+import getCovers from "../../lib/getCovers";
+import cardinalsFallback from "../../images/cardinals.jpg";
 import Emerald from "../Emerald";
+
+// Lock-screen / Android Auto artwork. When false, always use the cardinals cover
+// (matching the Recently Played iPod widget's fallback). Flip to true to use each
+// track's real cover art (fetched below) and fall back to cardinals when none.
+const USE_REAL_COVER_ART = false;
 
 const NavPlayer = () => {
     const { isPlaying, isStalled, togglePlayPause, isHighQuality } = useAudio();
@@ -22,6 +29,11 @@ const NavPlayer = () => {
         album: null,
         dj: "mystery dj"
     });
+
+    // Cover art for the currently playing track, used for lock-screen / car
+    // metadata. Only populated when USE_REAL_COVER_ART is on; otherwise we always
+    // show the cardinals fallback below.
+    const [nowPlayingCover, setNowPlayingCover] = useState(null);
 
     // fetches directly from the external WXDU API (api.wxdu.art / api.wxdu.org).
     // the old /api/now-playing Next route doesn't exist in the static export,
@@ -48,6 +60,79 @@ const NavPlayer = () => {
         const interval = setInterval(fetchNowPlaying, 10000);
         return () => clearInterval(interval);
     }, []);
+
+    // Look up the current track's cover art (by artist + album) for the OS media
+    // metadata. Gated behind USE_REAL_COVER_ART so we don't even hit the API
+    // while the cardinals image is forced on.
+    useEffect(() => {
+        if (!USE_REAL_COVER_ART) return;
+        if (!nowPlaying.artist || !nowPlaying.album) {
+            setNowPlayingCover(null);
+            return;
+        }
+        let cancelled = false;
+        getCovers(nowPlaying.artist, null, nowPlaying.album).then((url) => {
+            if (!cancelled) setNowPlayingCover(url || null);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [nowPlaying.artist, nowPlaying.album]);
+
+    // Publish now-playing metadata to the OS (lock screen, Android Auto, etc.).
+    // Artwork is the track's real cover when enabled and found, otherwise the
+    // cardinals image — resolved to an absolute URL, which some platforms require.
+    useEffect(() => {
+        if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+
+        const cover = USE_REAL_COVER_ART && nowPlayingCover ? nowPlayingCover : cardinalsFallback.src;
+        const artworkUrl =
+            cover.startsWith("http") || typeof window === "undefined"
+                ? cover
+                : window.location.origin + cover;
+
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: nowPlaying.song || "WXDU 88.7 FM",
+            artist: nowPlaying.artist || "WXDU",
+            album: nowPlaying.album || "Durham, NC",
+            artwork: [
+                { src: artworkUrl, sizes: "512x512", type: "image/jpeg" },
+            ],
+        });
+    }, [nowPlaying.song, nowPlaying.artist, nowPlaying.album, nowPlayingCover]);
+
+    // Keep the OS playback state in sync and route its play/pause controls back
+    // into our single stream toggle.
+    useEffect(() => {
+        if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+
+        navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+
+        const onPlay = () => {
+            if (!isPlaying) togglePlayPause();
+        };
+        const onPause = () => {
+            if (isPlaying) togglePlayPause();
+        };
+
+        const setHandler = (action, handler) => {
+            try {
+                navigator.mediaSession.setActionHandler(action, handler);
+            } catch {
+                // some platforms don't support every action — ignore
+            }
+        };
+
+        setHandler("play", onPlay);
+        setHandler("pause", onPause);
+        setHandler("stop", onPause);
+
+        return () => {
+            setHandler("play", null);
+            setHandler("pause", null);
+            setHandler("stop", null);
+        };
+    }, [isPlaying, togglePlayPause]);
 
     // only show track info when artist/song/album are all present
     const currentTrack =
