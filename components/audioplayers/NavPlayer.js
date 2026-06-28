@@ -6,7 +6,7 @@ import { getNowPlaying } from "../../lib/nowPlaying";
 import Emerald from "../Emerald";
 
 const NavPlayer = () => {
-    const { isPlaying, togglePlayPause, isHighQuality } = useAudio();
+    const { isPlaying, isStalled, togglePlayPause, isHighQuality } = useAudio();
 
     // refs for measuring available ticker width vs text width
     const tickerContainerRef = useRef(null);
@@ -106,8 +106,16 @@ const NavPlayer = () => {
                 title={isPlaying ? 'Pause stream' : 'Play stream'}
                 className="group flex h-full shrink-0 flex-row items-center gap-2 border-r border-[#e0ff05] px-4 transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             >
-                <span className="text-[#e0ff05] group-hover:text-yellow-200">
+                <span className="relative text-[#e0ff05] group-hover:text-yellow-200">
                     {isPlaying ? <FaPause size={18} /> : <FaPlay size={18} />}
+                    {/* Mobile/tablet reconnect indicator: the waveform overlay only
+                        exists on lg+, so pulse a ring over the icon below that. */}
+                    {isStalled && (
+                        <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute -inset-2 rounded-full border-2 border-[#e0ff05] animate-ping lg:hidden"
+                        />
+                    )}
                 </span>
 
                 <span className="bitcount text-base uppercase tracking-widest text-[#e0ff05]">
@@ -127,6 +135,19 @@ const NavPlayer = () => {
                         className="relative z-10"
                         style={{ height: "75px", width: "175px", objectFit: "cover" }}
                     />
+
+                    {/* While reconnecting, keep the oscillation but overlay a label
+                        so the user knows the audio dropped and we're rejoining. */}
+                    {isStalled && (
+                        <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-1">
+                            <span
+                                className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
+                                style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
+                            >
+                                Reconnecting
+                            </span>
+                        </span>
+                    )}
                 </span>
             </button>
 
