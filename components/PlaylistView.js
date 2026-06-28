@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import getCovers from '../lib/getCovers'
+import { fixEncoding } from '../lib/fixEncoding'
 import AlbumArtGrid from './AlbumArtGrid'
 
 function formatTime(unix) {
@@ -46,10 +47,10 @@ function formatTrackTime(songstart) {
 // ({ type: "Buffer", data: [...] }) — or occasionally a plain string. Decode to
 // trimmed text, or null when empty. Mirrors normaliseComments in lib/nowPlaying.
 function decodeComments(raw) {
-	if (typeof raw === 'string') return raw.trim() || null
+	if (typeof raw === 'string') return fixEncoding(raw.trim()) || null
 	if (raw && typeof raw === 'object' && raw.type === 'Buffer' && Array.isArray(raw.data)) {
 		try {
-			return new TextDecoder().decode(new Uint8Array(raw.data)).trim() || null
+			return fixEncoding(new TextDecoder().decode(new Uint8Array(raw.data)).trim()) || null
 		} catch {
 			return null
 		}

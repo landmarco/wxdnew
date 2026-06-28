@@ -154,7 +154,7 @@ const NavPlayer = () => {
                                 ref={tickerTextRef}
                                 className="px-8 text-base font-semibold tracking-widest text-[#e0ff05] group-hover:text-white group-hover:underline group-focus:text-white group-focus:underline"
                             >
-                                Currently Playing: {currentTrack} &nbsp;&nbsp;&nbsp;&nbsp; DJ ON AIR: {nowPlaying.dj}
+                                <span className="hidden md:inline">Currently Playing: </span>{currentTrack} &nbsp;&nbsp;&nbsp;&nbsp; DJ ON AIR: {nowPlaying.dj}
                             </span>
                         </div>
                     </div>
