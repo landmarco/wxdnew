@@ -33,6 +33,30 @@ function formatDate(unix) {
 	})
 }
 
+// A track's play time arrives as an ISO string (`songstart`), unlike the show's
+// unix `starttime`. Render it in the same short clock format.
+function formatTrackTime(songstart) {
+	if (!songstart) return ''
+	const d = new Date(songstart)
+	if (Number.isNaN(d.getTime())) return ''
+	return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+}
+
+// The upstream `comments` field is a JSON-serialised Node Buffer
+// ({ type: "Buffer", data: [...] }) — or occasionally a plain string. Decode to
+// trimmed text, or null when empty. Mirrors normaliseComments in lib/nowPlaying.
+function decodeComments(raw) {
+	if (typeof raw === 'string') return raw.trim() || null
+	if (raw && typeof raw === 'object' && raw.type === 'Buffer' && Array.isArray(raw.data)) {
+		try {
+			return new TextDecoder().decode(new Uint8Array(raw.data)).trim() || null
+		} catch {
+			return null
+		}
+	}
+	return null
+}
+
 const albumKey = (t) => (t?.artist && t?.album ? `${t.artist}|${t.album}` : null)
 
 // The fixed NavPlayer bar overlaps the top of the page; treat content beneath it
@@ -62,6 +86,9 @@ export default function PlaylistView({ show, tracks, djNode }) {
 	const endTime = show?.duration ? show.starttime + show.duration * 3600 : null
 
 	const visibleTracks = tracks?.filter((t) => t.artist !== '*****') ?? []
+
+	// Only surface the comments column when this show actually has some.
+	const hasComments = visibleTracks.some((t) => decodeComments(t.comments))
 
 	// Deferred album-art lookup. coverCacheRef persists across renders/polls so a
 	// given album is only fetched once; coverMap is the render-visible snapshot.
@@ -128,7 +155,7 @@ export default function PlaylistView({ show, tracks, djNode }) {
 		if (shimmerTimer.current) clearTimeout(shimmerTimer.current)
 		shimmerTimer.current = setTimeout(
 			() => setShimmer((s) => ({ key: null, nonce: s.nonce })),
-			1000
+			2300
 		)
 	}
 
@@ -137,7 +164,7 @@ export default function PlaylistView({ show, tracks, djNode }) {
 		if (sparkleTimer.current) clearTimeout(sparkleTimer.current)
 		sparkleTimer.current = setTimeout(
 			() => setSparkle((s) => ({ key: null, nonce: s.nonce })),
-			1400
+			2300
 		)
 	}
 
@@ -223,7 +250,8 @@ export default function PlaylistView({ show, tracks, djNode }) {
 			{visibleTracks.length === 0 ? (
 				<p className="text-neutral-400">No tracks logged yet.</p>
 			) : (
-				<div className="overflow-x-auto">
+				// The negative margin + equal padding keep the table in place (aligned with the show-info card above) while extending this wrapper's box into the left page gutter, so the first/last tracks' play times render in that open black space instead of being clipped by overflow-x. Disabled on mobile, where the gutter is too narrow and the times are hidden.
+				<div className="overflow-x-auto md:-ml-16 md:pl-16">
 					<table className="w-full text-left text-sm">
 						<thead>
 							<tr className="border-b border-neutral-700 text-neutral-400">
@@ -231,7 +259,10 @@ export default function PlaylistView({ show, tracks, djNode }) {
 								<th className="pb-2 pr-6 font-normal">Song</th>
 								<th className="hidden pb-2 pr-6 font-normal md:table-cell">Album</th>
 								<th className="hidden pb-2 pr-6 font-normal lg:table-cell">Label</th>
-								<th className="hidden pb-2 font-normal lg:table-cell">Req</th>
+								<th className="hidden pb-2 pr-6 font-normal lg:table-cell">Req</th>
+								{hasComments && (
+									<th className="hidden pb-2 font-normal md:table-cell">Comments</th>
+								)}
 							</tr>
 						</thead>
 						<tbody>
@@ -239,6 +270,11 @@ export default function PlaylistView({ show, tracks, djNode }) {
 								const key = albumKey(t)
 								const base = t.ID ?? i
 								const isShimmering = shimmer.key != null && key === shimmer.key
+								// Show the play time, tucked into the open space left of the
+								// table, for the first and last tracks of the show only.
+								const showPlayTime = i === 0 || i === visibleTracks.length - 1
+								const playTime = showPlayTime ? formatTrackTime(t.songstart) : ''
+								const comment = hasComments ? decodeComments(t.comments) : null
 								return (
 									<tr
 										key={isShimmering ? `${base}-${shimmer.nonce}` : base}
@@ -251,7 +287,14 @@ export default function PlaylistView({ show, tracks, djNode }) {
 											key ? 'cursor-pointer' : ''
 										} ${isShimmering ? 'animate-shimmer' : ''}`}
 									>
-										<td className="py-2 pr-6">{t.artist}</td>
+										<td className="relative py-2 pr-6">
+											{playTime && (
+												<span className="pointer-events-none absolute right-full top-1/2 hidden -translate-y-1/2 whitespace-nowrap pr-2 text-xs text-neutral-400 md:block">
+													{playTime}
+												</span>
+											)}
+											{t.artist}
+										</td>
 										<td className="py-2 pr-6">{t.song}</td>
 										<td className="hidden py-2 pr-6 text-neutral-400 md:table-cell">
 											{t.album}
@@ -259,9 +302,14 @@ export default function PlaylistView({ show, tracks, djNode }) {
 										<td className="hidden py-2 pr-6 text-neutral-400 lg:table-cell">
 											{t.label}
 										</td>
-										<td className="hidden py-2 text-neutral-500 lg:table-cell">
+										<td className="hidden py-2 pr-6 text-neutral-500 lg:table-cell">
 											{t.request ? 'R' : ''}
 										</td>
+										{hasComments && (
+											<td className="hidden py-2 text-neutral-400 md:table-cell">
+												{comment}
+											</td>
+										)}
 									</tr>
 								)
 							})}

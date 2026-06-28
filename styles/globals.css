@@ -249,7 +249,10 @@ body::-webkit-scrollbar-thumb {
 	);
 	background-size: 200% 100%;
 	background-repeat: no-repeat;
-	animation: shimmer 1s ease-in-out 1;
+	/* The forward pass sweeps the highlight right-to-left; `alternate` makes each
+	   pass reverse, so it goes R→L, then L→R, then R→L, etc. Three passes fill
+	   the 2.3s the JS timer keeps the class on. */
+	animation: shimmer calc(2.3s / 3) ease-in-out infinite alternate;
 }
 
 /* Brief twinkle for the sparkle elements drawn around an album tile. */
@@ -269,7 +272,7 @@ body::-webkit-scrollbar-thumb {
 }
 
 .animate-sparkle {
-	animation: sparkle 1.4s ease-in-out 1;
+	animation: sparkle 2.3s ease-in-out 1;
 }
 
 /* Sparkling glow for the 320 kbps easter-egg emerald. */
