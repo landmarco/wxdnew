@@ -5,6 +5,12 @@ const AudioContext = createContext()
 const STREAM_LOW = 'https://stream.wxdu.art/wxdu192.mp3'
 const STREAM_HIGH = 'https://stream.wxdu.art/wxdu320.mp3'
 
+// How long a backgrounded, idle (not-playing) tab stays warm before we release
+// the stream connection. Brief tab-flips — copying a link, glancing at another
+// tab — stay well under this, so we don't churn the connection or dull the next
+// play. A playing stream is never torn down (see the visibility effect).
+const HIDDEN_UNLOAD_DELAY_MS = 138000 // 2m 18s
+
 export const AudioProvider = ({ children }) => {
     const [isPlaying, setIsPlaying] = useState(false)
     const [isHighQuality, setIsHighQuality] = useState(false)
@@ -17,6 +23,9 @@ export const AudioProvider = ({ children }) => {
     // What the listener wants — so we only auto-reconnect when they meant to listen.
     const wantsToPlayRef = useRef(false)
     const reconnectTimer = useRef(null)
+    // Counts down once a not-playing tab is backgrounded; on fire we release the
+    // warm stream connection. Cleared the moment the tab is shown again.
+    const hiddenTimer = useRef(null)
     // The URL the active element should be playing (follows quality changes).
     const currentSrcRef = useRef(STREAM_LOW)
 
@@ -77,6 +86,64 @@ export const AudioProvider = ({ children }) => {
             audio.removeEventListener('pause', handlePause)
             audio.removeEventListener('ended', handlePause)
             audio.removeEventListener('error', scheduleReconnect)
+        }
+    }, [activeId])
+
+    // Release the warm stream connection while a tab is backgrounded and idle, so
+    // we don't hold a listener slot on the server for someone who isn't (and may
+    // never be) listening — then re-warm it when they return so the next play is
+    // still instant. A playing stream is left completely untouched: it must stay
+    // up as long as possible.
+    useEffect(() => {
+        // Active element, derived inline so this effect only depends on activeId.
+        const activeEl = () => (activeId === 'a' ? audioARef.current : audioBRef.current)
+
+        // Drop the buffer and close the connection (warm -> cold).
+        const unloadIdle = () => {
+            if (wantsToPlayRef.current) return
+            const active = activeEl()
+            if (!active || !active.getAttribute('src')) return
+            active.pause()
+            active.removeAttribute('src')
+            active.load()
+        }
+
+        // Re-open the connection and re-buffer (cold -> warm), ready for an
+        // instant play. togglePlayPause also restores src on demand, so a click
+        // that beats this re-warm still works.
+        const rewarm = () => {
+            if (wantsToPlayRef.current) return
+            const active = activeEl()
+            if (!active || active.getAttribute('src')) return
+            active.src = currentSrcRef.current
+            active.load()
+        }
+
+        const handleVisibility = () => {
+            if (document.hidden) {
+                // Don't tear down a stream the listener wants playing.
+                if (wantsToPlayRef.current) return
+                if (hiddenTimer.current) clearTimeout(hiddenTimer.current)
+                hiddenTimer.current = setTimeout(() => {
+                    hiddenTimer.current = null
+                    unloadIdle()
+                }, HIDDEN_UNLOAD_DELAY_MS)
+            } else {
+                if (hiddenTimer.current) {
+                    clearTimeout(hiddenTimer.current)
+                    hiddenTimer.current = null
+                }
+                rewarm()
+            }
+        }
+
+        document.addEventListener('visibilitychange', handleVisibility)
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibility)
+            if (hiddenTimer.current) {
+                clearTimeout(hiddenTimer.current)
+                hiddenTimer.current = null
+            }
         }
     }, [activeId])
 
@@ -162,8 +229,12 @@ export const AudioProvider = ({ children }) => {
 
     return (
         <AudioContext.Provider value={{ isPlaying, togglePlayPause, isHighQuality, setHighQuality }}>
-            <audio ref={audioARef} />
-            <audio ref={audioBRef} />
+            {/* preload="auto" is explicit: keep the active element's stream warm so
+                the first play is instant, rather than depending on the browser's
+                default preload behavior (which varies). The idle element has no src
+                until a quality crossover, so it stays cold. */}
+            <audio ref={audioARef} preload="auto" />
+            <audio ref={audioBRef} preload="auto" />
             {children}
         </AudioContext.Provider>
     )
