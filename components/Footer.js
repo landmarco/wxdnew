@@ -12,10 +12,12 @@ import {FaPhone} from 'react-icons/fa6'
 import {AiFillGithub} from 'react-icons/ai'
 import {FaTumblr, FaBandcamp} from "react-icons/fa6";
 import {useAudio} from './AudioContext'
+import {useModal} from './ModalContext'
 import Emerald from './Emerald'
 
 const Footer = () => {
 	const {isHighQuality, setHighQuality, isPlaying} = useAudio()
+	const {openModal} = useModal()
 	return (
 		// Footer is formatted as a column on phone screen and as a row on tablet+desktop screens
 		<footer className="mx-auto mb-3 mt-10 px-2 lg:mt-36 lg:px-24">
@@ -47,6 +49,13 @@ const Footer = () => {
 							<FaBandcamp size={32} className="ml-.5 mt-0.5" />
 						</a>
 				</div>
+				<button
+					type="button"
+					onClick={() => openModal('feedback')}
+					className="text-sm underline hover:no-underline"
+				>
+					submit a bug report/feedback
+				</button>
 			</div>
 
 			{/* <div className="flex flex-col px-5">
