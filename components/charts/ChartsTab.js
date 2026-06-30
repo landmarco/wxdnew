@@ -5,7 +5,7 @@ import { useMostPlayed } from "@/hooks/useMostPlayed"
 const today = new Date().toISOString().split('T')[0];
 
 //initalChart and latestDate come from getServerSideProps below
-export default function ChartsPage() {
+export default function ChartsTab() {
 
     const [selectedDate, setSelectedDate] = useState(today); //date the user has picked
 

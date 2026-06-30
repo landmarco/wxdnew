@@ -105,13 +105,13 @@ const Header = () => {
 
 						<div className="ml-10 mt-8 flex h-8 text-3xl">
 							<Link
-								href="/charts"
+								href="/explore"
 								legacyBehavior={false}
 								className="cursor-pointer"
 								rel="noopener noreferrer"
 								onClick={closeMenu}
 							>
-								Charts
+								Explore
 							</Link>
 						</div>
 
@@ -205,8 +205,8 @@ const Header = () => {
 								Schedule
 							</Link>
 
-							<Link href="/charts" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
-								Charts
+							<Link href="/explore" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Explore
 							</Link>
 
 							<Link href="/blog" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">

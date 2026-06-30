@@ -1,6 +1,5 @@
 // This is the listen page.
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import useCurrentPlaylist from '@/hooks/useCurrentPlaylist'
 import NowPlayingHeader from "@/components/listenpage/NowPlayingHeader";
