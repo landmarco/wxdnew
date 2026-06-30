@@ -197,7 +197,7 @@ export default function FeedbackWidget() {
                         maxLength={2000}
                         placeholder="What bug did you find, what could be better, or what are we doing well?"
                     />
-                    <p className="font-courierprime mt-1 text-xs text-gray-500">
+                    <p className="font-courierprime mt-1 text-xs text-gray-300">
                         We attach basic browser info (no personal data) to help us reproduce issues.
                     </p>
                 </div>
