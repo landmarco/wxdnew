@@ -39,7 +39,9 @@ router.post('/', postLimiter, async (req, res) => {
       }
     }
 
-    const created_at = new Date().toISOString();
+    // MySQL DATETIME wants 'YYYY-MM-DD HH:MM:SS' (UTC). toISOString()'s 'T', 'Z',
+    // and fractional seconds are rejected under strict SQL mode.
+    const created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     // Parameterized query — user input never concatenated into SQL.
     await pool.query(

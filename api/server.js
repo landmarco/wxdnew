@@ -15,6 +15,11 @@ const charts = require('./routes/charts');
 
 const app = express();
 
+// Apache proxies to this server and sets X-Forwarded-For with the real client
+// IP. Trust the first proxy hop so express-rate-limit keys on the actual client
+// rather than bucketing everyone under 127.0.0.1.
+app.set('trust proxy', 1);
+
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim());
 
 app.use(express.json());
