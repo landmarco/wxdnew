@@ -27,6 +27,11 @@ export const AudioProvider = ({ children }) => {
     // connection mid-stream) and we're trying to rejoin. Drives the UI's
     // "RECONNECTING" overlay.
     const [isStalled, setIsStalled] = useState(false)
+    // True while the active element is buffering a fresh connection — the initial
+    // page-load warm-up, or a re-warm after returning to the tab — and hasn't yet
+    // reported it can play. Drives the header's "LICHENIZING" overlay. A mid-play
+    // reconnect is a separate concern, surfaced by isStalled instead.
+    const [isPreloading, setIsPreloading] = useState(false)
     // Two audio elements so we can buffer a new bitrate on the idle one and cut
     // over gaplessly. activeId marks which one is currently the live player.
     const audioARef = useRef(null)
@@ -57,6 +62,38 @@ export const AudioProvider = ({ children }) => {
         const active = activeId === 'a' ? audioARef.current : audioBRef.current
         if (active && !active.getAttribute('src')) {
             active.src = currentSrcRef.current
+        }
+    }, [activeId])
+
+    // Track the cold warm-up so the header can show a "LICHENIZING" overlay while
+    // the connection buffers, clearing it the moment the element can play. Only
+    // the idle warm-up counts: a reconnect while the listener wants to play is
+    // covered by the "Reconnecting" overlay (isStalled), so we skip those.
+    useEffect(() => {
+        const audio = activeId === 'a' ? audioARef.current : audioBRef.current
+        if (!audio) return
+
+        const startWarming = () => {
+            if (!wantsToPlayRef.current) setIsPreloading(true)
+        }
+        const doneWarming = () => setIsPreloading(false)
+
+        audio.addEventListener('loadstart', startWarming)
+        audio.addEventListener('canplay', doneWarming)
+        audio.addEventListener('playing', doneWarming)
+
+        // Reconcile with the element's current state in case we attached after its
+        // events fired: already buffered means ready; mid-load means still warming.
+        if (audio.readyState >= 3 /* HAVE_FUTURE_DATA */) {
+            setIsPreloading(false)
+        } else if (audio.getAttribute('src') && !wantsToPlayRef.current) {
+            setIsPreloading(true)
+        }
+
+        return () => {
+            audio.removeEventListener('loadstart', startWarming)
+            audio.removeEventListener('canplay', doneWarming)
+            audio.removeEventListener('playing', doneWarming)
         }
     }, [activeId])
 
@@ -234,6 +271,29 @@ export const AudioProvider = ({ children }) => {
         }
     }
 
+    // Keep a ref to the latest togglePlayPause so the global key listener (bound
+    // once) always calls the current closure rather than a stale one.
+    const togglePlayPauseRef = useRef(togglePlayPause)
+    togglePlayPauseRef.current = togglePlayPause
+
+    // Global "k" hotkey to start/stop the stream, like YouTube's play/pause key.
+    // Ignored while the user is typing in a field or holding a modifier, so it
+    // never hijacks normal text entry or browser shortcuts.
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key !== 'k' && event.key !== 'K') return
+            if (event.metaKey || event.ctrlKey || event.altKey) return
+            const el = event.target
+            const tag = el?.tagName
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return
+            event.preventDefault()
+            togglePlayPauseRef.current()
+        }
+
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [])
+
     // Switch the stream quality. Gapless when already playing: the new bitrate is
     // buffered on the idle element and we only cut over once it's truly playing.
     const setHighQuality = (toHigh) => {
@@ -297,7 +357,7 @@ export const AudioProvider = ({ children }) => {
     }
 
     return (
-        <AudioContext.Provider value={{ isPlaying, isStalled, togglePlayPause, isHighQuality, setHighQuality }}>
+        <AudioContext.Provider value={{ isPlaying, isStalled, isPreloading, togglePlayPause, isHighQuality, setHighQuality }}>
             {/* preload="auto" is explicit: keep the active element's stream warm so
                 the first play is instant, rather than depending on the browser's
                 default preload behavior (which varies). The idle element has no src

@@ -13,7 +13,7 @@ import Emerald from "../Emerald";
 const USE_REAL_COVER_ART = false;
 
 const NavPlayer = () => {
-    const { isPlaying, isStalled, togglePlayPause, isHighQuality } = useAudio();
+    const { isPlaying, isStalled, isPreloading, togglePlayPause, isHighQuality } = useAudio();
 
     // refs for measuring available ticker width vs text width
     const tickerContainerRef = useRef(null);
@@ -232,6 +232,15 @@ const NavPlayer = () => {
                             className="pointer-events-none absolute -inset-2 rounded-full border-2 border-[#e0ff05] animate-ping lg:hidden"
                         />
                     )}
+                    {/* Mobile/tablet warm-up indicator: a mossy green ring that
+                        creeps round the icon while the stream buffers. */}
+                    {isPreloading && !isStalled && (
+                        <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute -inset-2 animate-spin rounded-full border-2 border-dashed border-[#6b8e23] lg:hidden"
+                            style={{ animationDuration: "3s" }}
+                        />
+                    )}
                 </span>
 
                 <span className="bitcount text-base uppercase tracking-widest text-[#e0ff05]">
@@ -261,6 +270,21 @@ const NavPlayer = () => {
                                 style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
                             >
                                 Reconnecting
+                            </span>
+                        </span>
+                    )}
+
+                    {/* On first load (or returning to the tab) the stream is buffering
+                        its connection — overlay a label until it's ready to play. If
+                        the user hits play before it's live, the label rides over the
+                        moving oscillation until audio actually starts flowing. */}
+                    {isPreloading && !isStalled && (
+                        <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-1">
+                            <span
+                                className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
+                                style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
+                            >
+                                Lichenizing
                             </span>
                         </span>
                     )}
