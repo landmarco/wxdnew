@@ -271,23 +271,47 @@ export const AudioProvider = ({ children }) => {
         }
     }
 
-    // Keep a ref to the latest togglePlayPause so the global key listener (bound
-    // once) always calls the current closure rather than a stale one.
+    // Drop the buffered audio and reload the source to rejoin the live edge. A
+    // plain HTTP stream has no live-edge seek: the browser just plays through an
+    // ever-growing buffer, so latency only accumulates (see notes below). The one
+    // way to catch back up to "now" is to tear down the connection and reconnect,
+    // which is exactly what this does. No-op unless the listener is actually
+    // playing — there's no live edge to chase while paused.
+    const rejoinLive = () => {
+        const audio = getActive()
+        if (!audio || !wantsToPlayRef.current) return
+        // Surface the "Reconnecting" overlay while the fresh connection buffers;
+        // markProgress clears it once the new stream is actually flowing.
+        setIsStalled(true)
+        audio.src = currentSrcRef.current
+        audio.load()
+        audio.play().catch(() => {})
+        // Re-baseline the watchdog so it judges this fresh attempt, not the old buffer.
+        lastTimeRef.current = -1
+        lastProgressAtRef.current = Date.now()
+    }
+
+    // Keep refs to the latest closures so the global key listener (bound once)
+    // always calls current state, not a stale render's.
     const togglePlayPauseRef = useRef(togglePlayPause)
     togglePlayPauseRef.current = togglePlayPause
+    const rejoinLiveRef = useRef(rejoinLive)
+    rejoinLiveRef.current = rejoinLive
 
-    // Global "k" hotkey to start/stop the stream, like YouTube's play/pause key.
-    // Ignored while the user is typing in a field or holding a modifier, so it
-    // never hijacks normal text entry or browser shortcuts.
+    // Global hotkeys: "k" toggles play/pause (like YouTube); "r" drops the buffer
+    // and rejoins the live edge. Ignored while the user is typing in a field or
+    // holding a modifier, so they never hijack text entry or browser shortcuts.
     useEffect(() => {
         const handleKeyDown = (event) => {
-            if (event.key !== 'k' && event.key !== 'K') return
+            const key = event.key.toLowerCase()
+            if (key !== 'k' && key !== 'r') return
             if (event.metaKey || event.ctrlKey || event.altKey) return
             const el = event.target
             const tag = el?.tagName
             if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return
             event.preventDefault()
-            togglePlayPauseRef.current()
+            if (key === 'k') togglePlayPauseRef.current()
+            else rejoinLiveRef.current()
         }
 
         document.addEventListener('keydown', handleKeyDown)
@@ -357,7 +381,7 @@ export const AudioProvider = ({ children }) => {
     }
 
     return (
-        <AudioContext.Provider value={{ isPlaying, isStalled, isPreloading, togglePlayPause, isHighQuality, setHighQuality }}>
+        <AudioContext.Provider value={{ isPlaying, isStalled, isPreloading, togglePlayPause, rejoinLive, isHighQuality, setHighQuality }}>
             {/* preload="auto" is explicit: keep the active element's stream warm so
                 the first play is instant, rather than depending on the browser's
                 default preload behavior (which varies). The idle element has no src
