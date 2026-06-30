@@ -1,10 +1,42 @@
 import React, {useState, useEffect, useRef} from 'react'
 import { apiFetch } from '../lib/api'
 import { useModal } from './ModalContext'
+import { useAudio } from './AudioContext'
 
 const COOLDOWN_SECONDS = 60
 const COOLDOWN_KEY = 'feedback_cooldown_until' // localStorage key for persisting cooldown across page refreshes
 const REPO_URL = 'https://github.com/landmarco/wxdnew'
+
+// Build a curated, non-sensitive diagnostics snapshot to help the computing team
+// reproduce a report. Deliberately excludes cookies/localStorage and anything
+// secret — just environment + current player state. Best-effort: any failure
+// yields null so it can never block a submission.
+function collectClientInfo(audio) {
+    if (typeof window === 'undefined') return null
+    try {
+        return {
+            url: window.location.href,
+            referrer: document.referrer || null,
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            viewport: { w: window.innerWidth, h: window.innerHeight },
+            screen: { w: window.screen?.width, h: window.screen?.height, dpr: window.devicePixelRatio },
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            online: navigator.onLine,
+            // Player state — the most useful signal for stream bug reports.
+            player: {
+                isPlaying: audio?.isPlaying ?? null,
+                isHighQuality: audio?.isHighQuality ?? null,
+                isStalled: audio?.isStalled ?? null,
+                isRejoining: audio?.isRejoining ?? null,
+                isPreloading: audio?.isPreloading ?? null,
+            },
+            capturedAt: new Date().toISOString(),
+        }
+    } catch {
+        return null
+    }
+}
 
 // Modal-only widget (no floating button): opened from the footer link or the "f"
 // hotkey via ModalContext. Mirrors DJRequestWidget's modal shell, focus trap,
@@ -13,6 +45,7 @@ const REPO_URL = 'https://github.com/landmarco/wxdnew'
 export default function FeedbackWidget() {
     const { activeModal, closeModal } = useModal()
     const isOpen = activeModal === 'feedback'
+    const audio = useAudio()
 
     const [text, setText] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -101,7 +134,7 @@ export default function FeedbackWidget() {
             await apiFetch('/api/feedback', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: trimmed })
+                body: JSON.stringify({ text: trimmed, client_info: collectClientInfo(audio) })
             })
 
             setStatus('success')
@@ -164,6 +197,9 @@ export default function FeedbackWidget() {
                         maxLength={2000}
                         placeholder="What bug did you find, what could be better, or what are we doing well?"
                     />
+                    <p className="font-courierprime mt-1 text-xs text-gray-500">
+                        We attach basic browser info (no personal data) to help us reproduce issues.
+                    </p>
                 </div>
 
                 <button

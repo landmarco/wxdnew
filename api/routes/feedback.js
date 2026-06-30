@@ -24,12 +24,27 @@ router.post('/', postLimiter, async (req, res) => {
     if (!text) return res.status(400).json({ error: 'text is required' });
     if (text.length > 2000) return res.status(400).json({ error: 'text too long' });
 
+    // Optional curated browser/session diagnostics. We re-serialize what the
+    // client sent (so the stored value is well-formed JSON we control the shape
+    // of, not an arbitrary string) and store NULL on anything missing/oversized —
+    // diagnostics must never block a valid report.
+    let clientInfo = null;
+    const raw = req.body.client_info;
+    if (raw && typeof raw === 'object') {
+      try {
+        const serialized = JSON.stringify(raw);
+        if (serialized.length <= 8000) clientInfo = serialized;
+      } catch {
+        clientInfo = null;
+      }
+    }
+
     const created_at = new Date().toISOString();
 
     // Parameterized query — user input never concatenated into SQL.
     await pool.query(
-      `INSERT INTO feedback (text, created_at) VALUES (?, ?)`,
-      [text, created_at]
+      `INSERT INTO feedback (text, client_info, created_at) VALUES (?, ?, ?)`,
+      [text, clientInfo, created_at]
     );
 
     res.status(201).json({ ok: true });

@@ -8,6 +8,11 @@ CREATE DATABASE IF NOT EXISTS feedback;
 CREATE TABLE feedback.feedback (
   feedback_id INT PRIMARY KEY AUTO_INCREMENT,
   text        VARCHAR(2000) NOT NULL,
+  -- Curated, non-sensitive browser/session diagnostics (user agent, viewport,
+  -- timezone, current player state, etc.) to help reproduce the report. Nullable:
+  -- a report is always stored even if diagnostics are absent. Never holds
+  -- cookies/localStorage or other secrets.
+  client_info JSON DEFAULT NULL,
   created_at  DATETIME NOT NULL
 );
 
