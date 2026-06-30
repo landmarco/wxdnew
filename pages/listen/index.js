@@ -29,10 +29,6 @@ export default function Listen() {
                         <PlayTabs currentPlaylist={currentPlaylist}/>
                     </div>
                 </div>
-
-                <div className="md:h-[calc(100vh-160px)] md:overflow-auto h-auto border-l border-gray-700 pl-8 flex justify-center">
-                    <ExploreTab />
-                </div>
             </div>
 
             {!isHighQuality && (

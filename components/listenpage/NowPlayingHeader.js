@@ -28,7 +28,10 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
                 )}
             </h1>
             <h4 className="text-2xl text-center text-gray-300 mt-1">
-                    Show: {title}
+                    Show:
+                    <Link href="/current" legacyBehavior={false} className="underline hover:no-underline">
+                        {title}
+                    </Link>
             </h4>
         </>
 
