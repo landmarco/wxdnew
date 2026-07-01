@@ -127,23 +127,11 @@ export default function DJRequestWidget() {
             {/* Floating button */}
             <button
                 ref={triggerButtonRef}
-                className="fixed bottom-6 right-6 z-50 cursor-pointer bg-transparent border-0 p-0"
+                className="fixed bottom-6 right-6 z-50 cursor-pointer bg-red-500 border-2 border-black ring-1 ring-red-500 px-6 py-3 font-courierprime font-bold text-black hover:bg-black hover:text-red-500 hover:border-red-500 hover:ring-1 hover:ring-red-500 transition-colors"
                 onClick={() => setIsOpen(true)}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
                 aria-label="Open DJ request modal"
             >
-                <img
-                    src={isHovered ? '/requestwidget_hover_bg.png' : '/requestwidget_bg.png'}
-                    alt="Send DJ Request"
-                    className={
-                        isHovered ? "w-[10vw]" : "w-[9.5vw]"
-                    }
-                    style={{
-                        height: 'auto',
-                        display: 'block',
-                    }}
-                />
+                Send DJ Request
             </button>
 
 
