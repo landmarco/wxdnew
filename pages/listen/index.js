@@ -27,8 +27,8 @@ export default function Listen() {
 			</p>
 
 			<NowPlaying currentPlaylist={currentPlaylist} />
-			
-            {!isHighQuality && (
+
+			{!isHighQuality && (
 				<div className="mt-10 flex justify-center pb-6">
 					<button
 						type="button"
@@ -41,10 +41,10 @@ export default function Listen() {
 			)}
 
 			<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 md:grid-cols-[minmax(0,1fr)_360px]">
-				<div className="h-auto min-w-0 md:h-[calc(100vh-160px)] md:overflow-auto">
+				<div className="listen-scrollbar h-auto min-w-0 md:h-[calc(100vh-160px)] md:overflow-auto">
 					<LastPlayed currentPlaylist={currentPlaylist} />
 				</div>
-				<div className="flex h-auto justify-center md:h-[calc(100vh-160px)] md:overflow-auto md:border-l md:border-gray-700 md:pl-8">
+				<div className="listen-scrollbar flex h-auto justify-center md:h-[calc(100vh-160px)] md:overflow-auto md:border-l md:border-gray-700 md:pl-8">
 					<TodayShows />
 				</div>
 			</div>

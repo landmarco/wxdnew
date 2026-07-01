@@ -8,21 +8,24 @@ export default function LastPlayed({currentPlaylist = {}}) {
 		? currentPlaylist.tracks
 		: []
 
-	const ten_tracks = tracks?.filter(item => item.artist != "*****").slice(1, 10)
+	const ten_tracks = tracks
+		?.filter((item) => item.artist != '*****')
+		.slice(1, 10)
 
 	// returns a table like appearance using only divs
 	// table is hidden for small screens like on mobile to rather just show a row.
 	return (
 		<section className="w-full">
-			<div className="w-full">
-				<div
-					role="table"
-					aria-label="Last played songs"
-					className="w-full md:min-w-[840px]"
-				>
+			<div className="w-full md:min-w-[840px]">
+				<div className="sticky top-0 z-50 bg-black pb-3 pt-1">
+					<h4 className="text-center text-2xl font-light text-white">
+						Last Played 10 Songs
+					</h4>
+				</div>
+				<div role="table" aria-label="Last played songs" className="w-full">
 					<div
 						role="row"
-						className="sticky top-0 z-20 hidden grid-cols-[128px_88px_minmax(140px,1fr)_minmax(180px,1.25fr)_minmax(140px,1fr)] gap-4 border-b border-zinc-700/90 bg-black px-2 pb-3 pt-1 text-sm text-sky-100 sm:px-3 md:grid"
+						className="sticky top-12 z-40 hidden grid-cols-[128px_88px_minmax(140px,1fr)_minmax(180px,1.25fr)_minmax(140px,1fr)] gap-4 border-b border-zinc-700/90 bg-black px-2 pb-3 pt-1 text-sm text-sky-100 sm:px-3 md:grid"
 					>
 						<div role="columnheader" aria-label="Album cover" />
 						<div role="columnheader">Time</div>
