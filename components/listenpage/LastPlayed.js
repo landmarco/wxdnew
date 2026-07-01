@@ -40,7 +40,6 @@ export default function LastPlayed({currentPlaylist = {}}) {
 								album={item.album}
 								songStart={item.songstart}
 								cover={item.cover}
-								variant="table"
 							/>
 						))
 					) : (

@@ -1,4 +1,4 @@
-import ChartEntryRow from '@/components/charts/ChartEntryRow';
+import ChartEntryRow from '@/components/explorepage/charts/ChartEntryRow';
 import { useState } from 'react';
 import { useMostPlayed } from "@/hooks/useMostPlayed"
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import ChartsTab from "@/components/charts/ChartsTab"
-import ExploreTab from "@/components/listenpage/ExploreTab"
+import ChartsTab from "@/components/explorepage/charts/ChartsTab"
+import ExploreTab from "@/components/explorepage/song/ExploreTab"
 
 // explore options are allowed
 const allowedChoices = [
