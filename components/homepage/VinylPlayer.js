@@ -24,8 +24,8 @@ export default function VinylPlayer() {
         ) : (
           <>
             <div className="min-w-0">
-              <div className="break-words text-left font-courierprime text-[5.5vw] leading-tight text-[#e0ff05] lg:truncate lg:text-[26px]">{song.song}</div>
-              <div className="break-words text-left font-courierprime text-[5.5vw] leading-tight text-white lg:truncate lg:text-[26px]">{song.artist}</div>
+              <div className="break-words text-left font-courierprime text-[5.5vw] leading-tight text-[#e0ff05] lg:text-[26px]">{song.song}</div>
+              <div className="break-words text-left font-courierprime text-[5.5vw] leading-tight text-white lg:text-[26px]">{song.artist}</div>
             </div>
 
             <div className="break-words text-left font-courierprime text-[3vw] text-white lg:text-[16px]">Played at {formatClock(song.songstart)}</div>
@@ -46,9 +46,9 @@ export default function VinylPlayer() {
             </div>
 
             <Link href="/listen" legacyBehavior>
-              <a className="flex items-center gap-2 break-words text-left font-courierprime text-[3vw] text-white transition-colors hover:text-red-400 lg:text-[15px]">
-                <IoPlaySkipForward />
+              <a className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#d9d9d9] py-[3%] font-courierprime text-[3vw] text-[#2a1717] transition-opacity hover:opacity-80 lg:text-[15px]">
                 View songs played today
+                <IoPlaySkipForward />
               </a>
             </Link>
           </>
