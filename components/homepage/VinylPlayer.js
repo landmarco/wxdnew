@@ -1,5 +1,5 @@
 import cardinalsFallback from '../../images/cardinals.jpg'
-import { useNowPlaying, formatClock } from '../../lib/useNowPlaying'
+import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
 import FitText from './FitText'
 
@@ -39,8 +39,7 @@ export default function VinylPlayer() {
           <FitText deps={[song.song, song.artist, dj]}>
             <div className="break-words text-left font-courierprime leading-tight text-[#e0ff05]">{song.song}</div>
             <div className="break-words text-left font-courierprime leading-tight text-white">{song.artist}</div>
-            <div className="break-words text-left font-courierprime text-white" style={{ fontSize: '0.62em', marginTop: '0.6em' }}>Played at {formatClock(song.songstart)}</div>
-            <div className="break-words text-left font-courierprime text-[#e0ff05]" style={{ fontSize: '0.62em', marginTop: '0.2em' }}>On air: {dj || 'mystery dj'}</div>
+            <div className="break-words text-left font-courierprime text-[#e0ff05]" style={{ fontSize: '0.62em', marginTop: '0.6em' }}>DJ: {dj || 'mystery dj'}</div>
           </FitText>
         )}
       </div>

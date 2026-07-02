@@ -1,5 +1,5 @@
 import cardinalsFallback from '../../images/cardinals.jpg'
-import { useNowPlaying, formatClock } from '../../lib/useNowPlaying'
+import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
 
 // Mobile-only vinyl player: turntable stacked on top, text panel + button below,
@@ -75,9 +75,7 @@ export default function MobileVinylPlayer() {
                 <div className="break-words font-courierprime text-[5.5vw] leading-tight text-white">{song.artist}</div>
               </div>
 
-              <div className="break-words font-courierprime text-[3.8vw] text-white">Played at {formatClock(song.songstart)}</div>
-
-              <div className="break-words font-courierprime text-[3.8vw] text-[#e0ff05]">On air: {dj || 'mystery dj'}</div>
+              <div className="break-words font-courierprime text-[3.8vw] text-[#e0ff05]">DJ: {dj || 'mystery dj'}</div>
             </>
           )}
         </div>
