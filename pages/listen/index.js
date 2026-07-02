@@ -19,6 +19,16 @@ export default function Listen() {
         <div className="min-h-screen text-white pb-2">
             <NowPlayingHeader currentPlaylist={currentPlaylist} />
 
+            <p className="mt-2 text-center">
+				<Link
+					href="/listen/past-10-days/"
+					legacyBehavior={false}
+					className="text-gray-300 underline hover:no-underline text-xl"
+				>
+					Past 10 days shows
+				</Link>
+			</p>
+
             <div className="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
                 <div className="hidden w-full max-w-3xl lg:block">
                     <VinylPlayer />
@@ -30,16 +40,6 @@ export default function Listen() {
                     <StreamButton />
                 </div>
             </div>
-
-			<p className="mt-2 text-center">
-				<Link
-					href="/listen/past-10-days/"
-					legacyBehavior={false}
-					className="text-gray-300 underline hover:no-underline"
-				>
-					Past 10 days
-				</Link>
-			</p>
 
             <div className="mt-10 flex justify-center">
                 <button
