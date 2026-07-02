@@ -4,7 +4,7 @@ import { useAudio } from '../AudioContext'
 import FitText from './FitText'
 
 export default function VinylPlayer() {
-  const { song, dj, loading } = useNowPlaying()
+  const { song, loading } = useNowPlaying()
   const { isPlaying, togglePlayPause } = useAudio()
 
   return (
@@ -36,10 +36,11 @@ export default function VinylPlayer() {
         ) : !song ? (
           <span className="font-courierprime text-[3cqw] text-zinc-400">no playlist</span>
         ) : (
-          <FitText deps={[song.song, song.artist, dj]}>
-            <div className="break-words text-left font-courierprime leading-tight text-[#e0ff05]">{song.song}</div>
-            <div className="break-words text-left font-courierprime leading-tight text-white">{song.artist}</div>
-            <div className="break-words text-left font-courierprime text-[#e0ff05]" style={{ fontSize: '0.62em', marginTop: '0.6em' }}>DJ: {dj || 'mystery dj'}</div>
+          <FitText deps={[song.song, song.artist, song.album, song.label]}>
+            <div lang="en" className="hyphens-auto [overflow-wrap:anywhere] text-left font-courierprime leading-tight text-[#e0ff05]">🎵 {song.song}</div>
+            {song.artist && <div lang="en" className="hyphens-auto [overflow-wrap:anywhere] text-left font-courierprime leading-tight text-white">🧑‍🎤 {song.artist}</div>}
+            {song.album && <div lang="en" className="hyphens-auto [overflow-wrap:anywhere] text-left font-courierprime leading-tight text-[#e0ff05]">💿 {song.album}</div>}
+            {song.label && <div lang="en" className="hyphens-auto [overflow-wrap:anywhere] text-left font-courierprime leading-tight text-white">🏷️ {song.label}</div>}
           </FitText>
         )}
       </div>
