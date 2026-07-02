@@ -3,11 +3,6 @@ import {IoIosCloseCircle} from 'react-icons/io'
 import logo from '../images/logo.png'
 import {useAudio} from './AudioContext'
 
-// Treat any banner image whose filename looks like a WXDU logo as a stream
-// play/pause control. This keeps the behavior correct even if editors reorder
-// the CMS images, as long as the logos keep recognizable filenames.
-const isLogoImage = src => typeof src === 'string' && /orangelogo-trans|wxdu_circle/i.test(src)
-
 const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 	const [isClosed, setIsClosed] = useState(false)
 	const {isPlaying, togglePlayPause} = useAudio()
@@ -16,7 +11,10 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 		return null
 	}
 
-	// Render a banner image, wrapping it in a play/pause button when it's a logo.
+	// Render a banner image. For now every image doubles as a stream play/pause
+	// control.
+	// TODO: eventually link each image to where it came from (the blog post,
+	// event, etc.) instead of defaulting to the stream toggle.
 	const renderBannerImage = (item, imgIndex) => {
 		const img = (
 			<img
@@ -25,10 +23,6 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 				className="w-full h-auto rounded-lg md:rounded-3xl"
 			/>
 		)
-
-		if (!isLogoImage(item.image)) {
-			return img
-		}
 
 		return (
 			<button

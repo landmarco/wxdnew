@@ -88,10 +88,12 @@ export default function Home(props) {
 					{/* if yes events: blog posts full row */}
 					{events.length > 0 && posts && <BlogCarouselFull posts={posts} />}
 					
-					{/* Photo gallery */}
-					<div className="mx-auto mt-16 hidden w-full items-center justify-center md:visible md:flex">
+					{/* Photo gallery (image cycle widget) — temporarily disabled.
+					    TODO: need to decide what images we want here and their
+					    purpose. Maybe from our archive project? */}
+					{/* <div className="mx-auto mt-16 hidden w-full items-center justify-center md:visible md:flex">
 						<PhotoGallery />
-					</div>
+					</div> */}
 				</div>
 			</div>
 		</div>

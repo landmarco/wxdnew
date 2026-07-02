@@ -19,7 +19,7 @@ const Header = () => {
 							{/* Home link (replaces the old WXDU logo) */}
 							<div className="my-auto flex flex-row">
 								<Link href="/" legacyBehavior={false} className="my-auto ml-10 flex h-12 items-center text-base text-white hover:text-blue-300">
-									Home
+									Come Home to WXDU
 								</Link>
 							</div>
 
