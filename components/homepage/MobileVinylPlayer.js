@@ -1,23 +1,10 @@
-<<<<<<< HEAD
-import Link from 'next/link'
-import { IoPlaySkipForward } from 'react-icons/io5'
-import cardinalsFallback from '../../images/cardinals.jpg'
-import { useNowPlaying, formatClock, formatMMSS } from '../../lib/useNowPlaying'
-=======
 import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
->>>>>>> origin/main
 
 // Mobile-only vinyl player: turntable stacked on top, text panel + button below,
 // per the "Mobile Vinyl Player" Figma layout (node 8:2).
 export default function MobileVinylPlayer() {
-<<<<<<< HEAD
-  const { song, loading, elapsedSec, remainingSec, progressPct } = useNowPlaying()
-
-  return (
-    <div className="relative mx-auto w-full max-w-md select-none">
-=======
   const { song, dj, loading } = useNowPlaying()
   const { isPlaying, togglePlayPause } = useAudio()
 
@@ -35,7 +22,6 @@ export default function MobileVinylPlayer() {
         }
       }}
     >
->>>>>>> origin/main
       {/* Turntable block: fixed aspect ratio, same width as the panel below so both edges line up.
           Sized larger than before so the artwork reads bigger while still fitting fully inside
           this rectangle (the images are plain percentages of this box, so they can't overflow it). */}
@@ -57,11 +43,7 @@ export default function MobileVinylPlayer() {
           {/* Spinning record + album art label, always rotating */}
           <div
             className="animate-spin-vinyl pointer-events-none absolute"
-<<<<<<< HEAD
-            style={{ left: '7.00%', top: '10.23%', width: '88.80%', height: '77.52%', transformOrigin: '50% 50%' }}
-=======
             style={{ left: '7.00%', top: '10.23%', width: '88.80%', height: '77.52%', transformOrigin: '50% 50%', animationPlayState: isPlaying ? 'running' : 'paused' }}
->>>>>>> origin/main
           >
             <img src="/vinyl-cd.png" alt="" className="absolute inset-0 h-full w-full" />
             <div className="absolute overflow-hidden rounded-full" style={{ left: '38.83%', top: '34.63%', width: '22.21%', height: '33.55%' }}>
@@ -93,33 +75,7 @@ export default function MobileVinylPlayer() {
                 <div className="break-words font-courierprime text-[5.5vw] leading-tight text-white">{song.artist}</div>
               </div>
 
-<<<<<<< HEAD
-              <div className="break-words font-courierprime text-[3.8vw] text-white">Played at {formatClock(song.songstart)}</div>
-
-              <div className="flex w-full flex-col gap-[6%]">
-                <div className="relative h-[8%] min-h-[4px] w-full rounded-full">
-                  <div className="absolute inset-0 rounded-full bg-[#d9d9d9] opacity-60" />
-                  <div className="absolute inset-y-0 left-0 rounded-full bg-[#d9d9d9]" style={{ width: `${progressPct}%` }} />
-                  <div
-                    className="absolute top-1/2 h-[3.5vw] w-[3.5vw] max-h-[18px] max-w-[18px] -translate-y-1/2 -translate-x-1/2 rounded-full bg-white shadow"
-                    style={{ left: `${progressPct}%` }}
-                  />
-                </div>
-                <div className="flex justify-between font-courierprime text-[2.8vw] text-white">
-                  <span>{formatMMSS(elapsedSec)}</span>
-                  <span>-{formatMMSS(remainingSec)}</span>
-                </div>
-              </div>
-
-              <Link href="/listen" legacyBehavior>
-                <a className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#d9d9d9] py-[3%] font-courierprime text-[3.2vw] text-[#2a1717] transition-opacity hover:opacity-80">
-                  View songs played today
-                  <IoPlaySkipForward />
-                </a>
-              </Link>
-=======
               <div className="break-words font-courierprime text-[3.8vw] text-[#e0ff05]">DJ: {dj || 'mystery dj'}</div>
->>>>>>> origin/main
             </>
           )}
         </div>
