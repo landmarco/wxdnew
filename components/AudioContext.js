@@ -411,21 +411,28 @@ export const AudioProvider = ({ children }) => {
     togglePlayPauseRef.current = togglePlayPause
     const rejoinLiveRef = useRef(rejoinLive)
     rejoinLiveRef.current = rejoinLive
+    // Assigned after setHighQuality is defined below (it's declared later in this
+    // component, so we can't reference it up here without a temporal-dead-zone error).
+    const setHighQualityRef = useRef(null)
+    const isHighQualityRef = useRef(isHighQuality)
+    isHighQualityRef.current = isHighQuality
 
     // Global hotkeys: "k" toggles play/pause (like YouTube); "r" drops the buffer
-    // and rejoins the live edge. Ignored while the user is typing in a field or
-    // holding a modifier, so they never hijack text entry or browser shortcuts.
+    // and rejoins the live edge; "e" toggles the 320 kbps stream (like clicking the
+    // footer emerald). Ignored while the user is typing in a field or holding a
+    // modifier, so they never hijack text entry or browser shortcuts.
     useEffect(() => {
         const handleKeyDown = (event) => {
             const key = event.key.toLowerCase()
-            if (key !== 'k' && key !== 'r') return
+            if (key !== 'k' && key !== 'r' && key !== 'e') return
             if (event.metaKey || event.ctrlKey || event.altKey) return
             const el = event.target
             const tag = el?.tagName
             if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return
             event.preventDefault()
             if (key === 'k') togglePlayPauseRef.current()
-            else rejoinLiveRef.current()
+            else if (key === 'r') rejoinLiveRef.current()
+            else setHighQualityRef.current?.(!isHighQualityRef.current)
         }
 
         document.addEventListener('keydown', handleKeyDown)
@@ -493,6 +500,8 @@ export const AudioProvider = ({ children }) => {
         next.load()
         next.play().catch(() => {})
     }
+    // Keep the "e" hotkey pointed at the latest setHighQuality closure.
+    setHighQualityRef.current = setHighQuality
 
     return (
         <AudioContext.Provider value={{ isPlaying, isStalled, isRejoining, isPreloading, togglePlayPause, rejoinLive, isHighQuality, setHighQuality }}>

@@ -1,3 +1,6 @@
+/* eslint-disable @next/next/no-img-element -- the turntable layers are absolutely
+   positioned by percentage and images are unoptimized in next.config, so next/image
+   would add complexity for no benefit. */
 import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
@@ -37,10 +40,10 @@ export default function VinylPlayer() {
           <span className="font-courierprime text-[3cqw] text-zinc-400">no playlist</span>
         ) : (
           <FitText deps={[song.song, song.artist, song.album, song.label]}>
-            <div lang="en" className="hyphens-auto [overflow-wrap:anywhere] text-left font-courierprime leading-tight text-[#e0ff05]">🎵 {song.song}</div>
-            {song.artist && <div lang="en" className="hyphens-auto [overflow-wrap:anywhere] text-left font-courierprime leading-tight text-white">🧑‍🎤 {song.artist}</div>}
-            {song.album && <div lang="en" className="hyphens-auto [overflow-wrap:anywhere] text-left font-courierprime leading-tight text-[#e0ff05]">💿 {song.album}</div>}
-            {song.label && <div lang="en" className="hyphens-auto [overflow-wrap:anywhere] text-left font-courierprime leading-tight text-white">🏷️ {song.label}</div>}
+            <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-[#e0ff05]">🎵 {song.song}</div>
+            {song.artist && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white">🧑‍🎤 {song.artist}</div>}
+            {song.album && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-[#e0ff05]">💿 {song.album}</div>}
+            {song.label && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white" style={{ fontSize: '0.72em' }}>🏷️ {song.label}</div>}
           </FitText>
         )}
       </div>

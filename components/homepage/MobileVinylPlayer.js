@@ -1,3 +1,6 @@
+/* eslint-disable @next/next/no-img-element -- the turntable layers are absolutely
+   positioned by percentage and images are unoptimized in next.config, so next/image
+   would add complexity for no benefit. */
 import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
@@ -71,10 +74,10 @@ export default function MobileVinylPlayer() {
           ) : (
             <>
               <div lang="en" className="mt-[2vw] flex w-full min-w-0 flex-col gap-[1.5vw]">
-                <div className="hyphens-auto [overflow-wrap:anywhere] font-courierprime text-[5.5vw] leading-tight text-[#e0ff05]">🎵 {song.song}</div>
-                {song.artist && <div className="hyphens-auto [overflow-wrap:anywhere] font-courierprime text-[5.5vw] leading-tight text-white">🧑‍🎤 {song.artist}</div>}
-                {song.album && <div className="hyphens-auto [overflow-wrap:anywhere] font-courierprime text-[4vw] leading-tight text-[#e0ff05]">💿 {song.album}</div>}
-                {song.label && <div className="hyphens-auto [overflow-wrap:anywhere] font-courierprime text-[4vw] leading-tight text-white">🏷️ {song.label}</div>}
+                <div className="hyphens-auto break-words font-courierprime text-[5.5vw] leading-tight text-[#e0ff05]">🎵 {song.song}</div>
+                {song.artist && <div className="hyphens-auto break-words font-courierprime text-[5.5vw] leading-tight text-white">🧑‍🎤 {song.artist}</div>}
+                {song.album && <div className="hyphens-auto break-words font-courierprime text-[4vw] leading-tight text-[#e0ff05]">💿 {song.album}</div>}
+                {song.label && <div className="hyphens-auto break-words font-courierprime text-[3.2vw] leading-tight text-white">🏷️ {song.label}</div>}
               </div>
             </>
           )}
