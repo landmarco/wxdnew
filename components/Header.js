@@ -1,150 +1,117 @@
-import React, {useState} from 'react'
+import React, {useEffect, useRef, useState} from 'react'
 import Link from 'next/link'
-import DropdownMenu from './DropdownMenu'
 import photo from '../images/logo.png'
 import Image from 'next/image'
 import {AiOutlineMenu, AiOutlineClose} from 'react-icons/ai'
-import {Menu} from '@headlessui/react'
-import {IoIosArrowDown, IoIosArrowUp} from 'react-icons/io'
+import {useAudio} from './AudioContext'
 
 const Header = () => {
-	const [submenuOpen, setSubmenuOpen] = useState(false)
-
-	const toggleSubmenu = () => {
-		setSubmenuOpen(!submenuOpen)
-	}
+	const {isPlaying, togglePlayPause} = useAudio()
 
 	const [isOpen, setIsOpen] = useState(false)
+	const mobileNavRef = useRef(null)
+
+	const closeMenu = () => {
+		setIsOpen(false)
+	}
 
 	const toggleMenu = () => {
-		setIsOpen(!isOpen)
+		setIsOpen((current) => !current)
 	}
+
+	// manages the closing behavior of the hamburger menu nav bar
+	useEffect(() => {
+		if (!isOpen) return
+
+		const handleOutsideClick = (event) => {
+			if (mobileNavRef.current?.contains(event.target)) return
+			closeMenu()
+		}
+
+		document.addEventListener('mousedown', handleOutsideClick)
+		document.addEventListener('touchstart', handleOutsideClick)
+
+		return () => {
+			document.removeEventListener('mousedown', handleOutsideClick)
+			document.removeEventListener('touchstart', handleOutsideClick)
+		}
+	}, [isOpen])
 
 	return (
 		//Parent Container
 		<div className="h-full">
 			{/* MOBILE NAVBAR STARTS HERE */}
-			<div className="fixed top-10 z-50 flex h-16 w-full flex-col bg-black/90 backdrop-blur-md lg:hidden ">
-				<div className="flex flex-row items-center justify-between">
+			<div
+				ref={mobileNavRef}
+				className="pointer-events-none fixed left-0 top-16 z-50 flex h-10 w-full items-center justify-end bg-transparent lg:hidden"
+			>
+				<div className="flex h-full flex-row items-center justify-end">
 					{/* Hamburger icon */}
-						<button
-							onClick={toggleMenu}
-							className="hamburger-icon duration-450 h-full transition-all ease-in-out"
-							aria-label={isOpen ? 'Close main menu' : 'Open main menu'}
-						>
+					<button
+						type="button"
+						onClick={toggleMenu}
+						className="hamburger-icon duration-450 pointer-events-auto flex h-full w-16 items-center justify-center transition-all ease-in-out"
+						aria-label={isOpen ? 'Close main menu' : 'Open main menu'}
+					>
 						{isOpen ? (
-							<AiOutlineClose size={32} className="ml-4 mt-1 md:ml-6" />
+							<AiOutlineClose size={32} className="mt-1" aria-hidden="true" />
 						) : (
-							<AiOutlineMenu size={32} className="ml-4 mt-1 md:ml-6" />
+							<AiOutlineMenu size={32} className="mt-1" aria-hidden="true" />
 						)}
 					</button>
 				</div>
 
 				{/* Collapsible menu for mobile*/}
 				{isOpen && (
-					<ul className="duration-450 h-screen w-screen flex-col justify-start bg-black/90 backdrop-blur-md transition-all ease-in-out md:gap-6">
-						<div className="w-full">
-							<Menu as="div" className="relative w-full">
-								<Menu.Button
-									onClick={toggleSubmenu}
-									className="ml-10 mt-16 flex h-8 text-3xl"
-								>
-									Listen
-									{submenuOpen ? (
-										<IoIosArrowUp size={24} className="ml-1 mt-2 md:ml-3" />
-									) : (
-										<IoIosArrowDown size={24} className="ml-1 mt-2 md:ml-3" />
-									)}
-								</Menu.Button>
-
-								{/* Submenu starts here */}
-								<div
-									className={`duration-450 my-5 ml-14 overflow-hidden text-2xl transition-all ease-in-out focus:outline-none focus:ring-0 md:text-3xl ${
-										submenuOpen ? 'max-h-[400px]' : 'max-h-0'
-									}`}
-								>
-
-									<div className="mb-2 flex w-full text-nowrap text-white">
-										<Menu.Item>
-											<Link
-												// webstream moved to its own page!
-												href="/listen"
-											>
-												Listen Here
-											</Link>
-										</Menu.Item>
-									</div>
-									<div className="mb-2 flex w-full text-nowrap text-white">
-											<Menu.Item>
-												<Link
-													href="https://wxdu.org"
-													target="_blank"
-													rel="noopener noreferrer"
-												>
-													Mobile app (wip)
-												</Link>
-										</Menu.Item>
-									</div>
-									{/* <div className="mb-2 flex w-full text-nowrap text-white">
-										<Menu.Item>
-											<Link
-												href="http://www.wxyc.info/playlists/recent"
-												target="_blank"
-											>
-												Live playlist
-											</Link>
-										</Menu.Item>
-									</div> */}
-								</div>
-								{/* Submenu ends here */}
-							</Menu>
-						</div>
-
-						<div className="ml-10 flex h-8 text-3xl">
+					<ul
+						className="duration-450 pointer-events-auto fixed left-0 top-[104px] flex h-[calc(100vh-104px)] w-screen flex-col justify-start bg-black/90 backdrop-blur-md transition-all ease-in-out md:gap-6"
+						onClick={closeMenu}
+					>
+						<div className="ml-10 mt-8 flex h-8 text-3xl">
 							<Link
-								href="/about"
+								href="/"
 								legacyBehavior={false}
 								className="cursor-pointer"
 								rel="noopener noreferrer"
-								onClick={toggleMenu}
+								onClick={closeMenu}
 							>
-								About
+								Home
+							</Link>
+						</div>
+
+						<div className="ml-10 mt-16 flex h-8 text-3xl">
+							<Link
+								href="/listen"
+								legacyBehavior={false}
+								className="cursor-pointer"
+								rel="noopener noreferrer"
+								onClick={closeMenu}
+							>
+								Listen
 							</Link>
 						</div>
 
 						<div className="ml-10 mt-8 flex h-8 text-3xl">
 							<Link
-								href="/programming"
+								href="/schedule"
 								legacyBehavior={false}
 								className="cursor-pointer"
 								rel="noopener noreferrer"
-								onClick={toggleMenu}
+								onClick={closeMenu}
 							>
-								Programming
+								Schedule
 							</Link>
 						</div>
 
-						<div className="ml-10 my-8 flex h-8 text-3xl">
+						<div className="ml-10 mt-8 flex h-8 text-3xl">
 							<Link
 								href="/charts"
 								legacyBehavior={false}
 								className="cursor-pointer"
 								rel="noopener noreferrer"
-								onClick={toggleMenu}
-								>
-									Charts
-								</Link>
-						</div>
-
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/archive"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={toggleMenu}
+								onClick={closeMenu}
 							>
-								Archive
+								Charts
 							</Link>
 						</div>
 
@@ -154,9 +121,21 @@ const Header = () => {
 								legacyBehavior={false}
 								className="cursor-pointer"
 								rel="noopener noreferrer"
-								onClick={toggleMenu}
+								onClick={closeMenu}
 							>
 								Blog
+							</Link>
+						</div>
+
+						<div className="ml-10 mt-8 flex h-8 text-3xl">
+							<Link
+								href="/archive"
+								legacyBehavior={false}
+								className="cursor-pointer"
+								rel="noopener noreferrer"
+								onClick={closeMenu}
+							>
+								Archive
 							</Link>
 						</div>
 
@@ -166,9 +145,21 @@ const Header = () => {
 								legacyBehavior={false}
 								className="cursor-pointer"
 								rel="noopener noreferrer"
-								onClick={toggleMenu}
+								onClick={closeMenu}
 							>
 								Contact
+							</Link>
+						</div>
+
+						<div className="ml-10 mt-8 flex h-8 text-3xl">
+							<Link
+								href="/about"
+								legacyBehavior={false}
+								className="cursor-pointer"
+								rel="noopener noreferrer"
+								onClick={closeMenu}
+							>
+								About
 							</Link>
 						</div>
 
@@ -188,67 +179,51 @@ const Header = () => {
 					<div className="flex h-14 w-full flex-row justify-between bg-black px-1 py-4 ">
 							{/* Logo and player*/}
 							<div className="my-auto flex flex-row">
-								{/* Keep logo as a semantic anchor target for keyboard users. */}
-								<Link href="/" legacyBehavior>
-									<a className="my-auto ml-10 flex h-10 w-28 cursor-pointer">
-										<Image src={photo} alt="WXDU logo" />
-									</a>
-								</Link>
+								{/* Clicking the logo starts/stops the stream, like the WXDU logos on the homepage. */}
+								<button
+									type="button"
+									onClick={togglePlayPause}
+									aria-label={isPlaying ? 'Pause WXDU stream' : 'Play WXDU stream'}
+									title={isPlaying ? 'Pause stream' : 'Play stream'}
+									className="my-auto ml-10 flex h-10 w-28 cursor-pointer border-0 bg-transparent p-0"
+								>
+									<Image src={photo} alt="WXDU logo" />
+								</button>
 							</div>
 
 						{/* Links*/}
 						<div className="my-auto flex w-1/2 flex-row">
-							<Link href="/about">
-								<a className="flex h-12 grow items-center justify-center">
-									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										About
-									</p>
-								</a>
+							<Link href="/" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Home
 							</Link>
 
-							<Link href="/programming">
-								<a className="flex h-12 grow items-center justify-center">
-									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										Programming
-									</p>
-								</a>
+							<Link href="/listen" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Listen
 							</Link>
 
-							<Link href="/charts">
-								<a className="flex h-12 grow items-center justify-center">
-									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										Charts
-										</p>
-									</a>
-								</Link>
-
-							<Link href="/archive">
-								<a className="flex h-12 grow items-center justify-center">
-									<p className="cursor-pointer text-base text-white no-underline hover:text-blue-300">
-										Archive
-									</p>
-								</a>
+							<Link href="/schedule" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Schedule
 							</Link>
 
-							<Link href="/blog">
-								<a className="flex h-12 grow items-center justify-center ">
-									<p className="cursor-pointer text-base no-underline hover:text-blue-300">
-										Blog
-									</p>
-								</a>
+							<Link href="/charts" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Charts
 							</Link>
 
-							<Link href="/contact">
-								<a className="flex h-12 grow items-center justify-center ">
-									<p className="cursor-pointer text-base no-underline hover:text-blue-300">
-										Contact
-									</p>
-								</a>
+							<Link href="/blog" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Blog
 							</Link>
 
-							<div className="flex h-12 grow items-center justify-center ">
-								<DropdownMenu />
-							</div>
+							<Link href="/archive" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Archive
+							</Link>
+
+							<Link href="/contact" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								Contact
+							</Link>
+
+							<Link href="/about" legacyBehavior={false} className="flex h-12 grow items-center justify-center text-base text-white hover:text-blue-300">
+								About
+							</Link>
 
 						</div>
 					</div>

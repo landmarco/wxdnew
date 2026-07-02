@@ -1,9 +1,9 @@
 import AlbumCover from "./AlbumCover";
 
-export default function ChartEntryRow({ rank, spins, artist, album, label }) {
+export default function ChartEntryRow({ rank, spins, artist, album, label, cover }) {
     return (
         <div className="flex items-center gap-4 border-b border-zinc-800 py-3">
-            <AlbumCover artist={artist} album={album} rank={rank} />
+            <AlbumCover artist={artist} album={album} cover={cover} rank={rank} />
             <div className="w-8 flex-shrink-0 text-right font-bold text-white">
                 {rank}
             </div>

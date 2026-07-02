@@ -15,7 +15,7 @@ return normalised JSON
 
 */
 
-import { apiFetch } from "../../lib/api"
+import { apiFetch } from "@/lib/api"
 
 function formatLocalDate(date) {
 	const year = date.getFullYear()

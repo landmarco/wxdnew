@@ -1,16 +1,14 @@
-// This component contains the tabs to switch between viewing now playing and last played songs.
+// This component contains the tabs to switch between viewing now playing and current playlist songs.
 
 import {useState, useMemo} from "react";
-import NowPlaying from "./NowPlaying";
-import LastPlayed from "./LastPlayed";
+import CurrentPlaylist from "./CurrentPlaylist";
 
-export default function PlayTabs({ nowPlaying = {}, currentPlaylist = {}}) {
-    const [activeTab, setActiveTab] = useState("nowplaying");
+export default function PlayTabs({ currentPlaylist = {}}) {
+    const [activeTab, setActiveTab] = useState("currentplaylist");
 
     const tabs = useMemo(
         () => [
-            { id: "nowplaying", label: "Now Playing", panelId: "tabpanel-nowplaying" },
-            { id: "lastplayed", label: "Last Played", panelId: "tabpanel-lastplayed" },
+            { id: "currentplaylist", label: "Current Playlist", panelId: "tabpanel-currentplaylist" },
         ],
         []
     );
@@ -40,7 +38,7 @@ export default function PlayTabs({ nowPlaying = {}, currentPlaylist = {}}) {
 
     return(
         <div className="w-full max-w-[360px] mx-auto">
-            <div role="tablist" aria-label="Now playing and last played tabs" className="flex justify-center">
+            <div role="tablist" aria-label="Current playlist" className="flex justify-center">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
@@ -65,22 +63,13 @@ export default function PlayTabs({ nowPlaying = {}, currentPlaylist = {}}) {
 
             <div className="max-h-[60vh] overflow-y-auto">
                 <div
-                    id="tabpanel-nowplaying"
+                    id="tabpanel-currentplaylist"
                     role="tabpanel"
-                    aria-labelledby="tab-nowplaying"
-                    hidden={activeTab !== "nowplaying"}
-                    className={activeTab === "nowplaying" ? "block" : "hidden"}
+                    aria-labelledby="tab-currentplaylist"
+                    hidden={activeTab !== "currentplaylist"}
+                    className={activeTab === "currentplaylist" ? "block" : "hidden"}
                 >
-                    <NowPlaying currentPlaylist={currentPlaylist} />
-                </div>
-                <div
-                    id="tabpanel-lastplayed"
-                    role="tabpanel"
-                    aria-labelledby="tab-lastplayed"
-                    hidden={activeTab !== "lastplayed"}
-                    className={activeTab === "lastplayed" ? "block" : "hidden"}
-                >
-                    <LastPlayed currentPlaylist={currentPlaylist} />
+                    <CurrentPlaylist currentPlaylist={currentPlaylist} />
                 </div>
             </div>
         </div>

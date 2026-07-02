@@ -2,9 +2,18 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { useAudio } from "../AudioContext";
+import { getNowPlaying } from "../../lib/nowPlaying";
+import getCovers from "../../lib/getCovers";
+import cardinalsFallback from "../../images/cardinals.jpg";
+import Emerald from "../Emerald";
+
+// Lock-screen / Android Auto artwork. When false, always use the cardinals cover
+// (matching the Recently Played iPod widget's fallback). Flip to true to use each
+// track's real cover art (fetched below) and fall back to cardinals when none.
+const USE_REAL_COVER_ART = false;
 
 const NavPlayer = () => {
-    const { isPlaying, togglePlayPause } = useAudio();
+    const { isPlaying, isStalled, isRejoining, isPreloading, togglePlayPause, isHighQuality } = useAudio();
 
     // refs for measuring available ticker width vs text width
     const tickerContainerRef = useRef(null);
@@ -21,11 +30,17 @@ const NavPlayer = () => {
         dj: "mystery dj"
     });
 
-    // polls the local API wrapper route that proxies api.wxdu.art atm
+    // Cover art for the currently playing track, used for lock-screen / car
+    // metadata. Only populated when USE_REAL_COVER_ART is on; otherwise we always
+    // show the cardinals fallback below.
+    const [nowPlayingCover, setNowPlayingCover] = useState(null);
+
+    // fetches directly from the external WXDU API (api.wxdu.art / api.wxdu.org).
+    // the old /api/now-playing Next route doesn't exist in the static export,
+    // so we call the API straight through the domain-aware apiFetch wrapper.
     async function fetchNowPlaying() {
         try {
-            const response = await fetch("/api/now-playing");
-            const data = await response.json();
+            const data = await getNowPlaying();
 
             setNowPlaying({
                 artist: data.artist,
@@ -38,18 +53,91 @@ const NavPlayer = () => {
         }
     }
 
-    // do an immediate fetch and then refresh every 30 seconds
+    // do an immediate fetch and then refresh every 10 seconds
     useEffect(() => {
         fetchNowPlaying();
 
-        const interval = setInterval(fetchNowPlaying, 30000);
+        const interval = setInterval(fetchNowPlaying, 10000);
         return () => clearInterval(interval);
     }, []);
 
+    // Look up the current track's cover art (by artist + album) for the OS media
+    // metadata. Gated behind USE_REAL_COVER_ART so we don't even hit the API
+    // while the cardinals image is forced on.
+    useEffect(() => {
+        if (!USE_REAL_COVER_ART) return;
+        if (!nowPlaying.artist || !nowPlaying.album) {
+            setNowPlayingCover(null);
+            return;
+        }
+        let cancelled = false;
+        getCovers(nowPlaying.artist, null, nowPlaying.album).then((url) => {
+            if (!cancelled) setNowPlayingCover(url || null);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [nowPlaying.artist, nowPlaying.album]);
+
+    // Publish now-playing metadata to the OS (lock screen, Android Auto, etc.).
+    // Artwork is the track's real cover when enabled and found, otherwise the
+    // cardinals image — resolved to an absolute URL, which some platforms require.
+    useEffect(() => {
+        if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+
+        const cover = USE_REAL_COVER_ART && nowPlayingCover ? nowPlayingCover : cardinalsFallback.src;
+        const artworkUrl =
+            cover.startsWith("http") || typeof window === "undefined"
+                ? cover
+                : window.location.origin + cover;
+
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: nowPlaying.song || "WXDU 88.7 FM",
+            artist: nowPlaying.artist || "WXDU",
+            album: nowPlaying.album || "Durham, NC",
+            artwork: [
+                { src: artworkUrl, sizes: "512x512", type: "image/jpeg" },
+            ],
+        });
+    }, [nowPlaying.song, nowPlaying.artist, nowPlaying.album, nowPlayingCover]);
+
+    // Keep the OS playback state in sync and route its play/pause controls back
+    // into our single stream toggle.
+    useEffect(() => {
+        if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+
+        navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+
+        const onPlay = () => {
+            if (!isPlaying) togglePlayPause();
+        };
+        const onPause = () => {
+            if (isPlaying) togglePlayPause();
+        };
+
+        const setHandler = (action, handler) => {
+            try {
+                navigator.mediaSession.setActionHandler(action, handler);
+            } catch {
+                // some platforms don't support every action — ignore
+            }
+        };
+
+        setHandler("play", onPlay);
+        setHandler("pause", onPause);
+        setHandler("stop", onPause);
+
+        return () => {
+            setHandler("play", null);
+            setHandler("pause", null);
+            setHandler("stop", null);
+        };
+    }, [isPlaying, togglePlayPause]);
+
     // only show track info when artist/song/album are all present
     const currentTrack =
-        nowPlaying.artist && nowPlaying.song && nowPlaying.album
-            ? `${nowPlaying.artist} — ${nowPlaying.song} ... ${nowPlaying.album}`
+        nowPlaying.artist && nowPlaying.song
+            ? `${nowPlaying.artist} — ${nowPlaying.song}`
             : "it's a secret... tune in to find out";
 
     // measure text and container widths so animation distance is exact
@@ -93,61 +181,117 @@ const NavPlayer = () => {
     const shouldScrollTicker = tickerDistance > 0 && !prefersReducedMotion;
 
     return (
-        <div className="fixed top-0 left-0 z-50 flex h-16 w-full flex-row items-center overflow-hidden border-b-2 border-[#e0ff05] bg-black">
-            <div className="flex shrink-0 flex-row items-center gap-2 border-r border-[#e0ff05] px-4">
-                {/* Icon-only control needs an explicit name for screen readers. */}
-                <button
-                    onClick={togglePlayPause}
-                    className="text-[#e0ff05] hover:text-yellow-200"
-                    aria-label={isPlaying ? 'Pause stream' : 'Play stream'}
-                    title={isPlaying ? 'Pause stream' : 'Play stream'}
+        <div className="fixed left-0 top-0 z-50 flex h-[104px] w-full flex-col items-stretch overflow-hidden border-b-2 border-[#e0ff05] bg-black lg:h-16 lg:flex-row lg:items-center">
+            {/* The rest of the bar — all the blank space around the ticker —
+                opens the /listen page, not just the text. */}
+            <Link href="/listen" legacyBehavior>
+                <a
+                    className="group order-1 mb-2 flex h-14 min-w-0 shrink-0 cursor-pointer items-center overflow-hidden transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 lg:order-2 lg:mb-0 lg:h-full lg:flex-1"
+                    onClick={(event) => {
+                        event.currentTarget.blur();
+                    }}
                 >
+                    <div ref={tickerContainerRef} className="w-full overflow-hidden">
+                        <div
+                            className={`inline-block whitespace-nowrap ${
+                                shouldScrollTicker ? "animate-ticker-pingpong" : ""
+                            }`}
+                            style={{
+                                "--ticker-distance": `${tickerDistance}px`
+                            }}
+                        >
+                            <span
+                                ref={tickerTextRef}
+                                className="px-4 text-sm font-semibold tracking-widest text-[#e0ff05] group-hover:text-white group-hover:underline group-focus:text-white group-focus:underline md:px-8 md:text-base"
+                            >
+                                <span className="inline md:hidden">Now: </span>
+                                <span className="hidden md:inline">Currently Playing: </span>
+                                {currentTrack} &nbsp;&nbsp;&nbsp;&nbsp; DJ ON AIR: {nowPlaying.dj}
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </Link>
+            
+            {/* The whole left box toggles the stream: from the page's left edge,
+                across the label and waveform, up to the dividing border. */}
+            <button
+                type="button"
+                onClick={togglePlayPause}
+                aria-label={isPlaying ? 'Pause stream' : 'Play stream'}
+                title={isPlaying ? 'Pause stream' : 'Play stream'}
+                className="group order-2 flex h-10 w-fit max-w-[calc(100%-4rem)] shrink-0 flex-row items-center justify-center gap-2 px-4 transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 lg:order-1 lg:h-full lg:w-auto lg:max-w-none lg:justify-start lg:border-r lg:border-[#e0ff05]"
+            >
+                <span className="relative text-[#e0ff05] group-hover:text-yellow-200">
                     {isPlaying ? <FaPause size={18} /> : <FaPlay size={18} />}
-                </button>
+                    {/* Mobile/tablet reconnect indicator: the waveform overlay only
+                        exists on lg+, so pulse a ring over the icon below that. */}
+                    {(isStalled || isRejoining) && (
+                        <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute -inset-2 rounded-full border-2 border-[#e0ff05] animate-ping lg:hidden"
+                        />
+                    )}
+                    {/* Mobile/tablet warm-up indicator: a mossy green ring that
+                        creeps round the icon while the stream buffers. */}
+                    {isPreloading && !isStalled && (
+                        <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute -inset-2 animate-spin rounded-full border-2 border-dashed border-[#6b8e23] lg:hidden"
+                            style={{ animationDuration: "3s" }}
+                        />
+                    )}
+                </span>
 
                 <span className="bitcount text-base uppercase tracking-widest text-[#e0ff05]">
                     Stream Here
                 </span>
 
-                <div className="hidden shrink-0 items-center lg:flex">
+                <span className="relative hidden shrink-0 items-center lg:flex">
+                    {isHighQuality && (
+                        <span className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+                            <Emerald size={60} animated={isPlaying} />
+                        </span>
+                    )}
                     <img
                         src={isPlaying ? "/soundwaves.gif" : "/staticsoundwave.gif"}
-                        alt="soundwaves"
+                        alt=""
+                        aria-hidden="true"
+                        className="relative z-10"
                         style={{ height: "75px", width: "175px", objectFit: "cover" }}
                     />
-                </div>
-            </div>
 
-            <div ref={tickerContainerRef} className="flex-1 overflow-hidden">
-                <Link href="/listen" legacyBehavior>
-                    <a
-                        className="group block h-full w-full cursor-pointer rounded transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                        aria-label="Open listen page"
-                        title="Open listen page"
-                        onClick={(event) => {
-                            event.currentTarget.blur();
-                        }}
-                    >
-                        <div className="flex-1 overflow-hidden">
-                            <div
-                                className={`inline-block whitespace-nowrap ${
-                                    shouldScrollTicker ? "animate-ticker-pingpong" : ""
-                                }`}
-                                style={{
-                                    "--ticker-distance": `${tickerDistance}px`
-                                }}
+                    {/* Keep the oscillation but overlay a label when the audio
+                        dropped mid-play ("Reconnecting") or when we're catching
+                        back up to live from a long pause ("Rejoining"). */}
+                    {(isStalled || isRejoining) && (
+                        <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-1">
+                            <span
+                                className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
+                                style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
                             >
-                                <span
-                                    ref={tickerTextRef}
-                                    className="px-8 text-base font-semibold tracking-widest text-[#e0ff05] group-hover:text-white group-hover:underline group-focus:text-white group-focus:underline"
-                                >
-                                    Currently Playing: {currentTrack} &nbsp;&nbsp;&nbsp;&nbsp; DJ ON AIR: {nowPlaying.dj}
-                                </span>
-                            </div>
-                        </div>
-                    </a>
-                </Link>
-            </div>
+                                {isRejoining ? "Rejoining" : "Reconnecting"}
+                            </span>
+                        </span>
+                    )}
+
+                    {/* On first load (or returning to the tab) the stream is buffering
+                        its connection — overlay a label until it's ready to play. If
+                        the user hits play before it's live, the label rides over the
+                        moving oscillation until audio actually starts flowing. */}
+                    {isPreloading && !isStalled && (
+                        <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-1">
+                            <span
+                                className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
+                                style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
+                            >
+                                Lichenizing
+                            </span>
+                        </span>
+                    )}
+                </span>
+            </button>
+
         </div>
     );
 };

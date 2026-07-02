@@ -47,7 +47,7 @@ export default function BlogBreadcrumbs() {
 	return (
 		<Breadcrumbs
 			aria-label="breadcrumb"
-			separator={<IoIosArrowForward size={18} className="ml-1 mt-0.5" />}
+			separator={<IoIosArrowForward size={18} className="ml-1 mt-0.5" aria-hidden="true" />}
 			color="white"
 		>
 			{breadcrumbs.map((crumb, idx) => (

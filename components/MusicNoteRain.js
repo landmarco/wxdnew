@@ -162,6 +162,7 @@ export default function MusicAsciiBackground() {
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
       style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, pointerEvents: 'none' }}
     />
   )

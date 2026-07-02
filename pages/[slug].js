@@ -2,9 +2,10 @@ import {TinaMarkdown} from 'tinacms/dist/rich-text'
 import {tinaField, useTina} from 'tinacms/dist/react'
 import {client} from '../tina/__generated__/client'
 import WeeklySchedule from '../components/WeeklySchedule'
+import {markdownComponents} from '../components/markdownComponents'
 import { scheduleBuilder } from '../lib/schedule/scheduleBuilder'
 
-//editable static pages (programming, contact, etc.)
+//editable static pages (schedule, contact, etc.)
 export default function Home(props) {
 	// data passes though in production mode and data is updated to the sidebar data in edit-mode
 	const {data} = useTina({
@@ -15,14 +16,15 @@ export default function Home(props) {
 
 	// store whatever is in rich text editor for that page in variable content
 	const content = data.page.body
-	const isProgrammingPage = props.slug === 'programming'
+	const isSchedulePage = props.slug === 'schedule'
 
 	// adds a Tina component for weekly schedule
 	const components = {
-		weeklySchedule: () => isProgrammingPage ? (
-			<div className="not-prose relative left-1/2 mt-8 w-[80vw] -translate-x-1/2">
-				<WeeklySchedule schedule={props.schedule} />
-			</div>
+		...markdownComponents,
+		weeklySchedule: () => isSchedulePage ? (
+				<div className="not-prose relative left-1/2 mt-8 w-[calc(100vw-1rem)] -translate-x-1/2 lg:w-[80vw]">
+					<WeeklySchedule schedule={props.schedule} />
+				</div>
 		) : null
 	}
 
@@ -41,7 +43,7 @@ export default function Home(props) {
 
 // build all the editable static pages ahead of time via github action
 export const getStaticPaths = async () => {
-	const paths = [{params: {slug: 'programming'}}]
+	const paths = [{params: {slug: 'schedule'}}]
 
 	return {
 		paths,
@@ -55,10 +57,10 @@ export const getStaticProps = async (ctx) => {
 		const {data, query, variables} = await client.queries.page({
 		relativePath: ctx.params.slug + '.mdx',
 		})
-		// loads schedule data from csv file (via lib/schedule.js) if on programming page
+		// loads schedule data from csv file (via lib/schedule.js) if on schedule page
 		// otherwise schedule is null and WeeklySchedule component won't render!
 		let schedule = null
-		if (ctx.params.slug === 'programming') {
+		if (ctx.params.slug === 'schedule') {
 			schedule = await scheduleBuilder()
 		}
 

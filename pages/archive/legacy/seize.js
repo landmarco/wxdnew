@@ -20,9 +20,9 @@ export default function Entry() {
 			<div className="mx-auto mt-32 w-5/6 text-white">
 				<p>Redirecting to sieze the sound...</p>
 				<p className="mt-4">
-					If you are not redirected, click{' '}
+					If you are not redirected,{' '}
 					<Link href={index_path} className="underline">
-						here
+						go to Seizing the Sound
 					</Link>
 					.
 				</p>

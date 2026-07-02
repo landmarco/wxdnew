@@ -1,5 +1,6 @@
 import {client} from '../tina/__generated__/client'
 import { TinaMarkdown } from "tinacms/dist/rich-text"
+import {markdownComponents} from '../components/markdownComponents'
 
 // getting the Contact Page TinaCMS information / fields
 export async function getStaticProps(){
@@ -91,7 +92,7 @@ export default function Contact({ contacts }){
                             prose-strong:font-black prose-em:text-[#e0ff05] prose-em:italic 
                             prose-a:text-blue-300 prose-a:underline prose-a:decoration-2 prose-a:underline-offset-4"
                         >
-                            <TinaMarkdown content={c.description} />
+                            <TinaMarkdown content={c.description} components={markdownComponents} />
                         </div>
                     </article>
                 ))}

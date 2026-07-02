@@ -12,10 +12,8 @@ export default function ArchiveHistoryIndex() {
 
 				{/* each new historical collection goes in one of these and gets a <name>.js redirect file*/}
 				<div className="mt-8 rounded border border-white/30 p-5">
-					<h2 className="text-2xl font-semibold underline text-m hover:no-underline">
-						<Link
-							href="/archive/legacy/seize"
-						>
+					<h2 className="text-2xl font-semibold">
+						<Link href="/archive/legacy/seize" className="hover:underline">
 							Seizing the Sound
 						</Link>
 					</h2>
@@ -25,10 +23,8 @@ export default function ArchiveHistoryIndex() {
 				</div>
 
 				<div className="mt-8 rounded border border-white/30 p-5">
-					<h2 className="text-2xl font-semibold underline text-m hover:no-underline">
-						<Link
-							href="/archive/legacy/blogger"
-						>
+					<h2 className="text-2xl font-semibold">
+						<Link href="/archive/legacy/blogger" className="hover:underline">
 							ancient blog posts and such
 						</Link>
 					</h2>
@@ -38,10 +34,8 @@ export default function ArchiveHistoryIndex() {
 				</div>
 
 				<div className="mt-8 rounded border border-white/30 p-5">
-					<h2 className="text-2xl font-semibold underline text-m hover:no-underline">
-						<Link
-							href="/archive/legacy/weeklycharts"
-						>
+					<h2 className="text-2xl font-semibold">
+						<Link href="/archive/legacy/weeklycharts" className="hover:underline">
 							old charts
 						</Link>
 					</h2>

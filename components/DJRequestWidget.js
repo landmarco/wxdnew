@@ -1,11 +1,14 @@
 import React, {useState, useEffect, useRef} from 'react'
 import { apiFetch } from '../lib/api'
+import { useModal } from './ModalContext'
 
 const COOLDOWN_SECONDS = 60
 const COOLDOWN_KEY = 'dj_request_cooldown_until' // localStorage key for persisting cooldown across page refreshes
 
 export default function DJRequestWidget() {
-    const [isOpen, setIsOpen] = useState(false)
+    // Open state is shared via ModalContext so the footer/keyboard ("c") can open it too.
+    const { activeModal, openModal, closeModal } = useModal()
+    const isOpen = activeModal === 'dj'
     const [activeTab, setActiveTab] = useState('song')
     const [songTitle, setSongTitle] = useState('')
     const [songArtist, setSongArtist] = useState('')
@@ -59,7 +62,7 @@ export default function DJRequestWidget() {
 
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
-                setIsOpen(false)
+                closeModal()
                 return
             }
 
@@ -127,17 +130,33 @@ export default function DJRequestWidget() {
             {/* Floating button */}
             <button
                 ref={triggerButtonRef}
-                className="fixed bottom-6 right-6 z-50 cursor-pointer bg-red-500 border-2 border-black ring-1 ring-red-500 px-6 py-3 font-courierprime font-bold text-black hover:bg-black hover:text-red-500 hover:border-red-500 hover:ring-1 hover:ring-red-500 transition-colors"
-                onClick={() => setIsOpen(true)}
+                className="fixed bottom-6 right-6 z-50 cursor-pointer bg-transparent border-0 p-0"
+                onClick={() => openModal('dj')}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
                 aria-label="Open DJ request modal"
             >
-                Send DJ Request
+                {/* Keep the phone "off the hook" while the request overlay is open. */}
+                <img
+                    src={isHovered || isOpen ? '/requestwidget_hover_bg.png' : '/requestwidget_bg.png'}
+                    alt="Send DJ Request"
+                    className={
+                        isHovered || isOpen ? "w-[10vw]" : "w-[9.5vw]"
+                    }
+                    style={{
+                        height: 'auto',
+                        display: 'block',
+                    }}
+                />
             </button>
 
 
             {/* Modal */}
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+                    onClick={() => closeModal()}
+                >
                     {/* Dialog semantics are required for screen readers. */}
                     <div
                         ref={modalRef}
@@ -145,6 +164,7 @@ export default function DJRequestWidget() {
                         aria-modal="true"
                         aria-labelledby="dj-request-title"
                         className="w-96 rounded-lg bg-zinc-900 p-6"
+                        onClick={(e) => e.stopPropagation()}
                     >
 
                         {/* Header */}
@@ -153,7 +173,7 @@ export default function DJRequestWidget() {
                             <button
                                 ref={closeButtonRef}
                                 className="text-gray-400 hover:text-white"
-                                onClick={() => setIsOpen(false)}
+                                onClick={() => closeModal()}
                                 aria-label="Close DJ request modal"
                             >
                                 ✕
@@ -298,6 +318,9 @@ export default function DJRequestWidget() {
                                         Something went wrong. Please try again.
                                     </p>
                                 )}
+                        <p className="font-courierprime mt-5 text-center text-sm text-gray-400">
+                            or call it in at (919) 684-8870
+                        </p>
                     </div>
                 </div>
             )}

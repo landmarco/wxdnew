@@ -230,10 +230,86 @@ body::-webkit-scrollbar-thumb {
   animation: ticker-pingpong 20s ease-in-out infinite;
 }
 
+/* Brief highlight sweep across a playlist row when its album tile is clicked. */
+@keyframes shimmer {
+	0% {
+		background-position: -150% 0;
+	}
+	100% {
+		background-position: 250% 0;
+	}
+}
+
+.animate-shimmer {
+	background-image: linear-gradient(
+		100deg,
+		transparent 20%,
+		rgba(224, 255, 5, 0.25) 50%,
+		transparent 80%
+	);
+	background-size: 200% 100%;
+	background-repeat: no-repeat;
+	/* The forward pass sweeps the highlight right-to-left; `alternate` makes each
+	   pass reverse, so it goes R→L, then L→R, then R→L, etc. Three passes fill
+	   the 2.3s the JS timer keeps the class on. */
+	animation: shimmer calc(2.3s / 3) ease-in-out infinite alternate;
+}
+
+/* Brief twinkle for the sparkle elements drawn around an album tile. */
+@keyframes sparkle {
+	0% {
+		transform: scale(0) rotate(0deg);
+		opacity: 0;
+	}
+	50% {
+		transform: scale(1) rotate(90deg);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(0) rotate(180deg);
+		opacity: 0;
+	}
+}
+
+.animate-sparkle {
+	animation: sparkle 2.3s ease-in-out 1;
+}
+
+/* Sparkling glow for the 320 kbps easter-egg emerald. */
+@keyframes emerald-glow {
+	0%,
+	100% {
+		filter: drop-shadow(0 0 2px rgba(16, 255, 120, 0.5));
+		transform: scale(1);
+	}
+	50% {
+		filter: drop-shadow(0 0 11px rgba(16, 255, 120, 0.95));
+		transform: scale(1.06);
+	}
+}
+
+.animate-emerald-glow {
+	animation: emerald-glow 1.8s ease-in-out infinite;
+}
+
+/* Continuous rotation for the vinyl player's spinning record. */
+@keyframes spin-vinyl {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
+.animate-spin-vinyl {
+	animation: spin-vinyl 3s linear infinite;
+}
+
 /* Respect reduced-motion user preference for marquee/hover-heavy UI. */
 @media (prefers-reduced-motion: reduce) {
 	.animate-conveyor,
-	.animate-ticker-pingpong {
+	.animate-ticker-pingpong,
+	.animate-shimmer,
+	.animate-sparkle,
+	.animate-emerald-glow,
+	.animate-spin-vinyl {
 		animation: none !important;
 	}
 }

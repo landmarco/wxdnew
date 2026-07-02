@@ -30,7 +30,7 @@ class AudioPlayerWaveform extends Component {
 		return (
 			<div className="flex h-24 w-full flex-row items-center justify-center bg-transparent">
 				<button
-					className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border-none bg-gray-300 pb-1 outline-none hover:bg-gray-500"
+					className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-full border-none bg-gray-300 pb-1 outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 hover:bg-gray-500"
 					onClick={this.handlePlay}
 				>
 					{!this.state.playing ? 'Play' : 'Pause'}

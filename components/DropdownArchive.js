@@ -17,9 +17,9 @@ const ArchiveDropdown = (props) => {
 							{/* filter -> on click opens dropdown */}
 							<Menu.Button className="w-full">
 								{({open}) => (
-									<p className="kallisto inline-flex w-full justify-center py-2 text-white ">
-										Filter <IoIosArrowDown size={18} className="ml-1 mt-0.5" />
-									</p>
+									<span className="kallisto inline-flex w-full justify-center py-2 text-white">
+										Filter <IoIosArrowDown size={18} className="ml-1 mt-0.5" aria-hidden="true" />
+									</span>
 								)}
 							</Menu.Button>
 
@@ -32,9 +32,9 @@ const ArchiveDropdown = (props) => {
 										passHref
 										scroll={false}
 									>
-										<p className="kallisto inline-flex w-full items-center justify-center py-2 text-white    hover:bg-neutral-600 hover:bg-opacity-50">
+										<span className="kallisto inline-flex w-full items-center justify-center py-2 text-white hover:bg-neutral-600 hover:bg-opacity-50">
 											Events
-										</p>
+										</span>
 									</Link>
 								</Menu.Item>
 
@@ -43,7 +43,7 @@ const ArchiveDropdown = (props) => {
 									<Menu as="div" className="relative">
 										<Menu.Button className="kallisto inline-flex w-full justify-center pb-1 pt-2 text-white  shadow-sm  hover:bg-neutral-600 hover:bg-opacity-70">
 											Specialty Shows{' '}
-											<IoIosArrowForward size={20} className="my-auto" />
+											<IoIosArrowForward size={20} className="my-auto" aria-hidden="true" />
 										</Menu.Button>
 										<Menu.Items className="kallisto absolute left-full top-0  -mt-10 ml-1  w-32 origin-right bg-black bg-opacity-70 md:-mt-0">
 											{/* page for all specialty shows */}
@@ -53,9 +53,9 @@ const ArchiveDropdown = (props) => {
 													href="/archive/specialty-shows/"
 													scroll={false}
 												>
-													<p className="group-flex items-center px-4 py-2 text-sm text-white  hover:bg-neutral-600 hover:bg-opacity-50 ">
+													<span className="group-flex items-center px-4 py-2 text-sm text-white  hover:bg-neutral-600 hover:bg-opacity-50 ">
 														All
-													</p>
+													</span>
 												</Link>
 											</Menu.Item>
 											{/* make a menu item for each archive category that admin indicates is a specialty show */}
@@ -67,9 +67,9 @@ const ArchiveDropdown = (props) => {
 															href={`/archive/specialty-shows/${option.value}`}
 															scroll={false}
 														>
-															<p className="group-flex ml items-center px-4 py-2 text-sm text-white hover:bg-neutral-600 hover:bg-opacity-50 hover:text-white">
+															<span className="group-flex ml items-center px-4 py-2 text-sm text-white hover:bg-neutral-600 hover:bg-opacity-50 hover:text-white">
 																{option.label}
-															</p>
+															</span>
 														</Link>
 													</Menu.Item>
 												</div>

@@ -41,13 +41,13 @@ export default function EventList(props) {
 						An archive of WXDU&apos;s activities (WIP):{""}
 						<br></br>
 						{/* Use Link for internal nav to preserve SPA navigation + semantics. */}
-						<Link href="/programming" className="underline">
+						<Link href="/schedule" className="underline">
 							Learn more about WXDU&apos;s specialty programming
 						</Link>
 						{"."}
 						<br></br>
 						<Link href="/archive/legacy" className="underline">
-							Click here to browse historical collections
+							Browse historical collections
 						</Link>
 					{"."}
 				</div>
@@ -58,12 +58,12 @@ export default function EventList(props) {
 
 			{/* Desktop banner image */}
 			<div className="relative z-5 -mt-10 hidden md:block">
-				<Image src={photo} alt="A crowded dancefloor at a WXYC event." />
+				<Image src={photo} alt="A crowded dancefloor at a WXDU event." />
 			</div>
 
 			{/* Mobile banner image */}
 			<div className="relative z-10 -mt-10 md:hidden">
-				<Image src={mobilephoto} alt="A crowded dancefloor at a WXYC event." />
+				<Image src={mobilephoto} alt="A crowded dancefloor at a WXDU event." />
 			</div>
 
 			<div className="archive-grid mx-auto lg:max-w-screen-xl">
