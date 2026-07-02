@@ -4,18 +4,6 @@ import SongRow from './songRow'
 import useRecentTracks from '@/hooks/useRecentTracks'
 import {getApiBase} from 'lib/api'
 
-function convertTime(time){
-	const date = new Date(time * 1000);
-
-	const etTime = date.toLocaleString("en-US", {
-	timeZone: "America/New_York",
-	dateStyle: "medium",
-	timeStyle: "short",
-	});
-
-	return etTime;
-}
-
 export default function LastPlayed({currentPlaylist = {}}) {
 	
 	const {recentTracks, loading} = useRecentTracks(10);
@@ -58,7 +46,7 @@ export default function LastPlayed({currentPlaylist = {}}) {
 								song={item.song}
 								artist={item.artist}
 								album={item.album}
-								songStart={convertTime(item.starttime)}
+								songStart={item.songstart}
 								cover={item.cover_url ? `${getApiBase()}${item.cover_url}` : null}
 							/>
 						))

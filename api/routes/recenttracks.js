@@ -111,7 +111,7 @@ router.get('/', async (req, res) => {
         }
       }
 
-      return { artist: track.artist, song: track.song, album: track.album, label: track.label, starttime: track.starttime, cover_url: coverUrl };
+      return { artist: track.artist, song: track.song, album: track.album, label: track.label, songstart: track.songstart, cover_url: coverUrl };
     });
 
     res.set('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
