@@ -1,177 +1,20 @@
-import React, {useEffect, useRef, useState} from 'react'
+import React from 'react'
 import Link from 'next/link'
 import photo from '../images/logo.png'
 import Image from 'next/image'
-import {AiOutlineMenu, AiOutlineClose} from 'react-icons/ai'
 import {useAudio} from './AudioContext'
+import MobileNavDrawer from './MobileNavDrawer'
 
 const Header = () => {
 	const {isPlaying, togglePlayPause} = useAudio()
 
-	const [isOpen, setIsOpen] = useState(false)
-	const mobileNavRef = useRef(null)
-
-	const closeMenu = () => {
-		setIsOpen(false)
-	}
-
-	const toggleMenu = () => {
-		setIsOpen((current) => !current)
-	}
-
-	// manages the closing behavior of the hamburger menu nav bar
-	useEffect(() => {
-		if (!isOpen) return
-
-		const handleOutsideClick = (event) => {
-			if (mobileNavRef.current?.contains(event.target)) return
-			closeMenu()
-		}
-
-		document.addEventListener('mousedown', handleOutsideClick)
-		document.addEventListener('touchstart', handleOutsideClick)
-
-		return () => {
-			document.removeEventListener('mousedown', handleOutsideClick)
-			document.removeEventListener('touchstart', handleOutsideClick)
-		}
-	}, [isOpen])
-
 	return (
 		//Parent Container
 		<div className="h-full">
-			{/* MOBILE NAVBAR STARTS HERE */}
-			<div
-				ref={mobileNavRef}
-				className="pointer-events-none fixed left-0 top-16 z-50 flex h-10 w-full items-center justify-end bg-transparent lg:hidden"
-			>
-				<div className="flex h-full flex-row items-center justify-end">
-					{/* Hamburger icon */}
-					<button
-						type="button"
-						onClick={toggleMenu}
-						className="hamburger-icon duration-450 pointer-events-auto flex h-full w-16 items-center justify-center transition-all ease-in-out"
-						aria-label={isOpen ? 'Close main menu' : 'Open main menu'}
-					>
-						{isOpen ? (
-							<AiOutlineClose size={32} className="mt-1" aria-hidden="true" />
-						) : (
-							<AiOutlineMenu size={32} className="mt-1" aria-hidden="true" />
-						)}
-					</button>
-				</div>
+			{/* Mobile navigation: an edge-swipe drawer replaces the hamburger menu. */}
+			<MobileNavDrawer />
 
-				{/* Collapsible menu for mobile*/}
-				{isOpen && (
-					<ul
-						className="duration-450 pointer-events-auto fixed left-0 top-[104px] flex h-[calc(100vh-104px)] w-screen flex-col justify-start bg-black/90 backdrop-blur-md transition-all ease-in-out md:gap-6"
-						onClick={closeMenu}
-					>
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={closeMenu}
-							>
-								Home
-							</Link>
-						</div>
-
-						<div className="ml-10 mt-16 flex h-8 text-3xl">
-							<Link
-								href="/listen"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={closeMenu}
-							>
-								Listen
-							</Link>
-						</div>
-
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/schedule"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={closeMenu}
-							>
-								Schedule
-							</Link>
-						</div>
-
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/charts"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={closeMenu}
-							>
-								Charts
-							</Link>
-						</div>
-
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/blog"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={closeMenu}
-							>
-								Blog
-							</Link>
-						</div>
-
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/archive"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={closeMenu}
-							>
-								Archive
-							</Link>
-						</div>
-
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/contact"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={closeMenu}
-							>
-								Contact
-							</Link>
-						</div>
-
-						<div className="ml-10 mt-8 flex h-8 text-3xl">
-							<Link
-								href="/about"
-								legacyBehavior={false}
-								className="cursor-pointer"
-								rel="noopener noreferrer"
-								onClick={closeMenu}
-							>
-								About
-							</Link>
-						</div>
-
-						{/* Add more navigation links as needed */}
-					</ul>
-				)}
-			</div>
-
-			{/* Makes the mobile navbar overlap the rest of the header content */}
 			<div className="relative z-20">
-				{/* END MOBILE NAVBAR */}
-
 
 				{/* Parent container of web navbar */}
 				<div className="mb-20 hidden w-full lg:flex mt-10">
