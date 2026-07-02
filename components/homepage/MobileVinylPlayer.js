@@ -75,9 +75,10 @@ export default function MobileVinylPlayer() {
             <>
               <div lang="en" className="mt-[2vw] flex w-full min-w-0 flex-col gap-[1.5vw]">
                 <div className="hyphens-auto break-words font-courierprime text-[5.5vw] leading-tight text-[#e0ff05]">🎵 {song.song}</div>
-                {song.artist && <div className="hyphens-auto break-words font-courierprime text-[5.5vw] leading-tight text-white">🧑‍🎤 {song.artist}</div>}
+                {song.artist && <div className="hyphens-auto break-words font-courierprime text-[5.5vw] leading-tight text-white">👩‍🎤 {song.artist}</div>}
                 {song.album && <div className="hyphens-auto break-words font-courierprime text-[4vw] leading-tight text-[#e0ff05]">💿 {song.album}</div>}
-                {song.label && <div className="hyphens-auto break-words font-courierprime text-[3.2vw] leading-tight text-white">🏷️ {song.label}</div>}
+                {/* Label hidden for now — felt too busy. Re-enable by uncommenting: */}
+                {/* {song.label && <div className="hyphens-auto break-words font-courierprime text-[3.2vw] leading-tight text-white">🏷️ {song.label}</div>} */}
               </div>
             </>
           )}

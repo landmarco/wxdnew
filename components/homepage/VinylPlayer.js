@@ -41,9 +41,10 @@ export default function VinylPlayer() {
         ) : (
           <FitText deps={[song.song, song.artist, song.album, song.label]}>
             <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-[#e0ff05]">🎵 {song.song}</div>
-            {song.artist && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white">🧑‍🎤 {song.artist}</div>}
+            {song.artist && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white">👩‍🎤 {song.artist}</div>}
             {song.album && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-[#e0ff05]">💿 {song.album}</div>}
-            {song.label && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white" style={{ fontSize: '0.72em' }}>🏷️ {song.label}</div>}
+            {/* Label hidden for now — felt too busy. Re-enable by uncommenting: */}
+            {/* {song.label && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white" style={{ fontSize: '0.72em' }}>🏷️ {song.label}</div>} */}
           </FitText>
         )}
       </div>

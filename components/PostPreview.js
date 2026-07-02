@@ -2,6 +2,11 @@ import Link from 'next/link'
 import {useRouter} from 'next/router'
 import {AiFillTag} from 'react-icons/ai'
 
+// Fallback cover for blog posts that don't have their own image (or whose image
+// fails to load), so image-optional posts render a friendly baby goat instead of
+// a broken-image placeholder.
+const PLACEHOLDER_COVER = '/uploads/baby_goat.jpg'
+
 // Formats individual blog post previews in /blog
 const PostPreview = (props) => {
 	const currentRoute = useRouter().asPath
@@ -19,10 +24,10 @@ const PostPreview = (props) => {
 					className="mb-5 flex w-72 cursor-pointer flex-col gap-2 lg:w-[23.5rem] "
 				>
 					<img
-						src={props.cover || '/notfound.png'}
+						src={props.cover || PLACEHOLDER_COVER}
 						onError={(e) => {
 							e.currentTarget.onerror = null
-							e.currentTarget.src = '/notfound.png'
+							e.currentTarget.src = PLACEHOLDER_COVER
 						}}
 						className="h-72 w-72 object-cover lg:h-[23.5rem] lg:w-[23.5rem]"
 						alt={props.title}
@@ -48,10 +53,10 @@ const PostPreview = (props) => {
 					className="mb-5  flex w-72 cursor-pointer flex-col gap-2 md:w-[22rem]"
 				>
 					<img
-						src={props.cover || '/notfound.png'}
+						src={props.cover || PLACEHOLDER_COVER}
 						onError={(e) => {
 							e.currentTarget.onerror = null
-							e.currentTarget.src = '/notfound.png'
+							e.currentTarget.src = PLACEHOLDER_COVER
 						}}
 						className="h-72 w-72 object-cover md:h-[22rem] md:w-[22rem]"
 						alt={props.title}
