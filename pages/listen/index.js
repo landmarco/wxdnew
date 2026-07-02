@@ -7,6 +7,8 @@ import NowPlayingHeader from "@/components/listenpage/NowPlayingHeader";
 import StreamButton from "@/components/audioplayers/StreamButton";
 import PlayTabs from "@/components/listenpage/PlayTabs";
 import ExploreTab from "@/components/listenpage/ExploreTab";
+import VinylPlayer from "@/components/homepage/VinylPlayer";
+import MobileVinylPlayer from "@/components/homepage/MobileVinylPlayer";
 import { useAudio } from "@/components/AudioContext";
 
 export default function Listen() {
@@ -16,6 +18,15 @@ export default function Listen() {
 
     return(
         <div className="min-h-screen text-white pb-2">
+            <div className="flex justify-center px-4 pt-4 pb-6">
+                <div className="hidden w-full max-w-3xl lg:block">
+                    <VinylPlayer />
+                </div>
+                <div className="w-full max-w-md lg:hidden">
+                    <MobileVinylPlayer />
+                </div>
+            </div>
+
             <NowPlayingHeader currentPlaylist={currentPlaylist} />
 
             <p className="text-center mt-2">
