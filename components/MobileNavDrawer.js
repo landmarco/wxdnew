@@ -11,21 +11,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Router } from 'next/router'
 import { useAudio } from './AudioContext'
+import { NAV_ITEMS } from '../lib/navItems'
 
 // Remembers (across visits) that the user has already found the swipe menu, so
 // the edge grips can retire after first use.
 const DISCOVERED_KEY = 'wxdu-nav-discovered'
-
-const NAV_ITEMS = [
-	{ href: '/', label: 'Home' },
-	{ href: '/listen', label: 'Listen' },
-	{ href: '/schedule', label: 'Schedule' },
-	{ href: '/charts', label: 'Charts' },
-	{ href: '/blog', label: 'Blog' },
-	{ href: '/archive', label: 'Archive' },
-	{ href: '/contact', label: 'Contact' },
-	{ href: '/about', label: 'About' },
-]
 
 // Only run the mobile drawer below Tailwind's lg breakpoint (the desktop navbar
 // takes over at lg).

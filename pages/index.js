@@ -8,7 +8,6 @@ import Link from 'next/link'
 import photo from '../images/logo.png'
 import Image from 'next/image'
 import StreamButton from '../components/audioplayers/StreamButton'
-import CDLink from '../components/homepage/CDLink'
 import VinylPlayer from '../components/homepage/VinylPlayer'
 import MobileVinylPlayer from '../components/homepage/MobileVinylPlayer'
 import TodaySchedule from '../components/homepage/TodaySchedule'
@@ -49,13 +48,6 @@ export default function Home(props) {
 								<div className="flex flex-col items-end gap-2 flex-[2]" style={{ zoom: 0.85 }}>
 									<VinylPlayer />
 									<StreamButton />
-									{/* CDs (fillers for now) that link to important pages */}
-								<div className="flex flex-row justify-between gap-2 mt-4 w-full">
-									<CDLink href="/blog" label="blog posts" image="/CD_1_Filler.jpg" />
-									<CDLink href="/schedule" label="schedule" image="/CD_2_Filler.jpg" />
-									<CDLink href="/about" label="about" image="/CD_3_Filler.jpg" />
-								</div>
-								
 							</div>
 							</div>
 						</div>
@@ -70,12 +62,6 @@ export default function Home(props) {
 					<MobileVinylPlayer />
 				</div>
 				<TodaySchedule schedule={schedule} />
-				<div className="flex flex-row justify-center gap-1 mt-4 w-full">
-						<CDLink href="/blog" label="blog posts" image="/CD_1_Filler.jpg" />
-						<CDLink href="/schedule" label="schedule" image="/CD_2_Filler.jpg" />
-						<CDLink href="/about" label="about" image="/CD_3_Filler.jpg" />
-				</div>
-				
 			</div>
 
 			<div className="mt-6 flex w-full justify-center overflow-x-auto lg:px-0 [&>*]:w-[92vw] lg:[&>*]:w-[60vw]">
