@@ -80,23 +80,37 @@ export default function TodaySchedule({ schedule }) {
 	return (
 		<div className="text-lg text-[#e0ff05] w-full tracking-[-0.07em]">
 			<h1 className="bitcount mb-2 text-center lg:text-left text-2xl lg:text-5xl text-white">Today&apos;s Schedule</h1>
-			{shows.map(({ startLabel, endLabel, show, id }, i) => (
-				show ? (
-					<Link
-						key={`${startLabel}-${endLabel}-${i}`}
-						href={djHref(id)}
-						legacyBehavior={false}
-						className="group flex gap-4 py-3 border-b border-gray-300"
-					>
+			{shows.map(({ startLabel, endLabel, show, id }, i) => {
+				if (!show) return null
+
+				// null for specialty/custom/unmatched shows; those render as plain
+				// text rather than misrouting to the auto-DJ (Otto) page.
+				const href = djHref(id)
+
+				const inner = (
+					<>
 						<span className="w-24 text-right">
 							{startLabel === endLabel ? (startLabel) : (<>{startLabel}–<br />{endLabel}</>)}
 						</span>
-						<span className="border-l font-bold border-gray-300 pl-4 flex-1 group-hover:underline">
+						<span className={`border-l font-bold border-gray-300 pl-4 flex-1 ${href ? "group-hover:underline" : ""}`}>
 							{show}
 						</span>
+					</>
+				)
+
+				const key = `${startLabel}-${endLabel}-${i}`
+				const rowClass = "flex gap-4 py-3 border-b border-gray-300"
+
+				return href ? (
+					<Link key={key} href={href} legacyBehavior={false} className={`group ${rowClass}`}>
+						{inner}
 					</Link>
-				) : null
-			))}
+				) : (
+					<div key={key} className={rowClass}>
+						{inner}
+					</div>
+				)
+			})}
 		</div>
 	)
 }

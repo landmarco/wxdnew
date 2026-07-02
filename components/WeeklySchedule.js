@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import Link from "next/link"
-import { djHref } from "@/lib/djLink"
+import { djHref, AUTO_DJ_ID } from "@/lib/djLink"
 
 /*
 Receives parsed CSV data from lib/scheduleParser.js and renders a weekly grid.
@@ -210,7 +210,7 @@ export default function WeeklySchedule({schedule}) {
 													{djName && (
 														// otto rows are the auto-DJ — link to the auto-DJ show list
 														// Link fills the whole cell so the entire cell is clickable, not just the text.
-															<Link href={djHref(null)} legacyBehavior={false} className="flex h-full items-center justify-center px-2 py-2 hover:underline lg:px-4">
+															<Link href={djHref(AUTO_DJ_ID)} legacyBehavior={false} className="flex h-full items-center justify-center px-2 py-2 hover:underline lg:px-4">
 																{djName}
 															</Link>
 													)}
@@ -263,8 +263,10 @@ export default function WeeklySchedule({schedule}) {
 											rowSpan += 1
 										}
 
-										// resolved MySQL id for this cell (falls back to auto-DJ in djHref)
+										// resolved MySQL id for this cell; null for specialty/custom/unmatched
+										// cells, which then render as plain text instead of linking to Otto.
 										const djId = idGrid?.[collapseAwareHourRow.originalRowIndex]?.[dayIndex]
+										const href = djHref(djId)
 
 										return (
 											<td
@@ -275,10 +277,17 @@ export default function WeeklySchedule({schedule}) {
 													specialtyShow ? "bg-[#e0ff05] text-black" : "bg-black" // HIGHLIGHT SPECIALTY SHOWS!!!
 												}`}
 											>
-												{/* Link fills the whole cell so the entire cell is clickable, not just the text. */}
-												<Link href={djHref(djId)} legacyBehavior={false} className="flex h-full items-center justify-center px-2 py-2 hover:underline lg:px-4">
-													{djName}
-												</Link>
+												{/* Link fills the whole cell so the entire cell is clickable, not just the text.
+												    Cells without a resolved DJ id show as plain, non-clickable text. */}
+												{href ? (
+													<Link href={href} legacyBehavior={false} className="flex h-full items-center justify-center px-2 py-2 hover:underline lg:px-4">
+														{djName}
+													</Link>
+												) : (
+													<span className="flex h-full items-center justify-center px-2 py-2 lg:px-4">
+														{djName}
+													</span>
+												)}
 										</td>
 									)
 								})}
