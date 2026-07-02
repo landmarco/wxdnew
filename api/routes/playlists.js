@@ -3,6 +3,18 @@ const { getPool } = require('../db');
 
 const router = Router();
 
+// Validates a YYYY-MM-DD date string, rejecting impossible dates like 2026-02-30.
+function isValidDate(dateStr) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+}
+
 // Safe subset of user fields — never return password, email (unless published), etc.
 const DJ_FIELDS = `
   u.ID, u.defdjname, u.deftitle, u.defsubtitle, u.defothergenre,
@@ -42,13 +54,54 @@ router.get('/current', async (req, res) => {
   }
 });
 
-// GET /api/playlists/recent?limit=20&offset=0
+// Fallback window when the caller specifies neither `limit` nor `start`:
+// return the last 10 days of shows rather than a fixed count.
+const DEFAULT_WINDOW_DAYS = 10;
+// Upper bound on an explicit `?limit=` for /recent.
+const MAX_RECENT_LIMIT = 23032;
+// Safety cap on the number of rows when no explicit `limit` is given.
+const UNCAPPED_LIMIT = 100000;
+
+// GET /api/playlists/recent?limit=20&offset=0&start=YYYY-MM-DD&end=YYYY-MM-DD
 // List of recent shows (no tracks), newest first.
+// Optional `start`/`end` (inclusive, station-local calendar dates) restrict the
+// results to shows whose starttime falls within that window.
+// If neither `limit` nor `start` is provided, defaults to the last 10 days.
 router.get('/recent', async (req, res) => {
   try {
     const pool = getPool();
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const hasLimit = req.query.limit !== undefined;
+    const limit = hasLimit ? Math.min(parseInt(req.query.limit) || 20, MAX_RECENT_LIMIT) : UNCAPPED_LIMIT;
     const offset = parseInt(req.query.offset) || 0;
+
+    const { start, end } = req.query;
+    const whereParts = [];
+    const whereParams = [];
+
+    // With no explicit count and no explicit start, fall back to the last 10
+    // days so callers get a full window of shows instead of an arbitrary count.
+    if (!hasLimit && start === undefined) {
+      whereParts.push('s.starttime >= ?');
+      whereParams.push(Math.floor(Date.now() / 1000) - DEFAULT_WINDOW_DAYS * 86400);
+    }
+
+    if (start !== undefined) {
+      if (!isValidDate(start)) {
+        return res.status(400).json({ error: 'start must be YYYY-MM-DD' });
+      }
+      whereParts.push('s.starttime >= UNIX_TIMESTAMP(?)');
+      whereParams.push(`${start} 00:00:00`);
+    }
+    if (end !== undefined) {
+      if (!isValidDate(end)) {
+        return res.status(400).json({ error: 'end must be YYYY-MM-DD' });
+      }
+      // strictly less than the day after `end` so the whole end day is included
+      whereParts.push('s.starttime < UNIX_TIMESTAMP(DATE_ADD(?, INTERVAL 1 DAY))');
+      whereParams.push(`${end} 00:00:00`);
+    }
+
+    const whereClause = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
 
     const [rows] = await pool.query(
       `SELECT s.ID, s.starttime, s.duration, s.djname, s.title, s.subtitle,
@@ -56,9 +109,10 @@ router.get('/recent', async (req, res) => {
               u.defdjname, u.link
        FROM shows s
        LEFT JOIN users u ON s.userID = u.ID
+       ${whereClause}
        ORDER BY s.starttime DESC
        LIMIT ? OFFSET ?`,
-      [limit, offset]
+      [...whereParams, limit, offset]
     );
 
     res.set('Cache-Control', 's-maxage=60, stale-while-revalidate=120');

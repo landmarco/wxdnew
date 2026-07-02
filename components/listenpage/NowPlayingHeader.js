@@ -1,4 +1,6 @@
-// This component displays the current show and dj playing.
+// This component displays the current show and dj playing, plus a link to the
+// previous-shows archive. Centered on mobile, left-aligned beside the vinyl
+// player on desktop.
 
 import Link from "next/link";
 
@@ -13,11 +15,11 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
     const djId = dj.ID ?? show.userID;
 
     return(
-        <>
-            <p className="text-base text-center text-gray-300 tracking-wide">
+        <div className="text-center lg:text-left">
+            <p className="text-base text-gray-300 tracking-wide">
                 Current Show
             </p>
-            <h1 className="text-5xl text-center font-light leading-tight">
+            <h1 className="text-3xl font-light leading-tight break-words">
                 DJ:{" "}
                 {djId && djname ? (
                     <Link href={`/dj/?id=${djId}`} legacyBehavior={false} className="underline hover:no-underline">
@@ -27,10 +29,21 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
                     djname
                 )}
             </h1>
-            <h4 className="text-2xl text-center text-gray-300 mt-1">
-                    Show: {title}
+            <h4 className="text-xl text-gray-300 mt-1 break-words">
+                Show:{" "}
+                {title ? (
+                    <Link href="/current/" legacyBehavior={false} className="underline hover:no-underline">
+                        {title}
+                    </Link>
+                ) : (
+                    title
+                )}
             </h4>
-        </>
-
+            <p className="mt-3">
+                <Link href="/previous-shows/" legacyBehavior={false} className="underline hover:no-underline text-gray-300">
+                    Previous shows
+                </Link>
+            </p>
+        </div>
     )
 }

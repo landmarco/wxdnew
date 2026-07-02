@@ -86,7 +86,7 @@ When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the follo
 | GET | `/api/health` | Returns `{"ok":true}` — use to confirm the server is up |
 | GET | `/api/nowplaying` | Most recently logged track from the active show |
 | GET | `/api/playlists/current` | Full active show with DJ info and all tracks |
-| GET | `/api/playlists/recent` | List of recent shows, newest first. Accepts `?limit=` and `?offset=` |
+| GET | `/api/playlists/recent` | List of recent shows, newest first. Accepts `?limit=`, `?offset=`, and an optional `?start=`/`?end=` (`YYYY-MM-DD`, inclusive) date window. With no `?limit=` or `?start=`, defaults to the last 10 days |
 | GET | `/api/playlists/:id` | One or more shows with tracks and DJ info. Accepts comma-separated IDs. |
 | GET | `/api/playlists/dj/:djId` | Shows by one or more DJs. Accepts comma-separated IDs, `?limit=`, `?offset=` |
 | GET | `/api/djs` | All active DJs. Accepts `?ids=`, `?firstname=`, `?lastname=` (see below) |
