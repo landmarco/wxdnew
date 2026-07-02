@@ -1,3 +1,4 @@
+import { useRouter } from 'next/router'
 import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
@@ -6,7 +7,9 @@ import StreamButton from '../audioplayers/StreamButton'
 
 export default function VinylPlayer() {
   const { song, dj, loading } = useNowPlaying()
-  const { isPlaying, togglePlayPause } = useAudio()
+  const { isPlaying } = useAudio()
+  const router = useRouter()
+  const goToListen = () => router.push('/listen')
 
   return (
     <div
@@ -14,12 +17,12 @@ export default function VinylPlayer() {
       style={{ aspectRatio: '1130 / 596', containerType: 'inline-size' }}
       role="button"
       tabIndex={0}
-      aria-label={isPlaying ? 'Pause stream' : 'Play stream'}
-      onClick={togglePlayPause}
+      aria-label="Go to listen page"
+      onClick={goToListen}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          togglePlayPause()
+          goToListen()
         }
       }}
     >
@@ -53,7 +56,7 @@ export default function VinylPlayer() {
       <img src="/vinyl-notch.png" alt="" className="pointer-events-none absolute" style={{ left: '42.21%', top: '10.74%', width: '47.96%', height: '68.96%' }} />
       <img src="/vinyl-buttons.png" alt="" className="pointer-events-none absolute" style={{ left: '41.68%', top: '6.21%', width: '56.64%', height: '81.54%' }} />
 
-      {/* Spinning record + album art label, always rotating */}
+      {/* Spinning record + album art label */}
       <div
         className="animate-spin-vinyl pointer-events-none absolute"
         style={{ left: '35.31%', top: '10.23%', width: '61.77%', height: '77.52%', transformOrigin: '50% 50%', animationPlayState: isPlaying ? 'running' : 'paused' }}

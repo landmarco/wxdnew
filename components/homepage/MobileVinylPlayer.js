@@ -1,3 +1,4 @@
+import { useRouter } from 'next/router'
 import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
@@ -7,19 +8,21 @@ import StreamButton from '../audioplayers/StreamButton'
 // per the "Mobile Vinyl Player" Figma layout (node 8:2).
 export default function MobileVinylPlayer() {
   const { song, dj, loading } = useNowPlaying()
-  const { isPlaying, togglePlayPause } = useAudio()
+  const { isPlaying } = useAudio()
+  const router = useRouter()
+  const goToListen = () => router.push('/listen')
 
   return (
     <div
       className="relative mx-auto w-full max-w-md cursor-pointer select-none focus:outline-none focus-visible:outline-none"
       role="button"
       tabIndex={0}
-      aria-label={isPlaying ? 'Pause stream' : 'Play stream'}
-      onClick={togglePlayPause}
+      aria-label="Go to listen page"
+      onClick={goToListen}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          togglePlayPause()
+          goToListen()
         }
       }}
     >

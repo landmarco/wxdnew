@@ -7,7 +7,10 @@ const StreamButton = () => {
 
     return (
         <button
-            onClick={togglePlayPause}
+            onClick={(e) => {
+                e.stopPropagation()
+                togglePlayPause()
+            }}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-700 hover:bg-red-600 py-[3%] font-courierprime text-[3vw] text-[#white] transition-opacity hover:opacity-80 lg:text-[15px]">
                 {isPlaying ? 'pause' : 'stream here'}
                 <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-white/20">
