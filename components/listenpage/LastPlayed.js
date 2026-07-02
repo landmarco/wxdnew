@@ -1,16 +1,24 @@
 // This component displayed the last played songs of the entire day.
 
 import SongRow from './songRow'
+import useRecentTracks from '@/hooks/useRecentTracks'
+import {getApiBase} from 'lib/api'
+
+function convertTime(time){
+	const date = new Date(time * 1000);
+
+	const etTime = date.toLocaleString("en-US", {
+	timeZone: "America/New_York",
+	dateStyle: "medium",
+	timeStyle: "short",
+	});
+
+	return etTime;
+}
 
 export default function LastPlayed({currentPlaylist = {}}) {
-	// The current playlist hook already returns the newest track first.
-	const tracks = Array.isArray(currentPlaylist.tracks)
-		? currentPlaylist.tracks
-		: []
-
-	const ten_tracks = tracks
-		?.filter((item) => item.artist != '*****')
-		.slice(1, 10)
+	
+	const {recentTracks, loading} = useRecentTracks(10);
 
 	// returns a table like appearance using only divs
 	// table is hidden for small screens like on mobile to rather just show a row.
@@ -34,15 +42,24 @@ export default function LastPlayed({currentPlaylist = {}}) {
 						<div role="columnheader">Album</div>
 					</div>
 
-					{tracks.length > 0 ? (
-						ten_tracks.map((item, i) => (
+					{loading ? (
+						<div
+							role="row"
+							className="px-1 py-5 text-sm text-zinc-400 md:grid md:grid-cols-[128px_88px_minmax(140px,1fr)_minmax(180px,1.25fr)_minmax(140px,1fr)] md:gap-4 md:px-3"
+						>
+							<p role="cell" className="md:col-span-5 text-center">
+								Loading recent songs...
+							</p>
+						</div>
+					) : recentTracks.length > 0 ? (
+						recentTracks.map((item, i) => (
 							<SongRow
 								key={`${item.songstart || 'track'}-${i}`}
 								song={item.song}
 								artist={item.artist}
 								album={item.album}
-								songStart={item.songstart}
-								cover={item.cover}
+								songStart={convertTime(item.starttime)}
+								cover={item.cover_url ? `${getApiBase()}${item.cover_url}` : null}
 							/>
 						))
 					) : (
