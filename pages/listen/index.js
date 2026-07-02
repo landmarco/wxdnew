@@ -30,11 +30,21 @@ export default function Listen() {
 			</p>
 
             <div className="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
-                <div className="hidden w-full max-w-3xl lg:block">
-                    <VinylPlayer />
+                {/* Desktop: current show info sits to the left of the vinyl player */}
+                <div className="hidden w-full max-w-5xl lg:flex lg:items-center lg:gap-8">
+                    <div className="w-1/3 min-w-0">
+                        <NowPlayingHeader currentPlaylist={currentPlaylist} />
+                    </div>
+                    <div className="w-2/3">
+                        <VinylPlayer />
+                    </div>
                 </div>
+                {/* Mobile: current show info stacked above the vinyl player */}
                 <div className="w-full max-w-md lg:hidden">
-                    <MobileVinylPlayer />
+                    <NowPlayingHeader currentPlaylist={currentPlaylist} />
+                    <div className="mt-4">
+                        <MobileVinylPlayer />
+                    </div>
                 </div>
                 <div className="w-full max-w-md lg:max-w-3xl">
                     <StreamButton />
