@@ -80,23 +80,25 @@ export default function TodaySchedule({ schedule }) {
 	return (
 		<div className="text-lg text-[#e0ff05] w-full tracking-[-0.07em]">
 			<h1 className="bitcount mb-2 text-center lg:text-left text-2xl lg:text-5xl text-white">Today&apos;s Schedule</h1>
-			{shows.map(({ startLabel, endLabel, show, id }, i) => (
-				show ? (
-					<Link
-						key={`${startLabel}-${endLabel}-${i}`}
-						href={djHref(id)}
-						legacyBehavior={false}
-						className="group flex gap-4 py-3 border-b border-gray-300"
-					>
-						<span className="w-24 text-right">
-							{startLabel === endLabel ? (startLabel) : (<>{startLabel}–<br />{endLabel}</>)}
-						</span>
-						<span className="border-l font-bold border-gray-300 pl-4 flex-1 group-hover:underline">
-							{show}
-						</span>
-					</Link>
-				) : null
-			))}
+			<div className="max-h-[50vh] overflow-y-auto border border-white p-4">
+				{shows.map(({ startLabel, endLabel, show, id }, i) => (
+					show ? (
+						<Link
+							key={`${startLabel}-${endLabel}-${i}`}
+							href={djHref(id)}
+							legacyBehavior={false}
+							className="group flex gap-4 py-3 border-b border-gray-300"
+						>
+							<span className="w-24 text-right">
+								{startLabel === endLabel ? (startLabel) : (<>{startLabel}–<br />{endLabel}</>)}
+							</span>
+							<span className="border-l font-bold border-gray-300 pl-4 flex-1 group-hover:underline">
+								{show}
+							</span>
+						</Link>
+					) : null
+				))}
+			</div>
 		</div>
 	)
 }

@@ -48,7 +48,6 @@ export default function Home(props) {
 								</div>
 								<div className="flex flex-col items-end gap-2 flex-[2]" style={{ zoom: 0.85 }}>
 									<VinylPlayer />
-									<StreamButton />
 									{/* CDs (fillers for now) that link to important pages */}
 								<div className="flex flex-row justify-between gap-2 mt-4 w-full">
 									<CDLink href="/blog" label="blog posts" image="/CD_1_Filler.jpg" />
@@ -66,7 +65,6 @@ export default function Home(props) {
 			{/* Mobile layout — hidden on desktop */}
 			<div className="lg:hidden flex flex-col items-center gap-8 px-8 pt-1 pb-16">
 				<div className="flex flex-col items-center gap-2 w-full">
-					<StreamButton />
 					<MobileVinylPlayer />
 				</div>
 				<TodaySchedule schedule={schedule} />

@@ -1,6 +1,7 @@
 import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
+import StreamButton from '../audioplayers/StreamButton'
 
 // Mobile-only vinyl player: turntable stacked on top, text panel + button below,
 // per the "Mobile Vinyl Player" Figma layout (node 8:2).
@@ -76,6 +77,7 @@ export default function MobileVinylPlayer() {
               </div>
 
               <div className="break-words font-courierprime text-[3.8vw] text-[#e0ff05]">DJ: {dj || 'mystery dj'}</div>
+              <StreamButton />
             </>
           )}
         </div>
