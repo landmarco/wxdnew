@@ -9,7 +9,7 @@ export default function VinylPlayer() {
 
   return (
     <div
-      className="relative w-full cursor-pointer select-none"
+      className="relative w-full cursor-pointer select-none focus:outline-none focus-visible:outline-none"
       style={{ aspectRatio: '1130 / 596', containerType: 'inline-size' }}
       role="button"
       tabIndex={0}

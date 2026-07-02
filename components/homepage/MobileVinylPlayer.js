@@ -10,7 +10,7 @@ export default function MobileVinylPlayer() {
 
   return (
     <div
-      className="relative mx-auto w-full max-w-md cursor-pointer select-none"
+      className="relative mx-auto w-full max-w-md cursor-pointer select-none focus:outline-none focus-visible:outline-none"
       role="button"
       tabIndex={0}
       aria-label={isPlaying ? 'Pause stream' : 'Play stream'}
