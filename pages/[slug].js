@@ -22,9 +22,9 @@ export default function Home(props) {
 	const components = {
 		...markdownComponents,
 		weeklySchedule: () => isSchedulePage ? (
-			<div className="not-prose relative left-1/2 mt-8 w-[80vw] -translate-x-1/2">
-				<WeeklySchedule schedule={props.schedule} />
-			</div>
+				<div className="not-prose relative left-1/2 mt-8 w-[calc(100vw-1rem)] -translate-x-1/2 lg:w-[80vw]">
+					<WeeklySchedule schedule={props.schedule} />
+				</div>
 		) : null
 	}
 

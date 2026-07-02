@@ -12,7 +12,7 @@ import { useAudio } from "@/components/AudioContext";
 export default function Listen() {
 
     const { currentPlaylist, loading } = useCurrentPlaylist();
-    const { isHighQuality, setHighQuality } = useAudio();
+    const { isPlaying, isHighQuality, setHighQuality, rejoinLive } = useAudio();
 
     return(
         <div className="min-h-screen text-white pb-2">
@@ -36,8 +36,20 @@ export default function Listen() {
                 </div>
             </div>
 
+            <div className="mt-10 flex justify-center">
+                <button
+                    type="button"
+                    onClick={rejoinLive}
+                    disabled={!isPlaying}
+                    title={isPlaying ? "Resync to the live stream" : "Start the stream to resync"}
+                    className="font-courierprime rounded border border-orange-500/60 px-4 py-2 text-sm text-orange-300 transition-colors hover:bg-orange-500/10 hover:text-orange-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-orange-300"
+                >
+                    Resync to the live stream
+                </button>
+            </div>
+
             {!isHighQuality && (
-                <div className="mt-10 flex justify-center pb-6">
+                <div className="mt-4 flex justify-center pb-6">
                     <button
                         type="button"
                         onClick={() => setHighQuality(true)}
