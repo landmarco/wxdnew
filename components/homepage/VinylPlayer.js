@@ -54,7 +54,7 @@ export default function VinylPlayer() {
         className="animate-spin-vinyl pointer-events-none absolute"
         style={{ left: '35.31%', top: '10.23%', width: '61.77%', height: '77.52%', transformOrigin: '50% 50%', animationPlayState: isPlaying ? 'running' : 'paused' }}
       >
-        <img src="/vinyl-cd.png" alt="" className="absolute inset-0 h-full w-full" />
+        <img src="/vinyl-cd.webp" alt="" className="absolute inset-0 h-full w-full" />
         <div className="absolute overflow-hidden rounded-full" style={{ left: '38.83%', top: '34.63%', width: '22.21%', height: '33.55%' }}>
           <img
             src={song?.albumArt || cardinalsFallback.src}
