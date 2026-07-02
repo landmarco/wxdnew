@@ -2,19 +2,34 @@
 
 import Link from 'next/link'
 import useCurrentPlaylist from '@/hooks/useCurrentPlaylist'
-import NowPlayingHeader from '@/components/listenpage/NowPlayingHeader'
-import {useAudio} from '@/components/AudioContext'
-import NowPlaying from '@/components/listenpage/NowPlaying'
+import NowPlayingHeader from "@/components/listenpage/NowPlayingHeader";
+import StreamButton from "@/components/audioplayers/StreamButton";
 import LastPlayed from '@/components/listenpage/LastPlayed'
 import TodayShows from '@/components/listenpage/TodayShows'
+import VinylPlayer from "@/components/homepage/VinylPlayer";
+import MobileVinylPlayer from "@/components/homepage/MobileVinylPlayer";
+import { useAudio } from "@/components/AudioContext";
 
 export default function Listen() {
-	const {currentPlaylist} = useCurrentPlaylist()
-	const {isHighQuality, setHighQuality} = useAudio()
 
-	return (
-		<div className="min-h-screen pb-2 text-white">
-			<NowPlayingHeader currentPlaylist={currentPlaylist} />
+    const { currentPlaylist, loading } = useCurrentPlaylist();
+    const { isPlaying, isHighQuality, setHighQuality, rejoinLive } = useAudio();
+
+    return(
+        <div className="min-h-screen text-white pb-2">
+            <NowPlayingHeader currentPlaylist={currentPlaylist} />
+
+            <div className="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
+                <div className="hidden w-full max-w-3xl lg:block">
+                    <VinylPlayer />
+                </div>
+                <div className="w-full max-w-md lg:hidden">
+                    <MobileVinylPlayer />
+                </div>
+                <div className="w-full max-w-md lg:max-w-3xl">
+                    <StreamButton />
+                </div>
+            </div>
 
 			<p className="mt-2 text-center">
 				<Link
@@ -26,21 +41,33 @@ export default function Listen() {
 				</Link>
 			</p>
 
-			<NowPlaying currentPlaylist={currentPlaylist} />
+            <div className="mt-10 flex justify-center">
+                <button
+                    type="button"
+                    onClick={rejoinLive}
+                    disabled={!isPlaying}
+                    title={isPlaying ? "Resync to the live stream" : "Start the stream to resync"}
+                    className="font-courierprime rounded border border-orange-500/60 px-4 py-2 text-sm text-orange-300 transition-colors hover:bg-orange-500/10 hover:text-orange-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-orange-300"
+                >
+                    Resync to the live stream
+                </button>
+            </div>
 
-			{!isHighQuality && (
-				<div className="mt-10 flex justify-center pb-6">
-					<button
-						type="button"
-						onClick={() => setHighQuality(true)}
-						className="rounded border border-emerald-500/60 px-4 py-2 font-courierprime text-sm text-emerald-300 transition-colors hover:bg-emerald-500/10 hover:text-emerald-200"
-					>
-						Gimme the 320 kbps stream
-					</button>
-				</div>
-			)}
 
-			<div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 md:grid-cols-[minmax(0,1fr)_360px]">
+
+            {!isHighQuality && (
+                <div className="mt-10 flex justify-center pb-6">
+                    <button
+                        type="button"
+                        onClick={() => setHighQuality(true)}
+                        className="font-courierprime rounded border border-emerald-500/60 px-4 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/10 hover:text-emerald-200"
+                    >
+                        Gimme the 320 kbps stream
+                    </button>
+                </div>
+            )}
+
+            <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 md:grid-cols-[minmax(0,1fr)_360px]">
 				<div className="listen-scrollbar h-auto min-w-0 md:h-[calc(100vh-160px)] md:overflow-auto">
 					<LastPlayed currentPlaylist={currentPlaylist} />
 				</div>
@@ -48,6 +75,7 @@ export default function Listen() {
 					<TodayShows />
 				</div>
 			</div>
-		</div>
-	)
+            
+        </div>
+    )
 }

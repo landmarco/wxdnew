@@ -9,7 +9,8 @@ import photo from '../images/logo.png'
 import Image from 'next/image'
 import StreamButton from '../components/audioplayers/StreamButton'
 import CDLink from '../components/homepage/CDLink'
-import IpodWidget from '../components/homepage/IpodWidget'
+import VinylPlayer from '../components/homepage/VinylPlayer'
+import MobileVinylPlayer from '../components/homepage/MobileVinylPlayer'
 import TodaySchedule from '../components/homepage/TodaySchedule'
 import ShowCalendar from "../components/homepage/ShowCalendar"
 
@@ -46,7 +47,7 @@ export default function Home(props) {
 									<TodaySchedule schedule={schedule} />
 								</div>
 								<div className="flex flex-col items-end gap-2 flex-[2]" style={{ zoom: 0.85 }}>
-									<IpodWidget />
+									<VinylPlayer />
 									<StreamButton />
 									{/* CDs (fillers for now) that link to important pages */}
 								<div className="flex flex-row justify-between gap-2 mt-4 w-full">
@@ -66,8 +67,7 @@ export default function Home(props) {
 			<div className="lg:hidden flex flex-col items-center gap-8 px-8 pt-1 pb-16">
 				<div className="flex flex-col items-center gap-2 w-full">
 					<StreamButton />
-					<IpodWidget />
-		
+					<MobileVinylPlayer />
 				</div>
 				<TodaySchedule schedule={schedule} />
 				<div className="flex flex-row justify-center gap-1 mt-4 w-full">
