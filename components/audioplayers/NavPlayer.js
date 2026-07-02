@@ -13,7 +13,7 @@ import Emerald from "../Emerald";
 const USE_REAL_COVER_ART = false;
 
 const NavPlayer = () => {
-    const { isPlaying, isStalled, togglePlayPause, isHighQuality } = useAudio();
+    const { isPlaying, isStalled, isRejoining, isPreloading, togglePlayPause, isHighQuality } = useAudio();
 
     // refs for measuring available ticker width vs text width
     const tickerContainerRef = useRef(null);
@@ -181,7 +181,38 @@ const NavPlayer = () => {
     const shouldScrollTicker = tickerDistance > 0 && !prefersReducedMotion;
 
     return (
-        <div className="fixed top-0 left-0 z-50 flex h-16 w-full flex-row items-center overflow-hidden border-b-2 border-[#e0ff05] bg-black">
+        <div className="fixed left-0 top-0 z-50 flex h-[104px] w-full flex-col items-stretch overflow-hidden border-b-2 border-[#e0ff05] bg-black lg:h-16 lg:flex-row lg:items-center">
+            {/* The rest of the bar — all the blank space around the ticker —
+                opens the /listen page, not just the text. */}
+            <Link href="/listen" legacyBehavior>
+                <a
+                    className="group order-1 mb-2 flex h-14 min-w-0 shrink-0 cursor-pointer items-center overflow-hidden transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 lg:order-2 lg:mb-0 lg:h-full lg:flex-1"
+                    onClick={(event) => {
+                        event.currentTarget.blur();
+                    }}
+                >
+                    <div ref={tickerContainerRef} className="w-full overflow-hidden">
+                        <div
+                            className={`inline-block whitespace-nowrap ${
+                                shouldScrollTicker ? "animate-ticker-pingpong" : ""
+                            }`}
+                            style={{
+                                "--ticker-distance": `${tickerDistance}px`
+                            }}
+                        >
+                            <span
+                                ref={tickerTextRef}
+                                className="px-4 text-sm font-semibold tracking-widest text-[#e0ff05] group-hover:text-white group-hover:underline group-focus:text-white group-focus:underline md:px-8 md:text-base"
+                            >
+                                <span className="inline md:hidden">Now: </span>
+                                <span className="hidden md:inline">Currently Playing: </span>
+                                {currentTrack} &nbsp;&nbsp;&nbsp;&nbsp; DJ ON AIR: {nowPlaying.dj}
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </Link>
+            
             {/* The whole left box toggles the stream: from the page's left edge,
                 across the label and waveform, up to the dividing border. */}
             <button
@@ -189,16 +220,25 @@ const NavPlayer = () => {
                 onClick={togglePlayPause}
                 aria-label={isPlaying ? 'Pause stream' : 'Play stream'}
                 title={isPlaying ? 'Pause stream' : 'Play stream'}
-                className="group flex h-full shrink-0 flex-row items-center gap-2 border-r border-[#e0ff05] px-4 transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                className="group order-2 flex h-10 w-fit max-w-[calc(100%-4rem)] shrink-0 flex-row items-center justify-center gap-2 px-4 transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 lg:order-1 lg:h-full lg:w-auto lg:max-w-none lg:justify-start lg:border-r lg:border-[#e0ff05]"
             >
                 <span className="relative text-[#e0ff05] group-hover:text-yellow-200">
                     {isPlaying ? <FaPause size={18} /> : <FaPlay size={18} />}
                     {/* Mobile/tablet reconnect indicator: the waveform overlay only
                         exists on lg+, so pulse a ring over the icon below that. */}
-                    {isStalled && (
+                    {(isStalled || isRejoining) && (
                         <span
                             aria-hidden="true"
                             className="pointer-events-none absolute -inset-2 rounded-full border-2 border-[#e0ff05] animate-ping lg:hidden"
+                        />
+                    )}
+                    {/* Mobile/tablet warm-up indicator: a mossy green ring that
+                        creeps round the icon while the stream buffers. */}
+                    {isPreloading && !isStalled && (
+                        <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute -inset-2 animate-spin rounded-full border-2 border-dashed border-[#6b8e23] lg:hidden"
+                            style={{ animationDuration: "3s" }}
                         />
                     )}
                 </span>
@@ -221,51 +261,37 @@ const NavPlayer = () => {
                         style={{ height: "75px", width: "175px", objectFit: "cover" }}
                     />
 
-                    {/* While reconnecting, keep the oscillation but overlay a label
-                        so the user knows the audio dropped and we're rejoining. */}
-                    {isStalled && (
+                    {/* Keep the oscillation but overlay a label when the audio
+                        dropped mid-play ("Reconnecting") or when we're catching
+                        back up to live from a long pause ("Rejoining"). */}
+                    {(isStalled || isRejoining) && (
                         <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-1">
                             <span
                                 className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
                                 style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
                             >
-                                Reconnecting
+                                {isRejoining ? "Rejoining" : "Reconnecting"}
+                            </span>
+                        </span>
+                    )}
+
+                    {/* On first load (or returning to the tab) the stream is buffering
+                        its connection — overlay a label until it's ready to play. If
+                        the user hits play before it's live, the label rides over the
+                        moving oscillation until audio actually starts flowing. */}
+                    {isPreloading && !isStalled && (
+                        <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-1">
+                            <span
+                                className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
+                                style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
+                            >
+                                Lichenizing
                             </span>
                         </span>
                     )}
                 </span>
             </button>
 
-            {/* The rest of the bar — all the blank space around the ticker —
-                opens the /listen page, not just the text. */}
-            <Link href="/listen" legacyBehavior>
-                <a
-                    className="group flex h-full min-w-0 flex-1 items-center overflow-hidden cursor-pointer transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                    aria-label="Open listen page"
-                    title="Open listen page"
-                    onClick={(event) => {
-                        event.currentTarget.blur();
-                    }}
-                >
-                    <div ref={tickerContainerRef} className="w-full overflow-hidden">
-                        <div
-                            className={`inline-block whitespace-nowrap ${
-                                shouldScrollTicker ? "animate-ticker-pingpong" : ""
-                            }`}
-                            style={{
-                                "--ticker-distance": `${tickerDistance}px`
-                            }}
-                        >
-                            <span
-                                ref={tickerTextRef}
-                                className="px-8 text-base font-semibold tracking-widest text-[#e0ff05] group-hover:text-white group-hover:underline group-focus:text-white group-focus:underline"
-                            >
-                                <span className="hidden md:inline">Currently Playing: </span>{currentTrack} &nbsp;&nbsp;&nbsp;&nbsp; DJ ON AIR: {nowPlaying.dj}
-                            </span>
-                        </div>
-                    </div>
-                </a>
-            </Link>
         </div>
     );
 };

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { djHref } from "@/lib/djLink"
 
@@ -65,28 +66,53 @@ function whichRowsCollapse(hourRows) {
 }
 
 export default function WeeklySchedule({schedule}) {
+	const scheduleScrollerRef = useRef(null)
+	const todayHeaderRef = useRef(null)
+	const firstColumnHeaderRef = useRef(null)
 
 	// because I"m lazy and I don"t want to rewrite the array logic below (which accounts for headers),
 	// I"m going to simply reconstruct the carrier into full array with header and feed it in
-	const reconstructedSchedule = [
-		schedule[0],
-		...schedule[3].map((row, i) => [schedule[1][i], ...row])
-	];
+	const headerSource = Array.isArray(schedule?.[0]) ? schedule[0] : []
+	const hourColumn = Array.isArray(schedule?.[1]) ? schedule[1] : []
+	const showGrid = Array.isArray(schedule?.[3]) ? schedule[3] : []
+	const reconstructedSchedule = headerSource.length && showGrid.length
+		? [
+			headerSource,
+			...showGrid.map((row, i) => [hourColumn[i], ...(Array.isArray(row) ? row : [])])
+		]
+		: []
+
+	// init arrays
+	const headerRow = reconstructedSchedule[0] || []
+	const hourRows = reconstructedSchedule.slice(1)
+	const days = headerRow
+	const todayColumnIndex = days.findIndex(
+		(day, dayIndex) =>
+			dayIndex > 0 &&
+			String(day || "").trim().toLowerCase() ===
+				new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase()
+	)
+
+	useEffect(() => {
+		const scroller = scheduleScrollerRef.current
+		const todayHeader = todayHeaderRef.current
+		if (!scroller || !todayHeader || todayColumnIndex <= 0) return
+		if (!window.matchMedia("(max-width: 1023px)").matches) return
+
+		const stickyWidth = firstColumnHeaderRef.current?.getBoundingClientRect().width || 0
+		scroller.scrollLeft = Math.max(todayHeader.offsetLeft - stickyWidth, 0)
+	}, [todayColumnIndex])
 
 	// MySQL id grid aligned with the dj-name grid (schedule[3]); used to link cells
-	const idGrid = Array.isArray(schedule[4]) ? schedule[4] : []
+	const idGrid = Array.isArray(schedule?.[4]) ? schedule[4] : []
 
 	// make sure we aren"t passing in non-arrays or nothing
 	if (!Array.isArray(reconstructedSchedule) || reconstructedSchedule.length === 0) {
 		return null
 	}
 
-	// init arrays
-	const headerRow = reconstructedSchedule[0]
-	const hourRows = reconstructedSchedule.slice(1)
-	const days = headerRow
 	const collapseAwareHourRows = whichRowsCollapse(hourRows)
-	const specialtyShowIndices = schedule[2] || []
+	const specialtyShowIndices = schedule?.[2] || []
 
 	// checks for specialty shows, so we can format them differently
 	function isSpecialtyShow(rowIndex, dayIndex) {
@@ -113,11 +139,11 @@ export default function WeeklySchedule({schedule}) {
 		return ""
 	}
 
-	const firstColumnClass = "sticky left-0 z-10 border border-gray-300 bg-white px-4 py-2 text-right text-xl whitespace-nowrap uppercase text-red-600"
+	const firstColumnClass = "sticky left-0 z-10 w-20 min-w-[5rem] max-w-[5rem] break-words border border-gray-300 bg-white px-2 py-2 text-center text-base leading-tight uppercase text-red-600 lg:w-auto lg:min-w-0 lg:max-w-none lg:px-4 lg:text-right lg:text-xl lg:whitespace-nowrap"
 
 	return (
-		<div className="h-[80vh] w-[80vw] overflow-auto text-xl font-semibold text-[#e0ff05] tracking-[-0.09em] flex justify-center">
-			<table className="w-full table-auto border-separate border-spacing-0">
+		<div ref={scheduleScrollerRef} className="mx-auto h-[80vh] w-[calc(100vw-1rem)] max-w-full overflow-auto text-lg font-semibold tracking-[-0.07em] text-[#e0ff05] lg:w-[80vw] lg:text-xl">
+			<table className="min-w-[720px] table-fixed border-separate border-spacing-0 lg:w-full lg:min-w-0 lg:table-auto">
                     <caption className="sr-only">
                         WXDU on-air show schedule with DJ names per hour
                     </caption>
@@ -128,9 +154,10 @@ export default function WeeklySchedule({schedule}) {
 						{days.map((day, dayIndex) => (
 							<th
 								key={dayIndex}
-								className={`sticky border border-gray-300 px-4 py-2 text-xl uppercase ${
+								ref={dayIndex === 0 ? firstColumnHeaderRef : dayIndex === todayColumnIndex ? todayHeaderRef : null}
+								className={`sticky border border-gray-300 px-2 py-2 text-lg uppercase lg:px-4 lg:text-xl ${
 									dayIndex === 0
-										? "top-0 left-0 z-50 bg-black"
+										? "top-0 left-0 z-50 w-20 min-w-[5rem] max-w-[5rem] break-words bg-black text-base leading-tight lg:w-auto lg:min-w-0 lg:max-w-none lg:text-xl"
 										: "top-0 z-30 bg-white text-red-600"
 								}`}
 							>
@@ -183,9 +210,9 @@ export default function WeeklySchedule({schedule}) {
 													{djName && (
 														// otto rows are the auto-DJ — link to the auto-DJ show list
 														// Link fills the whole cell so the entire cell is clickable, not just the text.
-														<Link href={djHref(null)} legacyBehavior={false} className="flex h-full items-center justify-center px-4 py-2 hover:underline">
-															{djName}
-														</Link>
+															<Link href={djHref(null)} legacyBehavior={false} className="flex h-full items-center justify-center px-2 py-2 hover:underline lg:px-4">
+																{djName}
+															</Link>
 													)}
 												</td>
 											)
@@ -212,10 +239,10 @@ export default function WeeklySchedule({schedule}) {
 								{djCells.map((djName, dayIndex) => {
 									if (!djName) {
 										return (
-											<td
-												key={`${hour}-${dayIndex}`}
-												className="border border-gray-300 bg-black px-4 py-2"
-											/>
+												<td
+													key={`${hour}-${dayIndex}`}
+													className="border border-gray-300 bg-black px-2 py-2 lg:px-4"
+												/>
 										)
 									}
 
@@ -248,10 +275,10 @@ export default function WeeklySchedule({schedule}) {
 													specialtyShow ? "bg-[#e0ff05] text-black" : "bg-black" // HIGHLIGHT SPECIALTY SHOWS!!!
 												}`}
 											>
-											{/* Link fills the whole cell so the entire cell is clickable, not just the text. */}
-											<Link href={djHref(djId)} legacyBehavior={false} className="flex h-full items-center justify-center px-4 py-2 hover:underline">
-												{djName}
-											</Link>
+												{/* Link fills the whole cell so the entire cell is clickable, not just the text. */}
+												<Link href={djHref(djId)} legacyBehavior={false} className="flex h-full items-center justify-center px-2 py-2 hover:underline lg:px-4">
+													{djName}
+												</Link>
 										</td>
 									)
 								})}

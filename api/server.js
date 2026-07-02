@@ -7,12 +7,18 @@ const playlists = require('./routes/playlists');
 const djs = require('./routes/djs');
 const schedule = require('./routes/schedule');
 const requests = require('./routes/requests');
+const feedback = require('./routes/feedback');
 const releases = require('./routes/releases');
 const events = require('./routes/events');
 const recenttracks = require('./routes/recenttracks');
 const charts = require('./routes/charts');
 
 const app = express();
+
+// Apache proxies to this server and sets X-Forwarded-For with the real client
+// IP. Trust the first proxy hop so express-rate-limit keys on the actual client
+// rather than bucketing everyone under 127.0.0.1.
+app.set('trust proxy', 1);
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim());
 
@@ -36,6 +42,7 @@ app.use('/api/playlists', playlists);
 app.use('/api/djs', djs);
 app.use('/api/schedule', schedule);
 app.use('/api/requests', requests);
+app.use('/api/feedback', feedback);
 app.use('/api/releases', releases);
 app.use('/api/events', events);
 app.use('/api/recenttracks', recenttracks);

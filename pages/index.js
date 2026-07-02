@@ -9,7 +9,10 @@ import photo from '../images/logo.png'
 import Image from 'next/image'
 import StreamButton from '../components/audioplayers/StreamButton'
 import CDLink from '../components/homepage/CDLink'
+<<<<<<< HEAD
 import IpodWidget from '../components/homepage/IpodWidget'
+=======
+>>>>>>> origin/main
 import VinylPlayer from '../components/homepage/VinylPlayer'
 import MobileVinylPlayer from '../components/homepage/MobileVinylPlayer'
 import TodaySchedule from '../components/homepage/TodaySchedule'
@@ -33,7 +36,7 @@ export default function Home(props) {
 
 	return (
 		<div>
-			<div data-tina-field={pageData?.page ? tinaField(pageData.page, 'homepageBanner') : undefined} className="pt-28 lg:pt-0 lg:px-16">
+			<div data-tina-field={pageData?.page ? tinaField(pageData.page, 'homepageBanner') : undefined} className="pt-5 lg:mt-0 lg:px-16">
 				{/* HomepageBanner is a component for adding a closeable banner announcement to the homepage. Toggle on or off in Components > HomepageBanner.js */}
 				<HomepageBanner columns={bannerColumns} aboveLogo={bannerAboveLogo} belowLogo={bannerBelowLogo} />
 			</div>
@@ -48,10 +51,14 @@ export default function Home(props) {
 									<TodaySchedule schedule={schedule} />
 								</div>
 								<div className="flex flex-col items-end gap-2 flex-[2]" style={{ zoom: 0.85 }}>
+<<<<<<< HEAD
 									<h1 className="bitcount w-full text-center lg:text-right text-2xl leading-none lg:text-5xl text-white">Currently Playing</h1>
 									<div className="-mt-10 w-full">
 										<VinylPlayer />
 									</div>
+=======
+									<VinylPlayer />
+>>>>>>> origin/main
 									<StreamButton />
 									{/* CDs (fillers for now) that link to important pages */}
 								<div className="flex flex-row justify-between gap-2 mt-4 w-full">
@@ -71,13 +78,17 @@ export default function Home(props) {
 			<div className="lg:hidden flex flex-col items-center gap-8 px-8 pt-1 pb-16">
 				<div className="flex flex-col items-center gap-2 w-full">
 					<StreamButton />
+<<<<<<< HEAD
 					<h1 className="bitcount w-full text-center text-2xl leading-none text-white">Currently Playing</h1>
 					<div className="-mt-6 w-full">
 						<MobileVinylPlayer />
 					</div>
+=======
+					<MobileVinylPlayer />
+>>>>>>> origin/main
 				</div>
 				<TodaySchedule schedule={schedule} />
-				<div className="flex flex-row justify-between gap-1 mt-4 w-full">
+				<div className="flex flex-row justify-center gap-1 mt-4 w-full">
 						<CDLink href="/blog" label="blog posts" image="/CD_1_Filler.jpg" />
 						<CDLink href="/schedule" label="schedule" image="/CD_2_Filler.jpg" />
 						<CDLink href="/about" label="about" image="/CD_3_Filler.jpg" />
@@ -85,13 +96,15 @@ export default function Home(props) {
 				
 			</div>
 
+			<div className="mt-6 flex w-full justify-center overflow-x-auto lg:px-0 [&>*]:w-[92vw] lg:[&>*]:w-[60vw]">
+				<ShowCalendar />
+			</div>
+
 			<div className="mx-auto flex w-full flex-col gap-4">
-<div className="mt-6">
-    <ShowCalendar />
-</div>
+
 
 			<div className="mx-auto flex w-5/6 flex-col gap-4">
-				<div className="-mt-5 flex w-full flex-col justify-center md:-mt-10 md:mr-10 lg:mt-5">
+				<div className="mt-5 flex w-full flex-col justify-center md:-mt-10 md:mr-10 lg:mt-5">
 					
 					
 
@@ -106,17 +119,6 @@ export default function Home(props) {
 
 					{/* if yes events: blog posts full row */}
 					{events.length > 0 && posts && <BlogCarouselFull posts={posts} />}
-
-					{/* "Submit a PSA" button on mobile */}
-					<div className="lg:hidden flex w-full justify-center"> 
-						<div className="mx-auto mt-10 flex h-16 w-4/6 md:w-2/6 flex-col items-center justify-center rounded-3xl bg-gradient-to-b from-neutral-200 to-neutral-400 text-xl text-black hover:text-neutral-700 lg:mx-0 ">
-							<div>
-								<a href="mailto:psa@wxdu.org">
-									Submit a PSA!
-								</a>
-							</div>
-						</div>
-					</div>
 					
 					{/* Photo gallery */}
 					<div className="mx-auto mt-16 hidden w-full items-center justify-center md:visible md:flex">

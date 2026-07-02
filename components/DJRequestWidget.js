@@ -1,11 +1,14 @@
 import React, {useState, useEffect, useRef} from 'react'
 import { apiFetch } from '../lib/api'
+import { useModal } from './ModalContext'
 
 const COOLDOWN_SECONDS = 60
 const COOLDOWN_KEY = 'dj_request_cooldown_until' // localStorage key for persisting cooldown across page refreshes
 
 export default function DJRequestWidget() {
-    const [isOpen, setIsOpen] = useState(false)
+    // Open state is shared via ModalContext so the footer/keyboard ("c") can open it too.
+    const { activeModal, openModal, closeModal } = useModal()
+    const isOpen = activeModal === 'dj'
     const [activeTab, setActiveTab] = useState('song')
     const [songTitle, setSongTitle] = useState('')
     const [songArtist, setSongArtist] = useState('')
@@ -59,7 +62,7 @@ export default function DJRequestWidget() {
 
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
-                setIsOpen(false)
+                closeModal()
                 return
             }
 
@@ -128,7 +131,7 @@ export default function DJRequestWidget() {
             <button
                 ref={triggerButtonRef}
                 className="fixed bottom-6 right-6 z-50 cursor-pointer bg-transparent border-0 p-0"
-                onClick={() => setIsOpen(true)}
+                onClick={() => openModal('dj')}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 aria-label="Open DJ request modal"
@@ -152,7 +155,7 @@ export default function DJRequestWidget() {
             {isOpen && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => closeModal()}
                 >
                     {/* Dialog semantics are required for screen readers. */}
                     <div
@@ -170,7 +173,7 @@ export default function DJRequestWidget() {
                             <button
                                 ref={closeButtonRef}
                                 className="text-gray-400 hover:text-white"
-                                onClick={() => setIsOpen(false)}
+                                onClick={() => closeModal()}
                                 aria-label="Close DJ request modal"
                             >
                                 ✕

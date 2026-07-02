@@ -1,15 +1,41 @@
+<<<<<<< HEAD
 import Link from 'next/link'
 import { IoPlaySkipForward } from 'react-icons/io5'
 import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying, formatClock, formatMMSS } from '../../lib/useNowPlaying'
+=======
+import cardinalsFallback from '../../images/cardinals.jpg'
+import { useNowPlaying } from '../../lib/useNowPlaying'
+import { useAudio } from '../AudioContext'
+>>>>>>> origin/main
 
 // Mobile-only vinyl player: turntable stacked on top, text panel + button below,
 // per the "Mobile Vinyl Player" Figma layout (node 8:2).
 export default function MobileVinylPlayer() {
+<<<<<<< HEAD
   const { song, loading, elapsedSec, remainingSec, progressPct } = useNowPlaying()
 
   return (
     <div className="relative mx-auto w-full max-w-md select-none">
+=======
+  const { song, dj, loading } = useNowPlaying()
+  const { isPlaying, togglePlayPause } = useAudio()
+
+  return (
+    <div
+      className="relative mx-auto w-full max-w-md cursor-pointer select-none focus:outline-none focus-visible:outline-none"
+      role="button"
+      tabIndex={0}
+      aria-label={isPlaying ? 'Pause stream' : 'Play stream'}
+      onClick={togglePlayPause}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          togglePlayPause()
+        }
+      }}
+    >
+>>>>>>> origin/main
       {/* Turntable block: fixed aspect ratio, same width as the panel below so both edges line up.
           Sized larger than before so the artwork reads bigger while still fitting fully inside
           this rectangle (the images are plain percentages of this box, so they can't overflow it). */}
@@ -31,7 +57,11 @@ export default function MobileVinylPlayer() {
           {/* Spinning record + album art label, always rotating */}
           <div
             className="animate-spin-vinyl pointer-events-none absolute"
+<<<<<<< HEAD
             style={{ left: '7.00%', top: '10.23%', width: '88.80%', height: '77.52%', transformOrigin: '50% 50%' }}
+=======
+            style={{ left: '7.00%', top: '10.23%', width: '88.80%', height: '77.52%', transformOrigin: '50% 50%', animationPlayState: isPlaying ? 'running' : 'paused' }}
+>>>>>>> origin/main
           >
             <img src="/vinyl-cd.png" alt="" className="absolute inset-0 h-full w-full" />
             <div className="absolute overflow-hidden rounded-full" style={{ left: '38.83%', top: '34.63%', width: '22.21%', height: '33.55%' }}>
@@ -63,6 +93,7 @@ export default function MobileVinylPlayer() {
                 <div className="break-words font-courierprime text-[5.5vw] leading-tight text-white">{song.artist}</div>
               </div>
 
+<<<<<<< HEAD
               <div className="break-words font-courierprime text-[3.8vw] text-white">Played at {formatClock(song.songstart)}</div>
 
               <div className="flex w-full flex-col gap-[6%]">
@@ -86,6 +117,9 @@ export default function MobileVinylPlayer() {
                   <IoPlaySkipForward />
                 </a>
               </Link>
+=======
+              <div className="break-words font-courierprime text-[3.8vw] text-[#e0ff05]">DJ: {dj || 'mystery dj'}</div>
+>>>>>>> origin/main
             </>
           )}
         </div>

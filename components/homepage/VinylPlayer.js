@@ -1,33 +1,48 @@
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { IoPlaySkipForward } from 'react-icons/io5'
 import cardinalsFallback from '../../images/cardinals.jpg'
-import { useNowPlaying, formatClock, formatMMSS } from '../../lib/useNowPlaying'
+import { useNowPlaying } from '../../lib/useNowPlaying'
+import { useAudio } from '../AudioContext'
+import FitText from './FitText'
 import StreamButton from '../audioplayers/StreamButton'
 
 export default function VinylPlayer() {
-  const { song, loading, elapsedSec, remainingSec, progressPct } = useNowPlaying()
+  const { song, dj, loading } = useNowPlaying()
+  const { isPlaying, togglePlayPause } = useAudio()
 
   return (
-    <div className="relative w-full select-none" style={{ aspectRatio: '1130 / 596' }}>
+    <div
+      className="relative w-full cursor-pointer select-none focus:outline-none focus-visible:outline-none"
+      style={{ aspectRatio: '1130 / 596', containerType: 'inline-size' }}
+      role="button"
+      tabIndex={0}
+      aria-label={isPlaying ? 'Pause stream' : 'Play stream'}
+      onClick={togglePlayPause}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          togglePlayPause()
+        }
+      }}
+    >
       {/* Light backdrop behind the turntable photo */}
       <div className="absolute bg-[#d9d9d9]" style={{ left: '0%', top: '12.42%', width: '97.08%', height: '75.34%' }} />
 
-      {/* Dark text panel */}
+      {/* Dark text panel. Fixed box; FitText shrinks the text to fit so long
+          track titles never spill out of it. */}
       <div
-        className="absolute flex flex-col items-center justify-center gap-[3%] bg-[#2a1717] px-[4%] py-[3%] lg:items-stretch"
+        className="absolute flex flex-col justify-center bg-[#2a1717] px-[4%] py-[3%]"
         style={{ left: '1.86%', top: '16.11%', width: '38.41%', height: '68.12%' }}
       >
         {loading ? (
-          <span className="font-courierprime text-[3.5vw] text-zinc-400 lg:text-[14px]">loading...</span>
+          <span className="font-courierprime text-[3cqw] text-zinc-400">loading...</span>
         ) : !song ? (
-          <span className="font-courierprime text-[3.5vw] text-zinc-400 lg:text-[14px]">no playlist</span>
+          <span className="font-courierprime text-[3cqw] text-zinc-400">no playlist</span>
         ) : (
           <>
-            <div className="min-w-0">
-              <div className="break-words text-left font-courierprime text-[5.5vw] leading-tight text-[#e0ff05] lg:text-[26px]">{song.song}</div>
-              <div className="break-words text-left font-courierprime text-[5.5vw] leading-tight text-white lg:text-[26px]">{song.artist}</div>
-            </div>
+            <FitText deps={[song.song, song.artist, dj]}>
+              <div className="break-words text-left font-courierprime leading-tight text-[#e0ff05]">{song.song}</div>
+              <div className="break-words text-left font-courierprime leading-tight text-white">{song.artist}</div>
+              <div className="break-words text-left font-courierprime text-[#e0ff05]" style={{ fontSize: '0.62em', marginTop: '0.6em' }}>DJ: {dj || 'mystery dj'}</div>
+            </FitText>
             <StreamButton />
           </>
         )}
@@ -41,7 +56,7 @@ export default function VinylPlayer() {
       {/* Spinning record + album art label, always rotating */}
       <div
         className="animate-spin-vinyl pointer-events-none absolute"
-        style={{ left: '35.31%', top: '10.23%', width: '61.77%', height: '77.52%', transformOrigin: '50% 50%' }}
+        style={{ left: '35.31%', top: '10.23%', width: '61.77%', height: '77.52%', transformOrigin: '50% 50%', animationPlayState: isPlaying ? 'running' : 'paused' }}
       >
         <img src="/vinyl-cd.png" alt="" className="absolute inset-0 h-full w-full" />
         <div className="absolute overflow-hidden rounded-full" style={{ left: '38.83%', top: '34.63%', width: '22.21%', height: '33.55%' }}>

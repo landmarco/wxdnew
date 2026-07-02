@@ -20,6 +20,23 @@ const WATCHDOG_INTERVAL_MS = 2000
 const STALL_TIMEOUT_MS = 6000
 const RECONNECT_DEBOUNCE_MS = 2000
 
+// On resume after a pause, the browser has usually kept buffering the live
+// broadcast, so we skip the playhead forward to the freshest buffered audio
+// instead of replaying the stale paused moment — making a brief pause feel like
+// the broadcast kept rolling, with no reconnect gap. We stop this far short of
+// the buffer's leading edge so playback keeps a cushion and doesn't immediately
+// stall, and only bother seeking when it'd recover more than MIN_CATCHUP_S.
+const LIVE_EDGE_CUSHION_S = 1.5
+const MIN_CATCHUP_S = 1
+
+// If a resume can't catch the playhead to within this many seconds of live from
+// the buffer alone — the browser's buffer cap was shorter than the pause, or the
+// server dropped us as a slow client — we seamlessly rejoin the live edge in the
+// background. We can't read the browser's buffer cap directly (no API exposes
+// it), so we infer the shortfall as pause-duration minus how far the buffer
+// actually let us skip forward.
+const RESUME_REJOIN_THRESHOLD_S = 5
+
 export const AudioProvider = ({ children }) => {
     const [isPlaying, setIsPlaying] = useState(false)
     const [isHighQuality, setIsHighQuality] = useState(false)
@@ -27,6 +44,15 @@ export const AudioProvider = ({ children }) => {
     // connection mid-stream) and we're trying to rejoin. Drives the UI's
     // "RECONNECTING" overlay.
     const [isStalled, setIsStalled] = useState(false)
+    // True while the active element is buffering a fresh connection — the initial
+    // page-load warm-up, or a re-warm after returning to the tab — and hasn't yet
+    // reported it can play. Drives the header's "LICHENIZING" overlay. A mid-play
+    // reconnect is a separate concern, surfaced by isStalled instead.
+    const [isPreloading, setIsPreloading] = useState(false)
+    // True while catching back up to live via a background crossover (see
+    // crossoverToLive). Distinct from isStalled so the overlay can say "Rejoining"
+    // for a deliberate catch-up vs "Reconnecting" for a dropped mid-play stream.
+    const [isRejoining, setIsRejoining] = useState(false)
     // Two audio elements so we can buffer a new bitrate on the idle one and cut
     // over gaplessly. activeId marks which one is currently the live player.
     const audioARef = useRef(null)
@@ -48,6 +74,9 @@ export const AudioProvider = ({ children }) => {
     const lastTimeRef = useRef(-1)
     // The URL the active element should be playing (follows quality changes).
     const currentSrcRef = useRef(STREAM_LOW)
+    // Wall-clock time the listener last paused, so on resume we can tell how far
+    // behind live we are and whether the buffer can catch us up on its own.
+    const pausedAtRef = useRef(0)
 
     const getActive = () => (activeId === 'a' ? audioARef.current : audioBRef.current)
     const getInactive = () => (activeId === 'a' ? audioBRef.current : audioARef.current)
@@ -57,6 +86,38 @@ export const AudioProvider = ({ children }) => {
         const active = activeId === 'a' ? audioARef.current : audioBRef.current
         if (active && !active.getAttribute('src')) {
             active.src = currentSrcRef.current
+        }
+    }, [activeId])
+
+    // Track the cold warm-up so the header can show a "LICHENIZING" overlay while
+    // the connection buffers, clearing it the moment the element can play. Only
+    // the idle warm-up counts: a reconnect while the listener wants to play is
+    // covered by the "Reconnecting" overlay (isStalled), so we skip those.
+    useEffect(() => {
+        const audio = activeId === 'a' ? audioARef.current : audioBRef.current
+        if (!audio) return
+
+        const startWarming = () => {
+            if (!wantsToPlayRef.current) setIsPreloading(true)
+        }
+        const doneWarming = () => setIsPreloading(false)
+
+        audio.addEventListener('loadstart', startWarming)
+        audio.addEventListener('canplay', doneWarming)
+        audio.addEventListener('playing', doneWarming)
+
+        // Reconcile with the element's current state in case we attached after its
+        // events fired: already buffered means ready; mid-load means still warming.
+        if (audio.readyState >= 3 /* HAVE_FUTURE_DATA */) {
+            setIsPreloading(false)
+        } else if (audio.getAttribute('src') && !wantsToPlayRef.current) {
+            setIsPreloading(true)
+        }
+
+        return () => {
+            audio.removeEventListener('loadstart', startWarming)
+            audio.removeEventListener('canplay', doneWarming)
+            audio.removeEventListener('playing', doneWarming)
         }
     }, [activeId])
 
@@ -209,12 +270,71 @@ export const AudioProvider = ({ children }) => {
         }
     }, [activeId])
 
+    // Rejoin the live edge WITHOUT a silence gap: keep playing whatever is still
+    // buffered on the active element while we buffer a fresh live connection on
+    // the idle one (muted, so the two never overlap), then cut over the instant
+    // it's actually playing. Used when a resume can't catch up to live from the
+    // buffer alone — a capped buffer, or the server having dropped us as a slow
+    // client mid-pause. "Rejoining" shows for the whole crossover, since the
+    // audio you're still hearing is the stale buffer until the cut.
+    const crossoverToLive = () => {
+        const next = getInactive()
+        if (!next) return
+        setIsRejoining(true)
+
+        const cleanup = () => {
+            next.removeEventListener('playing', onReady)
+            next.removeEventListener('error', onError)
+        }
+        const onReady = () => {
+            cleanup()
+            const old = getActive()
+            // Unmute the fresh stream and promote it to active; its listeners
+            // re-attach via the activeId effect.
+            next.muted = false
+            setActiveId((id) => (id === 'a' ? 'b' : 'a'))
+            setIsPlaying(true)
+            setIsRejoining(false)
+            lastTimeRef.current = -1
+            lastProgressAtRef.current = Date.now()
+            // Tear down the now-stale element so its connection closes promptly.
+            old.pause()
+            old.removeAttribute('src')
+            old.load()
+        }
+        const onError = () => {
+            cleanup()
+            // Fresh connection failed — stay on the buffered audio and let the
+            // watchdog reconnect in place if it ultimately runs dry.
+            next.muted = false
+            next.removeAttribute('src')
+            next.load()
+            setIsRejoining(false)
+        }
+
+        next.addEventListener('playing', onReady, { once: true })
+        next.addEventListener('error', onError, { once: true })
+        // Buffer the live stream silently so it never overlaps the stale audio;
+        // we unmute it at the exact moment we cut over.
+        next.muted = true
+        next.src = currentSrcRef.current
+        next.load()
+        next.play().catch(() => {})
+    }
+
     const togglePlayPause = () => {
         const audio = getActive()
         if (!audio) return
 
+        const onPlayReject = () => {
+            // play() can reject (e.g. browser autoplay policy). Keep state honest.
+            wantsToPlayRef.current = false
+            setIsPlaying(false)
+        }
+
         if (isPlaying) {
             wantsToPlayRef.current = false
+            pausedAtRef.current = Date.now()
             // Explicit user pause: drop the stalled/overlay state and reset the
             // watchdog clock so it doesn't police a deliberately-paused stream.
             setIsStalled(false)
@@ -225,14 +345,92 @@ export const AudioProvider = ({ children }) => {
             wantsToPlayRef.current = true
             lastProgressAtRef.current = 0 // startup grace until 'playing' fires
             lastTimeRef.current = -1
-            if (!audio.getAttribute('src')) audio.src = currentSrcRef.current
-            audio.play().catch(() => {
-                // play() can reject (e.g. browser autoplay policy). Keep state honest.
-                wantsToPlayRef.current = false
-                setIsPlaying(false)
-            })
+            if (!audio.getAttribute('src')) {
+                // Cold start: nothing buffered, just point at the stream and play.
+                audio.src = currentSrcRef.current
+                audio.play().catch(onPlayReject)
+            } else {
+                // Resuming a warm, paused stream: jump ahead to the live-most audio
+                // the browser buffered while we were paused, rather than picking up
+                // from the stale pause point. No reconnect, so no silence gap.
+                const pausedForS = pausedAtRef.current ? (Date.now() - pausedAtRef.current) / 1000 : 0
+                let caughtUpS = 0
+                try {
+                    const buf = audio.buffered
+                    if (buf.length > 0) {
+                        const liveEdge = buf.end(buf.length - 1) - LIVE_EDGE_CUSHION_S
+                        const gap = liveEdge - audio.currentTime
+                        if (gap > MIN_CATCHUP_S) {
+                            audio.currentTime = liveEdge
+                            caughtUpS = gap
+                        }
+                    }
+                } catch {
+                    // Some browsers refuse to seek a live stream — fall back to a
+                    // plain resume rather than failing the play.
+                }
+                // Start the buffered audio immediately — no silence either way.
+                audio.play().catch(onPlayReject)
+                // If the buffer couldn't get us within threshold of live (its cap
+                // was shorter than the pause, or the server dropped us as a slow
+                // client), seamlessly rejoin live in the background while this
+                // buffered audio keeps playing.
+                if (pausedForS - caughtUpS > RESUME_REJOIN_THRESHOLD_S) {
+                    crossoverToLive()
+                }
+            }
+            // Consumed the pause timestamp — clear it so it can't bleed into a
+            // later resume. (Set fresh on the next pause.)
+            pausedAtRef.current = 0
         }
     }
+
+    // Drop the buffered audio and reload the source to rejoin the live edge. A
+    // plain HTTP stream has no live-edge seek: the browser just plays through an
+    // ever-growing buffer, so latency only accumulates (see notes below). The one
+    // way to catch back up to "now" is to tear down the connection and reconnect,
+    // which is exactly what this does. No-op unless the listener is actually
+    // playing — there's no live edge to chase while paused.
+    const rejoinLive = () => {
+        const audio = getActive()
+        if (!audio || !wantsToPlayRef.current) return
+        // Surface the "Reconnecting" overlay while the fresh connection buffers;
+        // markProgress clears it once the new stream is actually flowing.
+        setIsStalled(true)
+        audio.src = currentSrcRef.current
+        audio.load()
+        audio.play().catch(() => {})
+        // Re-baseline the watchdog so it judges this fresh attempt, not the old buffer.
+        lastTimeRef.current = -1
+        lastProgressAtRef.current = Date.now()
+    }
+
+    // Keep refs to the latest closures so the global key listener (bound once)
+    // always calls current state, not a stale render's.
+    const togglePlayPauseRef = useRef(togglePlayPause)
+    togglePlayPauseRef.current = togglePlayPause
+    const rejoinLiveRef = useRef(rejoinLive)
+    rejoinLiveRef.current = rejoinLive
+
+    // Global hotkeys: "k" toggles play/pause (like YouTube); "r" drops the buffer
+    // and rejoins the live edge. Ignored while the user is typing in a field or
+    // holding a modifier, so they never hijack text entry or browser shortcuts.
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            const key = event.key.toLowerCase()
+            if (key !== 'k' && key !== 'r') return
+            if (event.metaKey || event.ctrlKey || event.altKey) return
+            const el = event.target
+            const tag = el?.tagName
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return
+            event.preventDefault()
+            if (key === 'k') togglePlayPauseRef.current()
+            else rejoinLiveRef.current()
+        }
+
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [])
 
     // Switch the stream quality. Gapless when already playing: the new bitrate is
     // buffered on the idle element and we only cut over once it's truly playing.
@@ -297,7 +495,7 @@ export const AudioProvider = ({ children }) => {
     }
 
     return (
-        <AudioContext.Provider value={{ isPlaying, isStalled, togglePlayPause, isHighQuality, setHighQuality }}>
+        <AudioContext.Provider value={{ isPlaying, isStalled, isRejoining, isPreloading, togglePlayPause, rejoinLive, isHighQuality, setHighQuality }}>
             {/* preload="auto" is explicit: keep the active element's stream warm so
                 the first play is instant, rather than depending on the browser's
                 default preload behavior (which varies). The idle element has no src
