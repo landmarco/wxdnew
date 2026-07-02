@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { IoPlaySkipForward } from 'react-icons/io5'
 import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying, formatClock, formatMMSS } from '../../lib/useNowPlaying'
+import StreamButton from '../audioplayers/StreamButton'
 
 export default function VinylPlayer() {
   const { song, loading, elapsedSec, remainingSec, progressPct } = useNowPlaying()
@@ -27,30 +28,7 @@ export default function VinylPlayer() {
               <div className="break-words text-left font-courierprime text-[5.5vw] leading-tight text-[#e0ff05] lg:text-[26px]">{song.song}</div>
               <div className="break-words text-left font-courierprime text-[5.5vw] leading-tight text-white lg:text-[26px]">{song.artist}</div>
             </div>
-
-            <div className="break-words text-left font-courierprime text-[3vw] text-white lg:text-[16px]">Played at {formatClock(song.songstart)}</div>
-
-            <div className="mt-[8%] flex w-full flex-col gap-[6%]">
-              <div className="relative h-[8%] min-h-[4px] w-full rounded-full">
-                <div className="absolute inset-0 rounded-full bg-[#d9d9d9] opacity-60" />
-                <div className="absolute inset-y-0 left-0 rounded-full bg-[#d9d9d9]" style={{ width: `${progressPct}%` }} />
-                <div
-                  className="absolute top-1/2 h-[2.2vw] w-[2.2vw] max-h-[16px] max-w-[16px] -translate-y-1/2 -translate-x-1/2 rounded-full bg-white shadow"
-                  style={{ left: `${progressPct}%` }}
-                />
-              </div>
-              <div className="flex justify-between font-courierprime text-[2.8vw] text-white lg:text-[12px]">
-                <span>{formatMMSS(elapsedSec)}</span>
-                <span>-{formatMMSS(remainingSec)}</span>
-              </div>
-            </div>
-
-            <Link href="/listen" legacyBehavior>
-              <a className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#d9d9d9] py-[3%] font-courierprime text-[3vw] text-[#2a1717] transition-opacity hover:opacity-80 lg:text-[15px]">
-                View songs played today
-                <IoPlaySkipForward />
-              </a>
-            </Link>
+            <StreamButton />
           </>
         )}
       </div>
