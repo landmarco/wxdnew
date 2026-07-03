@@ -37,7 +37,12 @@ const App = ({Component, pageProps}) => {
 			<AudioProvider>
 				<ModalProvider>
 					<div className="flex flex-col lg:items-center">
-						<div className="m-0 flex h-full w-full flex-col overflow-hidden bg-black font-courierprime text-base text-white">
+						{/* overflow-x-clip (not overflow-hidden) prevents a horizontal
+						    scrollbar from full-bleed sections WITHOUT making this a scroll
+						    container — otherwise it, not the viewport, would anchor every
+						    position:sticky descendant (e.g. the schedule's day headers) and
+						    they'd never stick on page scroll. */}
+						<div className="m-0 flex h-full w-full flex-col overflow-x-clip bg-black font-courierprime text-base text-white">
 							{/* First-focus overlay: shows keyboard shortcuts + the
 							    skip-to-main-content link on the initial Tab press. */}
 							<KeyboardShortcutsHint />

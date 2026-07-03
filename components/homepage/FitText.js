@@ -9,7 +9,7 @@ import { useRef, useState, useEffect } from 'react'
 // max/min font sizes are expressed as a fraction of the box width (via
 // maxRatio / minRatio) so the whole thing scales with the widget: a normal-length
 // title renders at the design size (the cap), and only longer text shrinks.
-export default function FitText({ children, maxRatio = 0.16, minRatio = 0.045, deps = [] }) {
+export default function FitText({ children, maxRatio = 0.16, minRatio = 0.045, deps = [], boxClassName = '' }) {
   const boxRef = useRef(null)
   const innerRef = useRef(null)
   const [fontPx, setFontPx] = useState(null)
@@ -51,7 +51,7 @@ export default function FitText({ children, maxRatio = 0.16, minRatio = 0.045, d
   }, [maxRatio, minRatio, ...deps])
 
   return (
-    <div ref={boxRef} className="flex h-full w-full flex-col justify-center overflow-hidden">
+    <div ref={boxRef} className={`flex h-full w-full flex-col justify-center overflow-hidden ${boxClassName}`}>
       <div ref={innerRef} style={fontPx ? { fontSize: `${fontPx}px` } : undefined}>
         {children}
       </div>

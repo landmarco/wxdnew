@@ -35,8 +35,8 @@ export default function VinylPlayer() {
       {/* Dark text panel. Fixed box; FitText shrinks the text to fit so long
           track titles never spill out of it. */}
       <div
-        className="absolute flex flex-col justify-center bg-[#2a1717] px-[4%] py-[3%]"
-        style={{ left: '1.86%', top: '16.11%', width: '38.41%', height: '68.12%' }}
+        className="absolute flex flex-col justify-center bg-[#2a1717] px-[3%] py-[3%]"
+        style={{ left: '1.2%', top: '16.11%', width: '39.07%', height: '68.12%' }}
       >
         {loading ? (
           <span className="font-courierprime text-[3cqw] text-zinc-400">loading...</span>
@@ -44,14 +44,35 @@ export default function VinylPlayer() {
           <span className="font-courierprime text-[3cqw] text-zinc-400">no playlist</span>
         ) : (
           <>
+            {/* Two-column flow: an emoji gutter (w-[3.2cqw]) over the maroon, a gap,
+                then the text. Plain flex (no negative margins / absolute) and no
+                break-words/hyphens on the text, so FitText measures the real content
+                width and sizes the font so whole words fit (no mid-word snapping). The
+                StreamButton is indented by the full gutter (3.2 + 1 gap = pl-[4.2cqw])
+                so the text lines up with it. */}
             <FitText deps={[song.song, song.artist, song.album, song.label]}>
-              <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-[#e0ff05]">🎵 {song.song}</div>
-              {song.artist && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white">👩‍🎤 {song.artist}</div>}
-              {song.album && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-[#e0ff05]">💿 {song.album}</div>}
+              <div lang="en" className="flex items-baseline gap-[1cqw] text-left font-courierprime leading-tight text-[#e0ff05]">
+                <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}>🎵</span>
+                <span className="min-w-0">{song.song}</span>
+              </div>
+              {song.artist && (
+                <div lang="en" className="flex items-baseline gap-[1cqw] text-left font-courierprime leading-tight text-white">
+                  <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}>👩‍🎤</span>
+                  <span className="min-w-0">{song.artist}</span>
+                </div>
+              )}
+              {song.album && (
+                <div lang="en" className="flex items-baseline gap-[1cqw] text-left font-courierprime leading-tight text-[#e0ff05]">
+                  <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}>💿</span>
+                  <span className="min-w-0">{song.album}</span>
+                </div>
+              )}
               {/* Label hidden for now — felt too busy. Re-enable by uncommenting: */}
               {/* {song.label && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white" style={{ fontSize: '0.72em' }}>🏷️ {song.label}</div>} */}
             </FitText>
-            <StreamButton />
+            <div className="pl-[4.2cqw]">
+              <StreamButton />
+            </div>
           </>
         )}
       </div>

@@ -11,6 +11,8 @@ import VinylPlayer from '../components/homepage/VinylPlayer'
 import MobileVinylPlayer from '../components/homepage/MobileVinylPlayer'
 import TodaySchedule from '../components/homepage/TodaySchedule'
 import ShowCalendar from "../components/homepage/ShowCalendar"
+import NowPlayingHeader from '../components/listenpage/NowPlayingHeader'
+import useCurrentPlaylist from '../hooks/useCurrentPlaylist'
 
 
 // home page
@@ -27,6 +29,8 @@ export default function Home(props) {
 	const posts = props.data.blogConnection.edges
 	const events = props.data.archiveConnection.edges
 	const schedule = props.schedule
+	// current show/DJ info shown under the vinyl widget (same data as /listen)
+	const { currentPlaylist } = useCurrentPlaylist()
 
 	return (
 		<div>
@@ -41,12 +45,13 @@ export default function Home(props) {
 						{/* Actual header text */}
 						<div className="flex w-full flex-col items-center justify-center md:w-3/4 md:pt-4 lg:w-full lg:pt-1">
 							<div className="mt-4 flex flex-row justify-between gap-4 items-start px-2 w-full" style={{ zoom: 1.1 }}>
-								<div className="flex-[2]">
+								<div className="flex-[1]">
 									<TodaySchedule schedule={schedule} />
 								</div>
-								{/* 2:1 split — Today's Schedule gets 2/3, the vinyl player 1/3 */}
-								<div className="flex flex-col items-end gap-2 flex-[1]">
-									<h1 className="bitcount mb-2 w-full text-center lg:text-right text-2xl lg:text-5xl text-white">Now Playing</h1>
+								{/* 1:1 split — title, then current show info, then the vinyl widget */}
+								<div className="flex flex-col items-stretch gap-2 flex-[1]">
+									<h1 className="bitcount w-full text-center lg:text-left text-2xl lg:text-5xl text-white">Now Playing</h1>
+									<NowPlayingHeader currentPlaylist={currentPlaylist} />
 									<VinylPlayer />
 							</div>
 							</div>

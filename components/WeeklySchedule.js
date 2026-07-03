@@ -141,8 +141,12 @@ export default function WeeklySchedule({schedule}) {
 
 	const firstColumnClass = "sticky left-0 z-10 w-20 min-w-[5rem] max-w-[5rem] break-words border border-gray-300 bg-white px-2 py-2 text-center text-base leading-tight uppercase text-red-600 lg:w-auto lg:min-w-0 lg:max-w-none lg:px-4 lg:text-right lg:text-xl lg:whitespace-nowrap"
 
+	// Desktop: no fixed height — the grid extends full length and the page scrolls,
+	// overflow visible so the day headers stick to the viewport (below the fixed
+	// NavPlayer, via lg:top-16). Mobile: a capped-height scroll box so the wide grid
+	// scrolls both ways and the day headers stick to the top of that box (top-0).
 	return (
-		<div ref={scheduleScrollerRef} className="mx-auto h-[80vh] w-[calc(100vw-1rem)] max-w-full overflow-auto text-lg font-semibold tracking-[-0.07em] text-[#e0ff05] lg:w-[80vw] lg:text-xl">
+		<div ref={scheduleScrollerRef} className="mx-auto h-[80vh] w-[calc(100vw-1rem)] max-w-full overflow-auto lg:h-auto lg:overflow-visible text-lg font-semibold tracking-[-0.07em] text-[#e0ff05] lg:w-[80vw] lg:text-xl">
 			<table className="min-w-[720px] table-fixed border-separate border-spacing-0 lg:w-full lg:min-w-0 lg:table-auto">
                     <caption className="sr-only">
                         WXDU on-air show schedule with DJ names per hour
@@ -157,8 +161,11 @@ export default function WeeklySchedule({schedule}) {
 								ref={dayIndex === 0 ? firstColumnHeaderRef : dayIndex === todayColumnIndex ? todayHeaderRef : null}
 								className={`sticky border border-gray-300 px-2 py-2 text-lg uppercase lg:px-4 lg:text-xl ${
 									dayIndex === 0
-										? "top-0 left-0 z-50 w-20 min-w-[5rem] max-w-[5rem] break-words bg-black text-base leading-tight lg:w-auto lg:min-w-0 lg:max-w-none lg:text-xl"
-										: "top-0 z-30 bg-white text-red-600"
+										// Mobile sticks to the top of the scroll box (top-0); desktop
+										// sticks to the viewport at lg:top-16 so it clears the fixed
+										// 64px NavPlayer bar instead of hiding behind it.
+										? "top-0 lg:top-16 left-0 z-50 w-20 min-w-[5rem] max-w-[5rem] break-words bg-black text-base leading-tight lg:w-auto lg:min-w-0 lg:max-w-none lg:text-xl"
+										: "top-0 lg:top-16 z-30 bg-white text-red-600"
 								}`}
 							>
 								{dayIndex === 0 ? "summer 2026" : day}
