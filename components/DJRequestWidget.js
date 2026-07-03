@@ -6,7 +6,7 @@ const COOLDOWN_SECONDS = 60
 const COOLDOWN_KEY = 'dj_request_cooldown_until' // localStorage key for persisting cooldown across page refreshes
 
 export default function DJRequestWidget() {
-    // Open state is shared via ModalContext so the footer/keyboard ("c") can open it too.
+    // Open state is shared via ModalContext so the footer/keyboard ("p") can open it too.
     const { activeModal, openModal, closeModal } = useModal()
     const isOpen = activeModal === 'dj'
     const [activeTab, setActiveTab] = useState('song')

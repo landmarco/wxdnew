@@ -1,3 +1,6 @@
+/* eslint-disable @next/next/no-img-element -- the turntable layers are absolutely
+   positioned by percentage and images are unoptimized in next.config, so next/image
+   would add complexity for no benefit. */
 import { useRouter } from 'next/router'
 import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying } from '../../lib/useNowPlaying'
@@ -7,14 +10,14 @@ import StreamButton from '../audioplayers/StreamButton'
 // Mobile-only vinyl player: turntable stacked on top, text panel + button below,
 // per the "Mobile Vinyl Player" Figma layout (node 8:2).
 export default function MobileVinylPlayer() {
-  const { song, dj, loading } = useNowPlaying()
+  const { song, loading } = useNowPlaying()
   const { isPlaying } = useAudio()
   const router = useRouter()
   const goToListen = () => router.push('/listen')
 
   return (
     <div
-      className="relative mx-auto w-full max-w-md cursor-pointer select-none focus:outline-none focus-visible:outline-none"
+      className="relative mx-auto w-full max-w-[35rem] cursor-pointer select-none focus:outline-none focus-visible:outline-none"
       role="button"
       tabIndex={0}
       aria-label="Go to listen page"
@@ -49,7 +52,7 @@ export default function MobileVinylPlayer() {
             className="animate-spin-vinyl pointer-events-none absolute"
             style={{ left: '7.00%', top: '10.23%', width: '88.80%', height: '77.52%', transformOrigin: '50% 50%', animationPlayState: isPlaying ? 'running' : 'paused' }}
           >
-            <img src="/vinyl-cd.png" alt="" className="absolute inset-0 h-full w-full" />
+            <img src="/vinyl-cd.webp" alt="" className="absolute inset-0 h-full w-full" />
             <div className="absolute overflow-hidden rounded-full" style={{ left: '38.83%', top: '34.63%', width: '22.21%', height: '33.55%' }}>
               <img
                 src={song?.albumArt || cardinalsFallback.src}
@@ -74,12 +77,13 @@ export default function MobileVinylPlayer() {
             <span className="font-courierprime text-[3.5vw] text-zinc-400">no playlist</span>
           ) : (
             <>
-              <div className="mt-[2vw] min-w-0">
-                <div className="break-words font-courierprime text-[5.5vw] leading-tight text-[#e0ff05]">{song.song}</div>
-                <div className="break-words font-courierprime text-[5.5vw] leading-tight text-white">{song.artist}</div>
+              <div lang="en" className="mt-[2vw] flex w-full min-w-0 flex-col gap-[1.5vw]">
+                <div className="hyphens-auto break-words font-courierprime text-[5.5vw] leading-tight text-[#e0ff05]">🎵 {song.song}</div>
+                {song.artist && <div className="hyphens-auto break-words font-courierprime text-[5.5vw] leading-tight text-white">👩‍🎤 {song.artist}</div>}
+                {song.album && <div className="hyphens-auto break-words font-courierprime text-[4vw] leading-tight text-[#e0ff05]">💿 {song.album}</div>}
+                {/* Label hidden for now — felt too busy. Re-enable by uncommenting: */}
+                {/* {song.label && <div className="hyphens-auto break-words font-courierprime text-[3.2vw] leading-tight text-white">🏷️ {song.label}</div>} */}
               </div>
-
-              <div className="break-words font-courierprime text-[3.8vw] text-[#e0ff05]">DJ: {dj || 'mystery dj'}</div>
               <StreamButton />
             </>
           )}

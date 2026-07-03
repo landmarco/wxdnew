@@ -1,3 +1,6 @@
+/* eslint-disable @next/next/no-img-element -- the turntable layers are absolutely
+   positioned by percentage and images are unoptimized in next.config, so next/image
+   would add complexity for no benefit. */
 import { useRouter } from 'next/router'
 import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying } from '../../lib/useNowPlaying'
@@ -6,7 +9,7 @@ import FitText from './FitText'
 import StreamButton from '../audioplayers/StreamButton'
 
 export default function VinylPlayer() {
-  const { song, dj, loading } = useNowPlaying()
+  const { song, loading } = useNowPlaying()
   const { isPlaying } = useAudio()
   const router = useRouter()
   const goToListen = () => router.push('/listen')
@@ -41,10 +44,12 @@ export default function VinylPlayer() {
           <span className="font-courierprime text-[3cqw] text-zinc-400">no playlist</span>
         ) : (
           <>
-            <FitText deps={[song.song, song.artist, dj]}>
-              <div className="break-words text-left font-courierprime leading-tight text-[#e0ff05]">{song.song}</div>
-              <div className="break-words text-left font-courierprime leading-tight text-white">{song.artist}</div>
-              <div className="break-words text-left font-courierprime text-[#e0ff05]" style={{ fontSize: '0.62em', marginTop: '0.6em' }}>DJ: {dj || 'mystery dj'}</div>
+            <FitText deps={[song.song, song.artist, song.album, song.label]}>
+              <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-[#e0ff05]">🎵 {song.song}</div>
+              {song.artist && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white">👩‍🎤 {song.artist}</div>}
+              {song.album && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-[#e0ff05]">💿 {song.album}</div>}
+              {/* Label hidden for now — felt too busy. Re-enable by uncommenting: */}
+              {/* {song.label && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white" style={{ fontSize: '0.72em' }}>🏷️ {song.label}</div>} */}
             </FitText>
             <StreamButton />
           </>
@@ -61,7 +66,7 @@ export default function VinylPlayer() {
         className="animate-spin-vinyl pointer-events-none absolute"
         style={{ left: '35.31%', top: '10.23%', width: '61.77%', height: '77.52%', transformOrigin: '50% 50%', animationPlayState: isPlaying ? 'running' : 'paused' }}
       >
-        <img src="/vinyl-cd.png" alt="" className="absolute inset-0 h-full w-full" />
+        <img src="/vinyl-cd.webp" alt="" className="absolute inset-0 h-full w-full" />
         <div className="absolute overflow-hidden rounded-full" style={{ left: '38.83%', top: '34.63%', width: '22.21%', height: '33.55%' }}>
           <img
             src={song?.albumArt || cardinalsFallback.src}

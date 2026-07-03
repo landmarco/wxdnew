@@ -56,8 +56,15 @@ export default function DjPage() {
         return <Message>Couldn&apos;t load this DJ&apos;s shows.</Message>;
     }
 
-    // name from the DJ profile, falling back to the djname on the show rows
-    const djName = dj?.defdjname || shows[0]?.djname || "this DJ";
+    // /api/djs/:id returns an array when several ids are requested (a multi-DJ
+    // show), or a single object for one id. Normalize to a list and join names.
+    const djList = Array.isArray(dj) ? dj : dj ? [dj] : [];
+    const djName =
+        djList.map((d) => d?.defdjname).filter(Boolean).join(", ") ||
+        shows[0]?.djname ||
+        "this DJ";
+    // only show a subtitle/title for a single DJ (ambiguous for a group)
+    const deftitle = djList.length === 1 ? djList[0]?.deftitle : null;
 
     const hasPrev = page > 0;
     const hasNext = shows.length === DJ_SHOWS_PAGE_SIZE;
@@ -67,8 +74,8 @@ export default function DjPage() {
             <div className="text-center py-6">
                 <p className="text-base text-gray-300 tracking-wide">Shows by</p>
                 <h1 className="text-4xl font-light leading-tight">{djName}</h1>
-                {dj?.deftitle ? (
-                    <p className="text-lg text-gray-300 mt-1">{dj.deftitle}</p>
+                {deftitle ? (
+                    <p className="text-lg text-gray-300 mt-1">{deftitle}</p>
                 ) : null}
             </div>
 
