@@ -1,7 +1,10 @@
-// Mobile navigation drawer, opened by an edge swipe (from either the left or
-// right screen edge) instead of a hamburger button. The panel slides in from
-// whichever edge the swipe started on, follows the finger on a dismiss swipe,
-// and can also be closed by tapping the backdrop or pressing Escape.
+// Mobile navigation drawer, opened by a horizontal swipe across the screen
+// (swipe right opens the left panel, swipe left opens the right panel) instead
+// of a hamburger button. The open-swipe deliberately ignores the very edges of
+// the screen so it doesn't fight the browser's back/forward gesture, and it
+// ignores swipes that start on horizontally-scrollable content (carousels, the
+// schedule grid) so those keep scrolling normally. The panel follows the finger
+// on a dismiss swipe, and can also be closed by tapping the backdrop or Escape.
 //
 // Small, low-opacity edge "grips" are rendered as a discoverability + keyboard
 // affordance — swipe is the primary interaction, but these keep the menu
@@ -20,11 +23,27 @@ const DISCOVERED_KEY = 'wxdu-nav-discovered'
 // Only run the mobile drawer below Tailwind's lg breakpoint (the desktop navbar
 // takes over at lg).
 const LG_BREAKPOINT = 1024
-// How close to the edge a touch must start to count as an opening swipe.
-const EDGE_ZONE = 30
+// Swipes that start this close to either screen edge are left to the browser's
+// own back/forward gesture — our open-swipe is a mid-screen swipe instead.
+const EDGE_IGNORE = 24
 // Horizontal travel needed to trigger open / to commit a dismiss.
-const OPEN_THRESHOLD = 55
+const OPEN_THRESHOLD = 70
 const CLOSE_FRACTION = 0.33
+
+// Walk up from the touch target: if any ancestor can scroll horizontally, this
+// swipe is meant to scroll that content (a carousel, the schedule grid), not to
+// open the menu, so we bow out.
+function startedOnHorizontalScroller(node) {
+	let el = node
+	while (el && el !== document.body) {
+		if (el.scrollWidth > el.clientWidth) {
+			const overflowX = window.getComputedStyle(el).overflowX
+			if (overflowX === 'auto' || overflowX === 'scroll') return true
+		}
+		el = el.parentElement
+	}
+	return false
+}
 
 const MobileNavDrawer = () => {
 	const { isPlaying } = useAudio()
@@ -74,15 +93,16 @@ const MobileNavDrawer = () => {
 		}
 	}, [])
 
-	// Edge-swipe detection to OPEN the drawer. Listens on the document so the
-	// whole screen edge is a target, but only acts on swipes that begin in the
-	// edge zone and stay mostly horizontal (so vertical scrolls pass through).
+	// Horizontal-swipe detection to OPEN the drawer. Listens on the document so a
+	// swipe anywhere on the page counts, but ignores swipes that start at the very
+	// edge (browser back/forward), start on horizontally-scrollable content, or
+	// turn out to be vertical scrolls. Swipe right opens the left panel; swipe
+	// left opens the right panel.
 	useEffect(() => {
 		if (openSide) return
 
 		let startX = 0
 		let startY = 0
-		let edge = null
 		let active = false
 
 		const onStart = (event) => {
@@ -90,10 +110,13 @@ const MobileNavDrawer = () => {
 			const touch = event.touches[0]
 			startX = touch.clientX
 			startY = touch.clientY
-			if (startX <= EDGE_ZONE) edge = 'left'
-			else if (startX >= window.innerWidth - EDGE_ZONE) edge = 'right'
-			else edge = null
-			active = edge !== null
+			// Skip the browser's edge back/forward zone and content that scrolls
+			// sideways on its own.
+			if (startX <= EDGE_IGNORE || startX >= window.innerWidth - EDGE_IGNORE) {
+				active = false
+				return
+			}
+			active = !startedOnHorizontalScroller(event.target)
 		}
 
 		const onMove = (event) => {
@@ -106,10 +129,10 @@ const MobileNavDrawer = () => {
 				active = false
 				return
 			}
-			if (edge === 'left' && dx > OPEN_THRESHOLD) {
+			if (dx > OPEN_THRESHOLD) {
 				open('left')
 				active = false
-			} else if (edge === 'right' && dx < -OPEN_THRESHOLD) {
+			} else if (dx < -OPEN_THRESHOLD) {
 				open('right')
 				active = false
 			}
@@ -117,7 +140,6 @@ const MobileNavDrawer = () => {
 
 		const onEnd = () => {
 			active = false
-			edge = null
 		}
 
 		document.addEventListener('touchstart', onStart, { passive: true })

@@ -41,11 +41,12 @@ export default function Home(props) {
 						{/* Actual header text */}
 						<div className="flex w-full flex-col items-center justify-center md:w-3/4 md:pt-4 lg:w-full lg:pt-1">
 							<div className="mt-4 flex flex-row justify-between gap-4 items-start px-2 w-full" style={{ zoom: 1.1 }}>
-								<div className="flex-[5]">
+								<div className="flex-[2]">
 									<TodaySchedule schedule={schedule} />
 								</div>
-								{/* zoom bumped 0.85 -> 1.06 to make the vinyl widget ~25% bigger */}
-								<div className="flex flex-col items-end gap-2 flex-[2]" style={{ zoom: 1.06 }}>
+								{/* 2:1 split — Today's Schedule gets 2/3, the vinyl player 1/3 */}
+								<div className="flex flex-col items-end gap-2 flex-[1]">
+									<h1 className="bitcount mb-2 w-full text-center lg:text-right text-2xl lg:text-5xl text-white">Now Playing</h1>
 									<VinylPlayer />
 							</div>
 							</div>
