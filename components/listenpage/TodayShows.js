@@ -2,8 +2,11 @@
 
 import {useEffect, useState} from 'react'
 import Link from 'next/link'
-import {getRecentShows} from '@/lib/recentShows'
+import {getShowsInRange} from '@/lib/previousShows'
 import {showDayKey, showTime} from '@/lib/showFormat'
+
+const date = new Date();
+const today = date.toLocaleDateString('en-CA');
 
 export default function TodayShows() {
 	const [shows, setShows] = useState([])
@@ -14,7 +17,7 @@ export default function TodayShows() {
 		let cancelled = false
 
 		async function loadShows() {
-			const rows = await getRecentShows(1)
+			const rows = await getShowsInRange(today, today)
 			const todayKey = showDayKey(Math.floor(Date.now() / 1000))
 			const todaysShows = rows
 				.filter((show) => showDayKey(show.starttime) === todayKey)

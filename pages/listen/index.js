@@ -17,18 +17,7 @@ export default function Listen() {
 
     return(
         <div className="min-h-screen text-white pb-2">
-            <NowPlayingHeader currentPlaylist={currentPlaylist} />
-
-            <p className="mt-2 text-center">
-				<Link
-					href="/listen/past-10-days/"
-					legacyBehavior={false}
-					className="text-gray-300 underline hover:no-underline text-xl"
-				>
-					Past 10 days shows
-				</Link>
-			</p>
-
+            
             <div className="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
                 {/* Desktop: current show info sits to the left of the vinyl player.
                     max-w-7xl (was 5xl) makes the vinyl widget ~25% larger. */}
