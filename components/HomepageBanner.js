@@ -42,7 +42,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 	const rightColumns = columns.slice(midIndex)
 
 	return (
-		<div className="mx-auto mb-1 lg:mb-10 w-11/12 md:w-5/6 lg:w-full rounded-3xl bg-black p-2 lg:p-4 text-white shadow-lg shadow-black/20">
+		<div className="mx-auto mb-1 lg:mb-10 w-11/12 md:w-5/6 lg:w-full rounded-3xl bg-black/80 p-2 lg:p-4 text-white shadow-lg shadow-black/20">
 			
 
 			<div className="flex gap-2 md:gap-4 items-stretch h-[15rem] sm:h-[28rem] md:h-[26rem] lg:h-[45rem]">

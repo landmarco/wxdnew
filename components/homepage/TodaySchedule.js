@@ -80,7 +80,7 @@ export default function TodaySchedule({ schedule }) {
 	return (
 		<div className="text-lg text-[#e0ff05] w-full tracking-[-0.07em]">
 			<h1 className="bitcount mb-2 text-center lg:text-left text-2xl lg:text-5xl text-white">Today&apos;s Schedule</h1>
-			<div className="border border-white p-4">
+			<div className="max-w-md lg:max-w-xl max-h-96 overflow-y-auto rounded-lg border border-white bg-black/80 p-4">
 				{shows.map(({ startLabel, endLabel, show, id }, i) => {
 					if (!show) return null
 
@@ -90,8 +90,8 @@ export default function TodaySchedule({ schedule }) {
 
 					const inner = (
 						<>
-							<span className="w-24 text-right">
-								{startLabel === endLabel ? (startLabel) : (<>{startLabel}–<br />{endLabel}</>)}
+							<span className="w-36 whitespace-nowrap text-right">
+								{startLabel === endLabel ? startLabel : `${startLabel}–${endLabel}`}
 							</span>
 							<span className={`border-l font-bold border-gray-300 pl-4 flex-1 ${href ? "group-hover:underline" : ""}`}>
 								{show}
