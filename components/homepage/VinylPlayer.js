@@ -7,6 +7,7 @@ import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
 import FitText from './FitText'
 import StreamButton from '../audioplayers/StreamButton'
+import { Music } from 'pixelarticons/react/Music.js'
 
 export default function VinylPlayer() {
   const { song, loading } = useNowPlaying()
@@ -52,7 +53,7 @@ export default function VinylPlayer() {
                 so the text lines up with it. */}
             <FitText deps={[song.song, song.artist, song.album, song.label]}>
               <div lang="en" className="flex items-baseline gap-[1cqw] text-left font-courierprime leading-tight text-[#e0ff05]">
-                <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}>🎵</span>
+                <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}><Music width="1.5em" height="1.5em" style={{ imageRendering: 'pixelated' }} /></span>
                 <span className="min-w-0">{song.song}</span>
               </div>
               {song.artist && (
