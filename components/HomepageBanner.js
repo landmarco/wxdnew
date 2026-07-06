@@ -34,7 +34,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 			// >
 			// 	{img}
 			// </button>
-			{img}
+			img
 		)
 	}
 
