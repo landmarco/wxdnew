@@ -14,6 +14,8 @@ import {FaTumblr, FaBandcamp} from "react-icons/fa6";
 import {useAudio} from './AudioContext'
 import {useModal} from './ModalContext'
 import Emerald from './Emerald'
+import CDLink from './homepage/CDLink'
+import {NAV_ITEMS, cdImageFor} from '../lib/navItems'
 
 const Footer = () => {
 	const {isHighQuality, setHighQuality, isPlaying} = useAudio()
@@ -21,6 +23,25 @@ const Footer = () => {
 	return (
 		// Footer is formatted as a column on phone screen and as a row on tablet+desktop screens
 		<footer className="mx-auto mb-3 mt-10 px-2 lg:mt-36 lg:px-24">
+			{/* CD nav: one tile per header tab, so the whole site stays reachable
+			    from the bottom of the page even without the header or swipe menu.
+			    Images cycle through the CD pool, so new tabs need no new artwork. */}
+			<nav aria-label="Site navigation" className="mb-10 border-b border-gray-700 pb-8">
+				<ul className="flex flex-wrap items-start justify-center gap-x-4 gap-y-6 sm:gap-x-8">
+					{NAV_ITEMS.map((item, index) => (
+						<li key={item.href}>
+							<CDLink
+								href={item.href}
+								label={item.label}
+								image={cdImageFor(index)}
+								boxClassName="w-20 h-20 lg:w-24 lg:h-24"
+								labelClassName="text-sm"
+							/>
+						</li>
+					))}
+				</ul>
+			</nav>
+
 			<div className="flex flex-col md:flex-row md:justify-around">
 			<div className=" px-5">
 				<p className=" text-lg font-bold md:text-xl">Connect</p>

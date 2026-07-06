@@ -10,6 +10,7 @@ import { ModalProvider } from '../components/ModalContext'
 import NavPlayer from '../components/audioplayers/NavPlayer'
 import DJRequestWidget from '../components/DJRequestWidget'
 import FeedbackWidget from '../components/FeedbackWidget'
+import KeyboardShortcutsHint from '../components/KeyboardShortcutsHint'
 
 const App = ({Component, pageProps}) => {
 	useEffect(() => {
@@ -36,11 +37,15 @@ const App = ({Component, pageProps}) => {
 			<AudioProvider>
 				<ModalProvider>
 					<div className="flex flex-col lg:items-center">
-						<div className="m-0 flex h-full w-full flex-col overflow-hidden bg-black font-courierprime text-base text-white">
-							{/* show skip-to-main-content link in a button only on keyboard focus. */}
-							<a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-black">
-								Skip to main content
-							</a>
+						{/* overflow-x-clip (not overflow-hidden) prevents a horizontal
+						    scrollbar from full-bleed sections WITHOUT making this a scroll
+						    container — otherwise it, not the viewport, would anchor every
+						    position:sticky descendant (e.g. the schedule's day headers) and
+						    they'd never stick on page scroll. */}
+						<div className="m-0 flex h-full w-full flex-col overflow-x-clip bg-black font-courierprime text-base text-white">
+							{/* First-focus overlay: shows keyboard shortcuts + the
+							    skip-to-main-content link on the initial Tab press. */}
+							<KeyboardShortcutsHint />
 							<NavPlayer />
 							<Layout>
 								<Component {...pageProps} />

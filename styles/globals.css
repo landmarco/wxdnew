@@ -292,13 +292,24 @@ body::-webkit-scrollbar-thumb {
 	animation: emerald-glow 1.8s ease-in-out infinite;
 }
 
+/* Continuous rotation for the vinyl player's spinning record. */
+@keyframes spin-vinyl {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
+.animate-spin-vinyl {
+	animation: spin-vinyl 3s linear infinite;
+}
+
 /* Respect reduced-motion user preference for marquee/hover-heavy UI. */
 @media (prefers-reduced-motion: reduce) {
 	.animate-conveyor,
 	.animate-ticker-pingpong,
 	.animate-shimmer,
 	.animate-sparkle,
-	.animate-emerald-glow {
+	.animate-emerald-glow,
+	.animate-spin-vinyl {
 		animation: none !important;
 	}
 }

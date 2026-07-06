@@ -1,12 +1,12 @@
 // This is the listen page.
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import useCurrentPlaylist from '@/hooks/useCurrentPlaylist'
 import NowPlayingHeader from "@/components/listenpage/NowPlayingHeader";
-import StreamButton from "@/components/audioplayers/StreamButton";
 import PlayTabs from "@/components/listenpage/PlayTabs";
 import ExploreTab from "@/components/listenpage/ExploreTab";
+import VinylPlayer from "@/components/homepage/VinylPlayer";
+import MobileVinylPlayer from "@/components/homepage/MobileVinylPlayer";
 import { useAudio } from "@/components/AudioContext";
 
 export default function Listen() {
@@ -16,13 +16,26 @@ export default function Listen() {
 
     return(
         <div className="min-h-screen text-white pb-2">
-            <NowPlayingHeader currentPlaylist={currentPlaylist} />
-
-            <p className="text-center mt-2">
-                <Link href="/listen/past-10-days/" legacyBehavior={false} className="underline hover:no-underline text-gray-300">
-                    Past 10 days
-                </Link>
-            </p>
+            <div className="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
+                {/* Desktop: current show info sits to the left of the vinyl player.
+                    max-w-7xl (was 5xl) makes the vinyl widget ~25% larger. */}
+                <div className="hidden w-full max-w-7xl lg:flex lg:items-center lg:gap-8">
+                    <div className="w-1/3 min-w-0">
+                        <NowPlayingHeader currentPlaylist={currentPlaylist} />
+                    </div>
+                    <div className="w-2/3">
+                        <VinylPlayer />
+                    </div>
+                </div>
+                {/* Mobile: current show info stacked above the vinyl player.
+                    max-w-[35rem] (was md/28rem) makes the vinyl widget ~25% larger. */}
+                <div className="w-full max-w-[35rem] lg:hidden">
+                    <NowPlayingHeader currentPlaylist={currentPlaylist} />
+                    <div className="mt-4">
+                        <MobileVinylPlayer />
+                    </div>
+                </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-[40%_60%] gap-8">
                 <div className="md:h-[calc(100vh-160px)] md:overflow-auto h-auto flex justify-center">
