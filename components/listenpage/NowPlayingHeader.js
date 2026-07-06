@@ -16,9 +16,6 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
 
     return(
         <div className="text-center lg:text-left">
-            <p className="text-base text-gray-300 tracking-wide">
-                Current Show
-            </p>
             <h1 className="text-3xl font-light leading-tight break-words">
                 DJ:{" "}
                 {djId && djname ? (
@@ -41,7 +38,7 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
             </h4>
             <p className="mt-3">
                 <Link href="/previous-shows/" legacyBehavior={false} className="underline hover:no-underline text-gray-300">
-                    Previous shows
+                    explore any past show
                 </Link>
             </p>
         </div>

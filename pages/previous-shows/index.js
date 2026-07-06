@@ -46,6 +46,130 @@ function windowLabel(startDay, endDay) {
     return `${dayKeyLabel(startDay)} – ${dayKeyLabel(endDay, { year: "numeric" })}`;
 }
 
+// Stable per-DJ identity used to fold back-to-back shows by the same DJ
+// together. Prefer the numeric user id; fall back to the DJ name. Returns null
+// when there's no DJ info, so those rows never get grouped.
+function djKey(show) {
+    const id = show.userID;
+    if (id !== undefined && id !== null && id !== "") return `id:${id}`;
+    const name = (show.defdjname || show.djname || "").trim().toLowerCase();
+    return name ? `name:${name}` : null;
+}
+
+// Radio is continuous, so a show ends when the next one starts. The list is
+// newest-first, so the chronologically-next show sits one slot earlier. For the
+// very newest show (no later neighbor) fall back to its scheduled duration.
+function withEndTimes(shows) {
+    return shows.map((show, i) => {
+        let endtime = null;
+        if (i > 0) endtime = shows[i - 1].starttime;
+        else if (show.duration) endtime = show.starttime + show.duration * 3600;
+        return { ...show, endtime };
+    });
+}
+
+// Fold each day's (newest-first) shows into runs of consecutive same-DJ shows.
+function groupConsecutive(shows) {
+    const groups = [];
+    for (const show of shows) {
+        const key = djKey(show);
+        const last = groups[groups.length - 1];
+        if (last && key && last.key === key) {
+            last.shows.push(show);
+        } else {
+            groups.push({ key, shows: [show] });
+        }
+    }
+    return groups;
+}
+
+// A single show row linking straight to its playlist page.
+function SingleShowRow({ show }) {
+    return (
+        <li className="border-b border-zinc-800 last:border-b-0">
+            <Link
+                href={`/show/?id=${show.ID}`}
+                legacyBehavior={false}
+                className="flex flex-col gap-1 px-4 py-3 hover:bg-zinc-900 sm:flex-row sm:items-baseline sm:gap-4"
+            >
+                <span className="w-24 flex-shrink-0 text-sm text-zinc-400">
+                    {showTime(show.starttime)}
+                </span>
+                <span className="min-w-0 flex-1">
+                    <span className="font-courierprime text-white">
+                        {show.defdjname || show.djname || show.title || "Untitled show"}
+                    </span>
+                    {show.defdjname || show.djname ? (
+                        <span className="block text-sm text-zinc-400">
+                            {show.title || "Untitled show"}
+                        </span>
+                    ) : null}
+                </span>
+            </Link>
+        </li>
+    );
+}
+
+// A run of back-to-back shows by one DJ, collapsed into an expandable row. The
+// header shows the DJ and the combined span (first show's start → last show's
+// end); expanding reveals each show, each linking to its own playlist page.
+function ShowGroup({ group }) {
+    const [open, setOpen] = useState(false);
+    const newest = group.shows[0];
+    const oldest = group.shows[group.shows.length - 1];
+    const djName = newest.defdjname || newest.djname || "Various";
+    const start = showTime(oldest.starttime);
+    const end = newest.endtime ? showTime(newest.endtime) : "";
+
+    return (
+        <li className="border-b border-zinc-800 last:border-b-0">
+            <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+                className="flex w-full flex-col gap-1 px-4 py-3 text-left hover:bg-zinc-900 sm:flex-row sm:items-baseline sm:gap-4"
+            >
+                {/* Same time column as single rows; the group's end time wraps to a
+                    second line so the span reads first-start → last-end. */}
+                <span className="w-24 flex-shrink-0 whitespace-nowrap text-sm text-zinc-400">
+                    {start}
+                    {end ? (
+                        <>
+                            {" "}–<br />{end}
+                        </>
+                    ) : null}
+                </span>
+                <span className="min-w-0 flex-1">
+                    <span className="font-courierprime text-white">{djName}</span>
+                </span>
+                <span aria-hidden="true" className="flex-shrink-0 text-zinc-500">
+                    {open ? "▾" : "▸"}
+                </span>
+            </button>
+            {open && (
+                <ul className="border-t border-zinc-800 bg-zinc-950/40">
+                    {group.shows.map((show) => (
+                        <li key={show.ID} className="border-b border-zinc-800 last:border-b-0">
+                            <Link
+                                href={`/show/?id=${show.ID}`}
+                                legacyBehavior={false}
+                                className="flex flex-col gap-1 py-2 pl-8 pr-4 hover:bg-zinc-900 sm:flex-row sm:items-baseline sm:gap-4"
+                            >
+                                <span className="w-24 flex-shrink-0 text-sm text-zinc-400">
+                                    {showTime(show.starttime)}
+                                </span>
+                                <span className="min-w-0 flex-1 font-courierprime text-white">
+                                    {show.title || "Untitled show"}
+                                </span>
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </li>
+    );
+}
+
 export default function PreviousShows() {
     const router = useRouter();
     const today = todayDayKey();
@@ -112,7 +236,7 @@ export default function PreviousShows() {
     };
 
     const atToday = endDay >= today;
-    const days = groupByDay(shows);
+    const days = groupByDay(withEndTimes(shows));
 
     return (
         <div id="main-content" className="min-h-screen text-white pb-8">
@@ -179,32 +303,13 @@ export default function PreviousShows() {
                         <section key={day.key} className="mb-6">
                             <h2 className="mb-2 text-lg text-[#e0ff05]">{dayKeyLabel(day.key)}</h2>
                             <ul className="border border-zinc-800">
-                                {day.shows.map((show) => (
-                                    <li
-                                        key={show.ID}
-                                        className="border-b border-zinc-800 last:border-b-0"
-                                    >
-                                        <Link
-                                            href={`/show/?id=${show.ID}`}
-                                            legacyBehavior={false}
-                                            className="flex flex-col gap-1 px-4 py-3 hover:bg-zinc-900 sm:flex-row sm:items-baseline sm:gap-4"
-                                        >
-                                            <span className="w-20 flex-shrink-0 text-sm text-zinc-400">
-                                                {showTime(show.starttime)}
-                                            </span>
-                                            <span className="min-w-0 flex-1">
-                                                <span className="font-courierprime text-white">
-                                                    {show.title || "Untitled show"}
-                                                </span>
-                                                {show.defdjname || show.djname ? (
-                                                    <span className="block text-sm text-zinc-400">
-                                                        {show.defdjname || show.djname}
-                                                    </span>
-                                                ) : null}
-                                            </span>
-                                        </Link>
-                                    </li>
-                                ))}
+                                {groupConsecutive(day.shows).map((group) =>
+                                    group.shows.length === 1 ? (
+                                        <SingleShowRow key={group.shows[0].ID} show={group.shows[0]} />
+                                    ) : (
+                                        <ShowGroup key={`grp-${group.shows[0].ID}`} group={group} />
+                                    )
+                                )}
                             </ul>
                         </section>
                     ))
