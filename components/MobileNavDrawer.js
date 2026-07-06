@@ -226,6 +226,7 @@ const MobileNavDrawer = () => {
 					href={item.href}
 					legacyBehavior={false}
 					onClick={close}
+					tabIndex={openSide === side ? 0 : -1}
 					className="py-3 text-3xl text-white hover:text-blue-300"
 				>
 					{item.label}
@@ -250,8 +251,9 @@ const MobileNavDrawer = () => {
 
 			{/* Discoverability / keyboard affordances: slim green edge grips that
 			    also open the menu on tap and pulse gently while the stream plays.
-			    They retire once the user has opened the menu at least once. */}
-			{mounted && !openSide && !discovered && (
+			    Kept mounted permanently (not just pre-discovery) so keyboard/switch
+			    users always have a way to open the drawer, even after swiping once. */}
+			{mounted && !openSide && (
 				<>
 					<button
 						type="button"
