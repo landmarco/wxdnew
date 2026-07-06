@@ -236,10 +236,13 @@ const MobileNavDrawer = () => {
 
 	return (
 		<div className="lg:hidden">
-			{/* Backdrop */}
+			{/* Backdrop — tap to close, or swipe in the closing direction (the same
+			    gesture, and same handlers, as dragging the panel itself) so a swipe
+			    that starts outside the drawer dismisses it too. */}
 			<div
 				onClick={close}
 				aria-hidden="true"
+				{...(openSide ? dismissHandlers(openSide) : {})}
 				className={`fixed inset-0 z-[60] bg-black/60 transition-opacity duration-200 ${
 					openSide ? 'opacity-100' : 'pointer-events-none opacity-0'
 				}`}
