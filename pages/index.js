@@ -13,9 +13,9 @@ import TodaySchedule from '../components/homepage/TodaySchedule'
 import ShowCalendar from "../components/homepage/ShowCalendar"
 import NowPlayingHeader from '../components/listenpage/NowPlayingHeader'
 import useCurrentPlaylist from '../hooks/useCurrentPlaylist'
-import AnimatedBackground from '../components/AnimatedBackground'
-import MobileAnimatedBackground from '../components/MobileAnimatedBackground'
 import HomepageBannerFullBlack from '../components/HomepageBannerFullBlack'
+import AnimatedBackgroundInverted from '../components/AnimatedBackgroundInverted'
+import MobileAnimatedBackgroundInverted from '../components/MobileAnimatedBackgroundInverted'
 
 
 
@@ -40,10 +40,10 @@ export default function Home(props) {
 	return (
 		<div>
 			<div className="hidden lg:block">
-				<AnimatedBackground />
+				<AnimatedBackgroundInverted />
 			</div>
 			<div className="lg:hidden">
-				<MobileAnimatedBackground />
+				<MobileAnimatedBackgroundInverted />
 			</div>
 			<div className="relative z-10">
 			<div data-tina-field={pageData?.page ? tinaField(pageData.page, 'homepageBanner') : undefined} className="pt-5 lg:mt-0 lg:px-16">
