@@ -14,6 +14,7 @@ import ShowCalendar from "../components/homepage/ShowCalendar"
 import NowPlayingHeader from '../components/listenpage/NowPlayingHeader'
 import useCurrentPlaylist from '../hooks/useCurrentPlaylist'
 import AnimatedBackground from '../components/AnimatedBackground'
+import MobileAnimatedBackground from '../components/MobileAnimatedBackground'
 
 
 
@@ -37,7 +38,12 @@ export default function Home(props) {
 
 	return (
 		<div>
-			<AnimatedBackground />
+			<div className="hidden lg:block">
+				<AnimatedBackground />
+			</div>
+			<div className="lg:hidden">
+				<MobileAnimatedBackground />
+			</div>
 			<div className="relative z-10">
 			<div data-tina-field={pageData?.page ? tinaField(pageData.page, 'homepageBanner') : undefined} className="pt-5 lg:mt-0 lg:px-16">
 				{/* HomepageBanner is a component for adding a closeable banner announcement to the homepage. Toggle on or off in Components > HomepageBanner.js */}

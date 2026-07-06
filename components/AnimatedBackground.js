@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-export default function AnimatedBackground() {
+export default function AnimatedBackground({ size = 18 }) {
   const containerRef = useRef(null)
 
   useEffect(() => {
@@ -13,7 +13,6 @@ export default function AnimatedBackground() {
       const sketch = (p) => {
         let sizes = []
         let cols, rows
-        let size = 18
         let xoff = 0, yoff = 0, inc = 0.1
         let zoff = 0
 
@@ -41,7 +40,7 @@ export default function AnimatedBackground() {
             sizes[i] = []
             yoff = 0
             for (let j = 0; j < rows; j++) {
-              sizes[i][j] = p.map(p.noise(xoff, yoff, zoff), 0, 1, 0, size * 1.7)
+              sizes[i][j] = p.map(p.noise(xoff, yoff, zoff), 0, 1, 0, size * 1.9)
               yoff += inc
               let r = p.noise(zoff) * 255
               let g = p.noise(zoff + 7) * 255
@@ -64,7 +63,7 @@ export default function AnimatedBackground() {
     return () => {
       if (p5Instance) p5Instance.remove()
     }
-  }, [])
+  }, [size])
 
   return (
     <div
