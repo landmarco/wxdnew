@@ -25,15 +25,16 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 		)
 
 		return (
-			<button
-				type="button"
-				onClick={togglePlayPause}
-				aria-label={isPlaying ? 'Pause WXDU stream' : 'Play WXDU stream'}
-				title={isPlaying ? 'Pause stream' : 'Play stream'}
-				className="block w-full cursor-pointer border-0 bg-transparent p-0"
-			>
-				{img}
-			</button>
+			// <button
+			// 	type="button"
+			// 	onClick={togglePlayPause}
+			// 	aria-label={isPlaying ? 'Pause WXDU stream' : 'Play WXDU stream'}
+			// 	title={isPlaying ? 'Pause stream' : 'Play stream'}
+			// 	className="block w-full cursor-pointer border-0 bg-transparent p-0"
+			// >
+			// 	{img}
+			// </button>
+			{img}
 		)
 	}
 
