@@ -15,6 +15,7 @@ import NowPlayingHeader from '../components/listenpage/NowPlayingHeader'
 import useCurrentPlaylist from '../hooks/useCurrentPlaylist'
 import AnimatedBackground from '../components/AnimatedBackground'
 import MobileAnimatedBackground from '../components/MobileAnimatedBackground'
+import HomepageBannerFullBlack from '../components/HomepageBannerFullBlack'
 
 
 

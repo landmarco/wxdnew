@@ -79,8 +79,8 @@ export default function TodaySchedule({ schedule }) {
 
 	return (
 		<div className="text-lg text-[#e0ff05] w-full tracking-[-0.07em]">
-			<h1 className="bitcount mb-2 text-center lg:text-left text-2xl lg:text-5xl text-white">Today&apos;s Schedule</h1>
-			<div className="max-w-md lg:max-w-xl max-h-96 overflow-y-auto rounded-lg border border-white bg-black/80 p-4">
+			<div className="max-w-md lg:max-w-xl max-h-96 lg:max-h-[34rem] overflow-y-auto rounded-lg border border-white bg-black/80 p-4">
+				<h1 className="bitcount mb-2 text-center lg:text-center text-2xl lg:text-5xl text-white">Today&apos;s Schedule</h1>
 				{shows.map(({ startLabel, endLabel, show, id }, i) => {
 					if (!show) return null
 
