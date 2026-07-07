@@ -1,10 +1,11 @@
 // This is the listen page.
 
-import { useState, useEffect } from 'react';
+import Link from 'next/link'
 import useCurrentPlaylist from '@/hooks/useCurrentPlaylist'
 import NowPlayingHeader from "@/components/listenpage/NowPlayingHeader";
-import PlayTabs from "@/components/listenpage/PlayTabs";
-import ExploreTab from "@/components/listenpage/ExploreTab";
+import StreamButton from "@/components/audioplayers/StreamButton";
+import LastPlayed from '@/components/listenpage/LastPlayed'
+import TodayShows from '@/components/listenpage/TodayShows'
 import VinylPlayer from "@/components/homepage/VinylPlayer";
 import MobileVinylPlayer from "@/components/homepage/MobileVinylPlayer";
 import { useAudio } from "@/components/AudioContext";
@@ -16,6 +17,7 @@ export default function Listen() {
 
     return(
         <div className="min-h-screen text-white pb-2">
+            
             <div className="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
                 {/* Desktop: current show info sits to the left of the vinyl player.
                     max-w-7xl (was 5xl) makes the vinyl widget ~25% larger. */}
@@ -37,18 +39,6 @@ export default function Listen() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[40%_60%] gap-8">
-                <div className="md:h-[calc(100vh-160px)] md:overflow-auto h-auto flex justify-center">
-                    <div className="w-full max-w-[360px]">
-                        <PlayTabs currentPlaylist={currentPlaylist}/>
-                    </div>
-                </div>
-
-                <div className="md:h-[calc(100vh-160px)] md:overflow-auto h-auto border-l border-gray-700 pl-8 flex justify-center">
-                    <ExploreTab />
-                </div>
-            </div>
-
             <div className="mt-10 flex justify-center">
                 <button
                     type="button"
@@ -61,8 +51,10 @@ export default function Listen() {
                 </button>
             </div>
 
+
+
             {!isHighQuality && (
-                <div className="mt-4 flex justify-center pb-6">
+                <div className="mt-10 flex justify-center pb-6">
                     <button
                         type="button"
                         onClick={() => setHighQuality(true)}
@@ -72,7 +64,16 @@ export default function Listen() {
                     </button>
                 </div>
             )}
+
+            <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 md:grid-cols-[minmax(0,1fr)_360px]">
+				<div className="listen-scrollbar h-auto min-w-0 md:h-[calc(100vh-160px)] md:overflow-auto">
+					<LastPlayed currentPlaylist={currentPlaylist} />
+				</div>
+				<div className="listen-scrollbar flex h-auto justify-center md:h-[calc(100vh-160px)] md:overflow-auto md:border-l md:border-gray-700 md:pl-8">
+					<TodayShows />
+				</div>
+			</div>
+            
         </div>
     )
 }
-

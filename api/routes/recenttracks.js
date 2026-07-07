@@ -26,12 +26,18 @@ router.get('/', async (req, res) => {
     // Step 1: fetch recent tracks from MySQL
     const pool = getPool();
     const [tracks] = await pool.query(
-      `SELECT p.artist, p.song, p.album, p.label, s.starttime
-       FROM playlist p
-       JOIN shows s ON p.showID = s.ID
-       WHERE p.artist IS NOT NULL AND p.artist != '' AND p.artist != '*****'
-       ORDER BY s.starttime DESC, p.orderkey DESC
-       LIMIT ?`,
+      `SELECT p.artist, p.song, p.album, p.label, p.songstart
+
+        FROM playlist p
+
+        WHERE p.artist IS NOT NULL 
+          AND p.artist != '' 
+          AND p.artist != '*****' 
+          AND p.songstart <= CURRENT_TIMESTAMP
+
+        ORDER BY p.songstart DESC, p.orderkey DESC
+        
+        LIMIT ?`,
       [limit]
     );
 
@@ -105,7 +111,7 @@ router.get('/', async (req, res) => {
         }
       }
 
-      return { artist: track.artist, song: track.song, album: track.album, label: track.label, starttime: track.starttime, cover_url: coverUrl };
+      return { artist: track.artist, song: track.song, album: track.album, label: track.label, songstart: track.songstart, cover_url: coverUrl };
     });
 
     res.set('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
