@@ -2,8 +2,21 @@
 // previous-shows archive. 
 
 import Link from "next/link";
+import { useRouter } from "next/router";
 
 export default function NowPlayingHeader({ currentPlaylist = {} }) {
+    const router = useRouter();
+    const goToListen = () => router.push("/listen");
+
+    // stops an inner link's click/keyboard activation from bubbling up to the
+    // card wrapper, so DJ/Show/explore links route to their own pages instead
+    // of also triggering the card's /listen redirect
+    const stopCardNav = {
+        onClick: (e) => e.stopPropagation(),
+        onKeyDown: (e) => {
+            if (e.key === "Enter" || e.key === " ") e.stopPropagation();
+        },
+    };
 
     const show = currentPlaylist.show || {};
     const dj = currentPlaylist.dj || {};
@@ -14,25 +27,37 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
     const djId = dj.ID ?? show.userID;
 
     const djLink = djId && djname ? (
-        <Link href={`/dj/?id=${djId}`} legacyBehavior={false} className="underline hover:no-underline">
+        <Link href={`/dj/?id=${djId}`} legacyBehavior={false} className="underline hover:no-underline" {...stopCardNav}>
             {djname}
         </Link>
     ) : djname;
 
     const showLink = title ? (
-        <Link href="/current/" legacyBehavior={false} className="underline hover:no-underline">
+        <Link href="/current/" legacyBehavior={false} className="underline hover:no-underline" {...stopCardNav}>
             {title}
         </Link>
     ) : title;
 
     const exploreLink = (
-        <Link href="/previous-shows/" legacyBehavior={false} className="underline hover:no-underline">
+        <Link href="/previous-shows/" legacyBehavior={false} className="underline hover:no-underline" {...stopCardNav}>
             explore any past show
         </Link>
     );
 
     return (
-        <div>
+        <div
+            className="cursor-pointer select-none focus:outline-none focus-visible:outline-none"
+            role="button"
+            tabIndex={0}
+            aria-label="Go to listen page"
+            onClick={goToListen}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    goToListen();
+                }
+            }}
+        >
             {/* Desktop */}
             <div className="relative hidden overflow-hidden rounded-[5px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] lg:block">
                 <img alt="" className="absolute inset-0 h-full w-full object-cover" src="/nowplaying/desktop-bg-gradient.png" />
