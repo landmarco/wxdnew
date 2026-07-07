@@ -181,13 +181,13 @@ export default function FeedbackWidget() {
                 </div>
 
                 <p className="font-courierprime mb-4 text-sm leading-relaxed text-gray-300">
-                    Thanks for yer feedback! Please let us know what bug you found, what could be
-                    better, or what you think we&apos;re doing well. This will go to our computing team
-                    - if you would like to send a message to the DJ on-air use the phone on the site instead.
+                    Please let us know what bug you found, what could be better, or what you think
+                    we&apos;re doing well. This will go to our computing team - if you would like to
+                    send a message to the DJ on-air use the phone on the site instead.
                 </p>
 
                 <div className="mb-5">
-                    <label htmlFor="feedback-text" className="font-courierprime mb-1 block text-sm text-gray-400">Your Feedback</label>
+                    <label htmlFor="feedback-text" className="font-courierprime mb-1 block text-sm text-gray-400">Feedback</label>
                     <textarea
                         id="feedback-text"
                         value={text}
@@ -195,7 +195,7 @@ export default function FeedbackWidget() {
                         className="font-courierprime w-full rounded bg-zinc-800 px-3 py-2 text-white"
                         rows={5}
                         maxLength={2000}
-                        placeholder="What bug did you find, what could be better, or what are we doing well?"
+                        placeholder="The site is cool, weird, fun, busted, etc."
                     />
                     <p className="font-courierprime mt-1 text-xs text-gray-500">
                         We attach basic browser info (no personal data) to help us reproduce issues.
