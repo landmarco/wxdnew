@@ -1,7 +1,5 @@
 // This component displays the current show and dj playing, plus a link to the
-// previous-shows archive. Renders as the "Now Playing" card from Figma
-// (node 13:123 desktop / 13:161 mobile) — noise-textured panel, CD graphic,
-// cat-headphones doodle, DJ/Show text, and an explore-past-shows button.
+// previous-shows archive. 
 
 import Link from "next/link";
 
@@ -38,14 +36,13 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
             {/* Desktop */}
             <div className="relative hidden overflow-hidden rounded-[5px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] lg:block">
                 <img alt="" className="absolute inset-0 h-full w-full object-cover" src="/nowplaying/desktop-bg-gradient.png" />
-                <div className="relative px-3 pt-3 pb-4">
+                <div className="relative px-3 pt-3 pb-3">
                     <h1 className="bitcount pl-5 text-[clamp(1.75rem,3.5vw,2.75rem)] leading-tight text-white">Now Playing</h1>
                     <div
                         className="relative mt-2 overflow-hidden rounded-[5px] bg-[#dad7d2]/40 bg-cover bg-top-left p-3 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
                         style={{ backgroundImage: `url("/nowplaying/desktop-noise.png"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)` }}
                     >
-                        {/* CD + text, sized to leave room on the right for the rat doodle
-                            (its column, positioned below, matches the Figma "rat-doodle 1" node) */}
+                        {/* CD + text, sized to leave room on the right for the rat doodle */}
                         <div className="flex flex-col gap-2 pr-[26%]">
                             <div className="flex items-center gap-6">
                                 <div className="relative h-[70px] w-[70px] shrink-0 overflow-hidden">
@@ -61,8 +58,7 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
                             </div>
                         </div>
 
-                        {/* rat doodle — bottom-right, proportions match the Figma "rat-doodle 1"
-                            node (316x197 in a 1065x371 frame): left 76.2%, top 42.9%, w 23.8%, h 45.4% */}
+                        {/* rat doodle — bottom-right */}
                         <img
                             alt=""
                             className="pointer-events-none absolute object-contain"

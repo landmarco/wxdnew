@@ -61,7 +61,7 @@ export default function Home(props) {
 									<TodaySchedule schedule={schedule} />
 								</div>
 								{/* 1:1 split — title, then current show info, then the vinyl widget */}
-								<div className="flex flex-col items-stretch gap-2 flex-[1]">
+								<div className="flex flex-col items-stretch gap-0 flex-[1]">
 									<NowPlayingHeader currentPlaylist={currentPlaylist} />
 									<VinylPlayer />
 							</div>
@@ -73,7 +73,7 @@ export default function Home(props) {
 
 			{/* Mobile layout — hidden on desktop */}
 			<div className="lg:hidden flex flex-col items-center gap-8 px-8 pt-1 pb-16">
-				<div className="flex flex-col items-center gap-2 w-full">
+				<div className="flex flex-col items-center gap-0 w-full">
 					<NowPlayingHeader currentPlaylist={currentPlaylist} />
 					<MobileVinylPlayer />
 				</div>
