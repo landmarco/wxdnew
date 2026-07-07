@@ -11,8 +11,13 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 		return null
 	}
 
-	// Render a banner image. For now every image doubles as a stream play/pause
-	// control.
+	// Render a banner image. Every image doubles as a stream play/pause control
+	// for mouse users. It's kept OUT of the keyboard tab order (tabIndex={-1})
+	// and hidden from assistive tech (aria-hidden) on purpose: the collage is a
+	// decorative hero, and the center WXDU logo below is the single, labeled
+	// play/pause control that keyboard + screen-reader users get. That lets
+	// tabbing jump header nav -> WXDU logo -> the page's main content without
+	// stepping through every banner image.
 	// TODO: eventually link each image to where it came from (the blog post,
 	// event, etc.) instead of defaulting to the stream toggle.
 	const renderBannerImage = (item, imgIndex) => {
@@ -25,16 +30,16 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 		)
 
 		return (
-			// <button
-			// 	type="button"
-			// 	onClick={togglePlayPause}
-			// 	aria-label={isPlaying ? 'Pause WXDU stream' : 'Play WXDU stream'}
-			// 	title={isPlaying ? 'Pause stream' : 'Play stream'}
-			// 	className="block w-full cursor-pointer border-0 bg-transparent p-0"
-			// >
-			// 	{img}
-			// </button>
-			img
+			<button
+				type="button"
+				onClick={togglePlayPause}
+				tabIndex={-1}
+				aria-hidden="true"
+				title={isPlaying ? 'Pause stream' : 'Play stream'}
+				className="block w-full cursor-pointer border-0 bg-transparent p-0"
+			>
+				{img}
+			</button>
 		)
 	}
 

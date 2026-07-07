@@ -39,6 +39,41 @@
 	border-radius: 10px;
 }
 
+.listen-scrollbar {
+	scrollbar-gutter: stable;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(224, 255, 5, 0.52) rgba(255, 255, 255, 0.05);
+}
+
+.listen-scrollbar::-webkit-scrollbar {
+	height: 9px;
+	width: 9px;
+}
+
+.listen-scrollbar::-webkit-scrollbar-track {
+	background: rgba(255, 255, 255, 0.04);
+	border-radius: 999px;
+	margin-block: 6px;
+}
+
+.listen-scrollbar::-webkit-scrollbar-thumb {
+	background: linear-gradient(
+		180deg,
+		rgba(224, 255, 5, 0.62),
+		rgba(125, 211, 252, 0.38)
+	);
+	border: 2px solid black;
+	border-radius: 999px;
+}
+
+.listen-scrollbar::-webkit-scrollbar-thumb:hover {
+	background: linear-gradient(
+		180deg,
+		rgba(224, 255, 5, 0.78),
+		rgba(125, 211, 252, 0.54)
+	);
+}
+
 body::-webkit-scrollbar {
 	/* display: none; */
 	height: 10px;
