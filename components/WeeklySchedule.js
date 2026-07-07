@@ -158,6 +158,7 @@ export default function WeeklySchedule({schedule}) {
 						{days.map((day, dayIndex) => (
 							<th
 								key={dayIndex}
+								scope="col"
 								ref={dayIndex === 0 ? firstColumnHeaderRef : dayIndex === todayColumnIndex ? todayHeaderRef : null}
 								className={`sticky border border-gray-300 px-2 py-2 text-lg uppercase lg:px-4 lg:text-xl ${
 									dayIndex === 0

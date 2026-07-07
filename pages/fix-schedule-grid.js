@@ -143,7 +143,7 @@ function DjPicker({ djs, onSelect }) {
 								}`}
 							>
 								<span>{dj.label}</span>
-								<span className="shrink-0 font-mono text-xs text-zinc-500">#{dj.ID}</span>
+								<span className="shrink-0 font-mono text-xs text-zinc-400">#{dj.ID}</span>
 							</button>
 						</li>
 					))}
@@ -369,7 +369,7 @@ export default function FixScheduleGrid({ headerRow, hourColumn, rawGrid, idGrid
 							changes appear after the next deploy. Then reload this page to confirm everything resolves.
 						</li>
 					</ol>
-					<p className="mt-2 text-xs text-zinc-500">
+					<p className="mt-2 text-xs text-zinc-400">
 						Tip: for a show with several DJs, add each of them — the pin becomes{" "}
 						<code>| 665,223,489</code> and the show links to all of their shows.
 					</p>
@@ -438,7 +438,7 @@ export default function FixScheduleGrid({ headerRow, hourColumn, rawGrid, idGrid
 											<div className="flex items-start justify-between gap-3">
 												<div className="min-w-0">
 													<p className="break-words font-courierprime text-[#e0ff05]">{item.display}</p>
-													<p className="mt-0.5 break-words font-mono text-xs text-zinc-500">
+													<p className="mt-0.5 break-words font-mono text-xs text-zinc-400">
 														{item.text}
 														{item.count > 1 ? `  ·  ${item.count} slots` : ""}
 													</p>
@@ -474,7 +474,7 @@ export default function FixScheduleGrid({ headerRow, hourColumn, rawGrid, idGrid
 													)}
 													<DjPicker djs={djs} onSelect={(dj) => assign(item.text, dj)} />
 													{assignedList.length > 0 && (
-														<p className="mt-1 text-xs text-zinc-500">Add another DJ for a multi-DJ show.</p>
+														<p className="mt-1 text-xs text-zinc-400">Add another DJ for a multi-DJ show.</p>
 													)}
 												</div>
 											)}
@@ -514,7 +514,7 @@ export default function FixScheduleGrid({ headerRow, hourColumn, rawGrid, idGrid
 											<div className="flex items-start justify-between gap-3">
 												<div className="min-w-0">
 													<p className="break-words font-courierprime text-white">{slot.display}</p>
-													<p className="mt-0.5 break-words font-mono text-xs text-zinc-500">
+													<p className="mt-0.5 break-words font-mono text-xs text-zinc-400">
 														{override.length
 															? `now → ${override.map((d) => `#${d.ID}`).join(", ")}`
 															: slot.currentIds.length
@@ -550,7 +550,7 @@ export default function FixScheduleGrid({ headerRow, hourColumn, rawGrid, idGrid
 														onRemove={(id) => removeDj(slot.text, id)}
 													/>
 													<DjPicker djs={djs} onSelect={(dj) => assign(slot.text, dj)} />
-													<p className="mt-1 text-xs text-zinc-500">
+													<p className="mt-1 text-xs text-zinc-400">
 														Add multiple DJs for a shared show. &quot;reset&quot; restores the original.
 													</p>
 												</div>

@@ -142,7 +142,7 @@ function ShowGroup({ group }) {
                 <span className="min-w-0 flex-1">
                     <span className="font-courierprime text-white">{djName}</span>
                 </span>
-                <span aria-hidden="true" className="flex-shrink-0 text-zinc-500">
+                <span aria-hidden="true" className="flex-shrink-0 text-zinc-400">
                     {open ? "▾" : "▸"}
                 </span>
             </button>

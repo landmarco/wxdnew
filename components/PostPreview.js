@@ -18,7 +18,7 @@ const PostPreview = (props) => {
 		currentRoute === '/blog/category/artist-interview'
 	) {
 		return (
-			<Link href={`/blog/${props.slug}`}>
+			<Link href={`/blog/${props.slug}`} legacyBehavior={false}>
 				<div
 					key={props.id}
 					className="mb-5 flex w-72 cursor-pointer flex-col gap-2 lg:w-[23.5rem] "
@@ -47,7 +47,7 @@ const PostPreview = (props) => {
 	
 	
 		return (
-			<Link href={`/blog/${props.slug}`}>
+			<Link href={`/blog/${props.slug}`} legacyBehavior={false}>
 				<div
 					key={props.id}
 					className="mb-5  flex w-72 cursor-pointer flex-col gap-2 md:w-[22rem]"

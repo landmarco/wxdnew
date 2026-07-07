@@ -61,12 +61,14 @@ const EventPage = (props) => {
 										category.category._sys.filename === 'specialty-show' ? (
 											<Link
 												href={`/archive/${category.category._sys.filename}s`}
+												legacyBehavior={false}
 											>
 												<div className="text-sm">{category.category.title}</div>
 											</Link>
 										) : (
 											<Link
 												href={`/archive/specialty-shows/${category.category._sys.filename}`}
+												legacyBehavior={false}
 											>
 												<div className="text-sm">{category.category.title}</div>
 											</Link>
