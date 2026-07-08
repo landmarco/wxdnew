@@ -82,8 +82,11 @@ const scrollElToTop = (el) => {
 	window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' })
 }
 
-export default function PlaylistView({ show, tracks, djNode }) {
-	const showTitle = show?.title || show?.othergenre || 'Playlist'
+export default function PlaylistView({ show, tracks, djNode, djName }) {
+	// Untitled shows fall back to "<DJ name>'s show" (matching the DJ shown in
+	// "with …" below); only when there's no DJ at all do we land on "Playlist".
+	const showTitle =
+		show?.title || show?.othergenre || (djName ? `${djName}'s show` : 'Playlist')
 	const endTime = show?.duration ? show.starttime + show.duration * 3600 : null
 
 	const visibleTracks = tracks?.filter((t) => t.artist !== '*****') ?? []

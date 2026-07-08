@@ -60,7 +60,7 @@ export default function CurrentPlaylist() {
 			)}
 
 			{!loading && data && (
-				<PlaylistView show={show} tracks={tracks} djNode={djNode} />
+				<PlaylistView show={show} tracks={tracks} djNode={djNode} djName={show?.djname || dj?.defdjname || null} />
 			)}
 		</div>
 	)
