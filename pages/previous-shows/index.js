@@ -15,6 +15,7 @@ import {
     todayDayKey,
     shiftDayKey,
     dayKeySpan,
+    showTitleOrDefault,
 } from "@/lib/showFormat";
 import PreviousShowsCalendar from "@/components/listenpage/PreviousShowsCalendar";
 
@@ -101,7 +102,7 @@ function SingleShowRow({ show }) {
                     </span>
                     {show.defdjname || show.djname ? (
                         <span className="block text-sm text-zinc-400">
-                            {show.title || "Untitled show"}
+                            {showTitleOrDefault(show)}
                         </span>
                     ) : null}
                 </span>
@@ -159,7 +160,7 @@ function ShowGroup({ group }) {
                                     {showTime(show.starttime)}
                                 </span>
                                 <span className="min-w-0 flex-1 font-courierprime text-white">
-                                    {show.title || "Untitled show"}
+                                    {showTitleOrDefault(show)}
                                 </span>
                             </Link>
                         </li>

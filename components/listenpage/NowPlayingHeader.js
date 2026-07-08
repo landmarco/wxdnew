@@ -10,7 +10,10 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
     const dj = currentPlaylist.dj || {};
 
     const djname = show.djname || dj.defdjname || "";
-    const title = show.title || "";
+    // Fall back to "<DJ name>'s show" when the show has no title of its own, so
+    // the label and its /current link stay present. Only truly empty when we
+    // don't even know the DJ.
+    const title = show.title || (djname ? `${djname}'s show` : "");
     // user ID for the DJ's show-list page; present on the current-playlist payload
     const djId = dj.ID ?? show.userID;
 

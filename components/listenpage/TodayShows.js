@@ -3,7 +3,7 @@
 import {useEffect, useState} from 'react'
 import Link from 'next/link'
 import {getShowsInRange} from '@/lib/previousShows'
-import {showDayKey, showTime} from '@/lib/showFormat'
+import {showDayKey, showTime, showTitleOrDefault} from '@/lib/showFormat'
 
 const date = new Date();
 const today = date.toLocaleDateString('en-CA');
@@ -46,8 +46,8 @@ export default function TodayShows() {
 			</h2>
 			<ul className="border-t border-zinc-300/80">
 				{shows.map((show) => {
-					const showTitle = show.title || 'Untitled show'
 					const djName = show.defdjname || show.djname
+					const showTitle = showTitleOrDefault(show)
 
 					return (
 						<li key={show.ID} className="border-b border-zinc-300/80">
