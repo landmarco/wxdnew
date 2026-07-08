@@ -1,3 +1,7 @@
+// pixelarticons ships ESM-only files in node_modules, which Next 12 does not
+// transpile by default. Run it through Babel so the server build can load it.
+const withTM = require('next-transpile-modules')(['pixelarticons']);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // If your Next version warns about `output: "export"`, you can omit it.
@@ -29,4 +33,4 @@ const nextConfig = {
   }
 };
 
-module.exports = nextConfig;
+module.exports = withTM(nextConfig);
