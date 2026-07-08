@@ -22,36 +22,153 @@ const DJ_FIELDS = `
   CASE WHEN u.emailpublish = 1 THEN u.email ELSE NULL END AS email
 `;
 
+// Loads the active show, its DJ, and its tracks — the shape returned by
+// GET /current and pushed over the SSE stream below. Returns null when off-air.
+async function fetchCurrentPlaylist(pool) {
+  const [showRows] = await pool.query(
+    'SELECT ID, starttime, duration, djname, title, subtitle, genre, othergenre, userID, active FROM shows WHERE active = 1 LIMIT 1'
+  );
+  if (!showRows.length) return null;
+  const show = showRows[0];
+
+  const [djRows] = await pool.query(
+    `SELECT ${DJ_FIELDS} FROM users u WHERE u.ID = ?`,
+    [show.userID]
+  );
+
+  const [tracks] = await pool.query(
+    'SELECT * FROM playlist WHERE showID = ? ORDER BY orderkey',
+    [show.ID]
+  );
+
+  return { show, dj: djRows[0] ?? null, tracks };
+}
+
 // GET /api/playlists/current
 // Full current playlist: show info, DJ info, and all tracks.
 router.get('/current', async (req, res) => {
   try {
-    const pool = getPool();
-
-    const [showRows] = await pool.query(
-      'SELECT ID, starttime, duration, djname, title, subtitle, genre, othergenre, userID, active FROM shows WHERE active = 1 LIMIT 1'
-    );
-    if (!showRows.length) {
+    const payload = await fetchCurrentPlaylist(getPool());
+    if (!payload) {
       return res.status(404).json({ error: 'No active show' });
     }
-    const show = showRows[0];
-
-    const [djRows] = await pool.query(
-      `SELECT ${DJ_FIELDS} FROM users u WHERE u.ID = ?`,
-      [show.userID]
-    );
-
-    const [tracks] = await pool.query(
-      'SELECT * FROM playlist WHERE showID = ? ORDER BY orderkey',
-      [show.ID]
-    );
-
     res.set('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
-    res.json({ show, dj: djRows[0] ?? null, tracks });
+    res.json(payload);
   } catch (err) {
     console.error('playlists/current error', err);
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// --- Live now-playing stream (Server-Sent Events) ------------------------
+//
+// Rather than have every browser poll /current on its own timer, a single
+// shared poller here queries the DB once per interval while at least one
+// client is connected, and pushes the payload to all of them ONLY when the
+// current show/track actually changes. N listeners therefore cost one DB
+// query per tick, not N, and each browser sees the change near-instantly.
+//
+// The off-air payload ({ show: null, ... }) is sent so clients can render the
+// "off air" state instead of treating it as an error.
+
+const STREAM_POLL_MS = 2000;
+const STREAM_HEARTBEAT_MS = 25000;
+
+const streamClients = new Set();
+let streamPollTimer = null;
+let streamHeartbeatTimer = null;
+let lastSignature = null;
+let lastPayload = null;
+
+// Compact fingerprint of the meaningful state, so we only broadcast on change
+// (new show going active, or a newly logged track) rather than every tick.
+function signatureOf(payload) {
+  if (!payload || !payload.show) return 'offair';
+  const tracks = payload.tracks || [];
+  const last = tracks[tracks.length - 1];
+  return [payload.show.ID, payload.show.active, tracks.length, last?.ID ?? 'none'].join(':');
+}
+
+function writeEvent(res, payload) {
+  res.write(`data: ${JSON.stringify(payload)}\n\n`);
+}
+
+function broadcast(payload) {
+  for (const res of streamClients) writeEvent(res, payload);
+}
+
+async function pollAndBroadcast() {
+  let payload;
+  try {
+    payload = await fetchCurrentPlaylist(getPool());
+  } catch (err) {
+    console.error('playlists/current/stream poll error', err);
+    return; // keep last known state; retry next tick
+  }
+  const normalized = payload || { show: null, dj: null, tracks: [] };
+  const sig = signatureOf(normalized);
+  if (sig !== lastSignature) {
+    lastSignature = sig;
+    lastPayload = normalized;
+    broadcast(normalized);
+  }
+}
+
+function startStreamPolling() {
+  if (streamPollTimer) return;
+  streamPollTimer = setInterval(pollAndBroadcast, STREAM_POLL_MS);
+  // Comment heartbeat keeps idle connections open through the Apache proxy.
+  streamHeartbeatTimer = setInterval(() => {
+    for (const res of streamClients) res.write(': ping\n\n');
+  }, STREAM_HEARTBEAT_MS);
+}
+
+function stopStreamPolling() {
+  clearInterval(streamPollTimer);
+  clearInterval(streamHeartbeatTimer);
+  streamPollTimer = null;
+  streamHeartbeatTimer = null;
+  lastSignature = null;
+  lastPayload = null;
+}
+
+// GET /api/playlists/current/stream
+// Server-Sent Events stream of the current playlist payload.
+router.get('/current/stream', async (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    // Disable proxy buffering (nginx honours this; Apache needs its own config).
+    'X-Accel-Buffering': 'no',
+  });
+  res.flushHeaders?.();
+  // Suggest the browser reconnect after 5s if the stream drops.
+  res.write('retry: 5000\n\n');
+
+  streamClients.add(res);
+
+  // Send the current state right away so a fresh client isn't blank until the
+  // next change. Reuse the cached snapshot if the poller already has one.
+  try {
+    let payload = lastPayload;
+    if (payload == null) {
+      payload = (await fetchCurrentPlaylist(getPool())) || { show: null, dj: null, tracks: [] };
+      lastPayload = payload;
+      lastSignature = signatureOf(payload);
+    }
+    writeEvent(res, payload);
+  } catch (err) {
+    console.error('playlists/current/stream initial error', err);
+    writeEvent(res, { show: null, dj: null, tracks: [] });
+  }
+
+  startStreamPolling();
+
+  req.on('close', () => {
+    streamClients.delete(res);
+    if (streamClients.size === 0) stopStreamPolling();
+  });
 });
 
 // Fallback window when the caller specifies neither `limit` nor `start`:
