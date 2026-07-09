@@ -1,5 +1,5 @@
 // This component displays the current show and dj playing, plus a link to the
-// previous-shows archive. 
+// previous-shows archive.
 
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -71,7 +71,7 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                         className="relative mt-2 overflow-hidden rounded-[5px] bg-[#dad7d2]/40 bg-cover bg-top-left p-3 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
                         style={{ backgroundImage: `url("/nowplaying/desktop-noise.png"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)`, containerType: "inline-size" }}
                     >
-                        {/* CD — top-right corner. The clipping box itself spins (not the
+                        {/* CD in top-right corner. The clipping box itself spins (not the
                             oversized/offset image inside it), so it rotates around its own
                             visible center instead of wobbling; synced to VinylPlayer's isPlaying. */}
                         <div
@@ -96,7 +96,7 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                             </div>
                         </div>
 
-                        {/* rat doodle — bottom-right corner, sized by cqw so it can never
+                        {/* rat doodle: bottom-right corner, sized by cqw so it can never
                             overflow the card */}
                         <div className="absolute right-[2%] bottom-[-17%] h-[28cqw] max-h-[116px] w-[21cqw] max-w-[88px]">
                             <img alt="" className="pointer-events-none h-full w-full object-contain" src="/nowplaying/rat-doodle.png" />
@@ -105,7 +105,7 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                 </div>
             </div>
 
-            {/* Mobile — capped at the same max-w as MobileVinylPlayer (mx-auto w-full
+            {/* Mobile: capped at the same max-w as MobileVinylPlayer (mx-auto w-full
                 max-w-[35rem]) so the two widgets always line up edge-to-edge, regardless
                 of how wide the parent container is on a given page. */}
             <div className={`relative mx-auto w-full max-w-[35rem] overflow-hidden rounded-[5px] text-center shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] ${forceMobile ? "" : "lg:hidden"}`}>
@@ -116,7 +116,7 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                         className="relative mt-0.5 overflow-hidden rounded-[5px] bg-[#dad7d2]/40 bg-cover bg-top-left p-2.5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
                         style={{ backgroundImage: `url("/nowplaying/mobile-noise.png"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)`, containerType: "inline-size" }}
                     >
-                        {/* CD — top-right corner, spins in sync with VinylPlayer's isPlaying state */}
+                        {/* CD: top-right corner, spins in sync with VinylPlayer's isPlaying state */}
                         <div
                             className="animate-spin-vinyl absolute right-[3%] top-[3%] h-[13cqw] max-h-[44px] min-h-[28px] w-[13cqw] max-w-[44px] min-w-[28px] overflow-hidden rounded-full"
                             style={{ animationPlayState: isPlaying ? "running" : "paused" }}
@@ -139,7 +139,7 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                             </div>
                         </div>
 
-                        {/* rat doodle — bottom-right corner, sized by cqw so it can never
+                        {/* rat doodle: bottom-right corner, sized by cqw so it can never
                             overflow the card */}
                         <div className="absolute right-[1%] bottom-[-15%] h-[34cqw] max-h-[122px] w-[24cqw] max-w-[90px]">
                             <img alt="" className="pointer-events-none h-full w-full object-contain" src="/nowplaying/rat-doodle.png" />

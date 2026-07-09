@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import useCurrentPlaylist from '@/hooks/useCurrentPlaylist'
 import NowPlayingHeader from "@/components/listenpage/NowPlayingHeader";
+import NowPlayingListenPage from "@/components/listenpage/NowPlayingListenPage";
 import StreamButton from "@/components/audioplayers/StreamButton";
 import LastPlayed from '@/components/listenpage/LastPlayed'
 import TodayShows from '@/components/listenpage/TodayShows'
@@ -21,9 +22,9 @@ export default function Listen() {
             <div className="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
                 {/* Desktop: current show info sits to the left of the vinyl player.
                     max-w-7xl (was 5xl) makes the vinyl widget ~25% larger. */}
-                <div className="hidden w-full max-w-7xl lg:flex lg:items-center lg:gap-8">
+                <div className="hidden w-full max-w-7xl lg:flex lg:items-stretch lg:gap-8">
                     <div className="w-1/3 min-w-0">
-                        <NowPlayingHeader currentPlaylist={currentPlaylist}/>
+                        <NowPlayingListenPage currentPlaylist={currentPlaylist} />
                     </div>
                     <div className="w-2/3">
                         <VinylPlayer />
