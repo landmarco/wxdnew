@@ -9,7 +9,7 @@ Cloudflare Pages (wxdu.art)
         |
         | HTTPS  →  https://api.wxdu.art
         v
-Apache reverse proxy (port 443 → 3001)
+nginx reverse proxy (port 443 → 3001, terminates TLS)
         |
         v
 Node/Express API  (127.0.0.1:3001)
@@ -21,7 +21,9 @@ Node/Express API  (127.0.0.1:3001)
 
 ## Server setup
 
-**Prerequisites:** Node.js ≥ 14 (install via nvm), Apache with `mod_proxy`/`mod_proxy_http` enabled, certbot.
+**Prerequisites:** Node.js ≥ 14 (install via nvm), nginx, certbot with the nginx plugin (`python3-certbot-nginx`).
+
+> **Note:** `api.wxdu.art` is fronted by **nginx** (it terminates TLS and proxies straight to Node). It used to sit behind Apache; that setup is preserved for reference in `apache.conf.example`, but the live config is `nginx.conf.example`.
 
 ```bash
 # 1. Install dependencies
@@ -39,19 +41,18 @@ cp .env.example .env
 pm2 start ecosystem.config.js
 pm2 save
 
-# 4. Set up Apache virtual host and TLS
-sudo a2enmod proxy proxy_http
-sudo cp apache.conf.example /etc/apache2/sites-available/wxdu-api.conf
-sudo a2ensite wxdu-api
-sudo apache2ctl configtest && sudo systemctl reload apache2
-sudo certbot --apache -d api.wxdu.art
+# 4. Set up the nginx server block and TLS
+sudo cp nginx.conf.example /etc/nginx/sites-available/api.wxdu.art
+sudo ln -s /etc/nginx/sites-available/api.wxdu.art /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d api.wxdu.art
 
 # 5. Smoke test
 curl https://api.wxdu.art/api/health
 curl https://api.wxdu.art/api/nowplaying
 # SSE stream — should print an immediate `data: {...}` line and stay open
-# (Ctrl-C to stop). If it hangs with no output or drops after ~10s, the Apache
-# proxy is buffering/timing out — see "Live now-playing stream" below.
+# (Ctrl-C to stop). If it hangs with no output or drops, the nginx proxy is
+# buffering/timing out — see "Live now-playing stream" below.
 curl -N https://api.wxdu.art/api/playlists/current/stream
 ```
 
@@ -69,14 +70,14 @@ pm2 restart wxdu-api
 
 When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the following:
 
-1. **Apache config** — add a `ServerAlias` to `/etc/apache2/sites-available/wxdu-api.conf`:
-   ```apache
-   ServerName api.wxdu.art
-   ServerAlias api.wxdu.org
+1. **nginx config** — add `api.wxdu.org` to the `server_name` line in both server blocks of `/etc/nginx/sites-available/api.wxdu.art`:
+   ```nginx
+   server_name api.wxdu.art api.wxdu.org;
    ```
+   then `sudo nginx -t && sudo systemctl reload nginx`.
 2. **Expand the TLS cert** to cover both names:
    ```bash
-   sudo certbot --apache -d api.wxdu.art -d api.wxdu.org
+   sudo certbot --nginx -d api.wxdu.art -d api.wxdu.org
    ```
 3. **Cloudflare Pages env var** — in the Cloudflare Pages dashboard, update `NEXT_PUBLIC_API_URL` to `https://api.wxdu.org` and redeploy.
 4. **Local dev** — update `wxdnew/.env.local` to `NEXT_PUBLIC_API_URL=https://api.wxdu.org`.
@@ -260,7 +261,7 @@ The `GET /api/releases/:id/cover` endpoint serves cover images directly from dis
 
 The payload is byte-for-byte the same shape as `GET /api/playlists/current`, so clients can share one reducer between the one-shot fetch and the stream.
 
-**Apache proxy requirements:** SSE needs Apache to *not* buffer the response and to *not* time out the long-lived connection. `apache.conf.example` handles both with a dedicated `ProxyPass` for the stream path (`flushpackets=on timeout=3600`), placed before the catch-all. Without this, events arrive batched/delayed or the connection is dropped after `ProxyTimeout` (10s). If you hand-maintain the vhost, replicate that block.
+**nginx proxy requirements:** SSE needs nginx to *not* buffer the response and to *not* time out the long-lived connection. `nginx.conf.example` handles both with a dedicated `location` for the stream path (`proxy_buffering off;` + `proxy_read_timeout 3600s;`). The Node route also sends `X-Accel-Buffering: no`, which nginx honours. Without these, events arrive batched/delayed or the connection is dropped. If you hand-maintain the server block, replicate that `location`.
 
 **Latency:** a newly logged track reaches every connected browser within the poll interval (≤2s) plus network. To trade latency against DB query volume, adjust `STREAM_POLL_MS` in `routes/playlists.js` — cost scales with the interval, not with the number of listeners.
 

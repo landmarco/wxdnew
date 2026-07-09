@@ -1,3 +1,9 @@
+# ============================================================================
+# DEPRECATED — api.wxdu.art is now fronted by nginx, not Apache.
+# Use nginx.conf.example instead. This file is kept only as a record of the
+# previous Apache setup (and the SSE ProxyPass tuning it needed). Do not deploy.
+# ============================================================================
+#
 # /etc/apache2/sites-available/wxdu-api.conf
 #
 # Setup steps (on the server, as computing user):

@@ -1,0 +1,68 @@
+# /etc/nginx/sites-available/api.wxdu.art
+#
+# nginx reverse proxy for the wxdu-api Node service (127.0.0.1:3001).
+# nginx terminates TLS and proxies straight to Node — there is no Apache in
+# this path. (The old Apache setup is kept for reference in apache.conf.example.)
+#
+# Setup steps (on the server):
+#   1. Copy this file:
+#        sudo cp nginx.conf.example /etc/nginx/sites-available/api.wxdu.art
+#   2. Enable it:
+#        sudo ln -s /etc/nginx/sites-available/api.wxdu.art /etc/nginx/sites-enabled/
+#   3. Test and reload:
+#        sudo nginx -t && sudo systemctl reload nginx
+#   4. Get / install a Let's Encrypt cert (certbot edits this file and sets up
+#      auto-renewal via the nginx authenticator):
+#        sudo certbot --nginx -d api.wxdu.art
+#
+# --- Switching to api.wxdu.org later ---
+# When Duke IT adds the api.wxdu.org DNS A record (152.3.0.229):
+#   1. Add it to server_name on BOTH blocks:  server_name api.wxdu.art api.wxdu.org;
+#   2. Expand the cert:  sudo certbot --nginx -d api.wxdu.art -d api.wxdu.org
+#   3. Update NEXT_PUBLIC_API_URL in Cloudflare Pages env vars to https://api.wxdu.org
+#      (ALLOWED_ORIGINS in .env already covers both domains — no change needed there)
+#   4. Reload: sudo systemctl reload nginx
+
+server {
+    listen 152.3.0.229:80;
+    server_name api.wxdu.art;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 152.3.0.229:443 ssl;
+    server_name api.wxdu.art;
+
+    # certbot --nginx manages these two lines:
+    ssl_certificate     /etc/letsencrypt/live/api.wxdu.art/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.wxdu.art/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    # Server-Sent Events stream (live now-playing / current playlist). It must
+    # NOT be buffered and must survive a long, mostly-idle connection:
+    #   proxy_buffering off  — flush each event to the browser immediately
+    #   proxy_read_timeout   — don't drop the connection between events/heartbeats
+    # (The Node route also sends `X-Accel-Buffering: no`, which nginx honours.)
+    location /api/playlists/current/stream {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Connection '';
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# NOTE: express-rate-limit in the API keys on the real client IP, which comes
+# from the X-Forwarded-For header set above plus `app.set('trust proxy', 1)` in
+# server.js — exactly one proxy hop (nginx -> Node). Keep those in sync.
