@@ -42,7 +42,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 	const rightColumns = columns.slice(midIndex)
 
 	return (
-		<div className="mx-auto mb-1 lg:mb-10 w-11/12 md:w-5/6 lg:w-full text-white">
+		<div className="mx-auto mb-1 lg:mb-10 w-11/12 md:w-5/6 lg:w-full rounded-3xl bg-black p-2 lg:p-4 text-white shadow-lg shadow-black/20">
 			
 
 			<div className="flex gap-2 md:gap-4 items-stretch h-[15rem] sm:h-[28rem] md:h-[26rem] lg:h-[45rem]">
@@ -90,7 +90,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 					</div>
 
 					{/* Middle row: logo + subheader, always fixed at the true center */}
-					<div className="flex flex-col items-center py-2 px-2 lg:px-4 my-3 lg:my-6 rounded-3xl bg-black/80 shadow-lg shadow-black/20">
+					<div className="flex flex-col items-center py-2">
 						<button
 							type="button"
 							onClick={togglePlayPause}
