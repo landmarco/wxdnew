@@ -3,10 +3,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/router";
+import FitText from '../homepage/FitText';
+import { useAudio } from '../AudioContext';
 
-export default function NowPlayingHeader({ currentPlaylist = {} }) {
+export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = false }) {
     const router = useRouter();
     const goToListen = () => router.push("/listen");
+    // same play state VinylPlayer uses, so this CD spins/stops in lockstep with it
+    const { isPlaying } = useAudio();
 
     // stops an inner link's click/keyboard activation from bubbling up to the
     // card wrapper, so DJ/Show/explore links route to their own pages instead
@@ -46,7 +50,7 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
 
     return (
         <div
-            className="cursor-pointer select-none focus:outline-none focus-visible:outline-none"
+            className="w-full cursor-pointer select-none focus:outline-none focus-visible:outline-none"
             role="button"
             tabIndex={0}
             aria-label="Go to listen page"
@@ -59,66 +63,86 @@ export default function NowPlayingHeader({ currentPlaylist = {} }) {
             }}
         >
             {/* Desktop */}
-            <div className="relative hidden overflow-hidden rounded-[5px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] lg:block">
+            <div className={`relative overflow-hidden rounded-[5px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] ${forceMobile ? "hidden" : "hidden lg:block"}`}>
                 <img alt="" className="absolute inset-0 h-full w-full object-cover" src="/nowplaying/desktop-bg-gradient.png" />
                 <div className="relative px-3 pt-3 pb-3">
                     <h1 className="bitcount pl-5 text-[clamp(1.75rem,3.5vw,2.75rem)] leading-tight text-white">Now Playing</h1>
                     <div
                         className="relative mt-2 overflow-hidden rounded-[5px] bg-[#dad7d2]/40 bg-cover bg-top-left p-3 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
-                        style={{ backgroundImage: `url("/nowplaying/desktop-noise.png"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)` }}
+                        style={{ backgroundImage: `url("/nowplaying/desktop-noise.png"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)`, containerType: "inline-size" }}
                     >
-                        {/* CD + text, sized to leave room on the right for the rat doodle */}
-                        <div className="flex flex-col gap-2 pr-[26%]">
-                            <div className="flex items-center gap-6">
-                                <div className="relative h-[70px] w-[70px] shrink-0 overflow-hidden">
-                                    <img alt="" className="absolute h-[278%] w-[177%] max-w-none" style={{ left: "-37.83%", top: "-121.06%" }} src="/nowplaying/cd.png" />
-                                </div>
-                                <div className="font-courierprime text-[24px] leading-snug text-[#1e0d7a]">
-                                    <p className="mb-0">DJ: {djLink}</p>
-                                    <p>Show: {showLink}</p>
-                                </div>
+                        {/* CD — top-right corner. The clipping box itself spins (not the
+                            oversized/offset image inside it), so it rotates around its own
+                            visible center instead of wobbling; synced to VinylPlayer's isPlaying. */}
+                        <div
+                            className="animate-spin-vinyl absolute right-[4%] top-[4%] h-[11cqw] max-h-[52px] min-h-[32px] w-[11cqw] max-w-[52px] min-w-[32px] overflow-hidden rounded-full"
+                            style={{ animationPlayState: isPlaying ? "running" : "paused" }}
+                        >
+                            <img alt="" className="absolute h-[278%] w-[177%] max-w-none" style={{ left: "-37.83%", top: "-121.06%" }} src="/nowplaying/cd.png" />
+                        </div>
+
+                        {/* Text + button share an explicit width (not just content-driven) so the
+                            button reads as a long bar and the text above it has real room to grow.
+                            FitText measures that box to scale the DJ/show text to fill it exactly. */}
+                        <div className="flex w-[80%] flex-col gap-2">
+                            <div className="h-[15cqw] max-h-[64px] min-h-[40px] min-w-0">
+                                <FitText maxRatio={0.16} minRatio={0.045} deps={[djname, title]}>
+                                    <p className="mb-0 font-courierprime leading-snug text-[#1e0d7a]">DJ: {djLink}</p>
+                                    <p className="font-courierprime leading-snug text-[#1e0d7a]">Show: {showLink}</p>
+                                </FitText>
                             </div>
-                            <div className="inline-block bg-[#7d7575] px-3 py-1.5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+                            <div className="bg-[#7d7575] px-3 py-1.5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
                                 <p className="font-courierprime text-base text-[#fff7f7]">{exploreLink}</p>
                             </div>
                         </div>
 
-                        {/* rat doodle — bottom-right */}
-                        <img
-                            alt=""
-                            className="pointer-events-none absolute object-contain"
-                            style={{ left: "76.2%", top: "42.9%", width: "23.8%", height: "45.4%" }}
-                            src="/nowplaying/rat-doodle.png"
-                        />
+                        {/* rat doodle — bottom-right corner, sized by cqw so it can never
+                            overflow the card */}
+                        <div className="absolute right-[2%] bottom-[-17%] h-[28cqw] max-h-[116px] w-[21cqw] max-w-[88px]">
+                            <img alt="" className="pointer-events-none h-full w-full object-contain" src="/nowplaying/rat-doodle.png" />
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Mobile */}
-            <div className="relative overflow-hidden rounded-[5px] text-center shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] lg:hidden">
+            {/* Mobile — capped at the same max-w as MobileVinylPlayer (mx-auto w-full
+                max-w-[35rem]) so the two widgets always line up edge-to-edge, regardless
+                of how wide the parent container is on a given page. */}
+            <div className={`relative mx-auto w-full max-w-[35rem] overflow-hidden rounded-[5px] text-center shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] ${forceMobile ? "" : "lg:hidden"}`}>
                 <img alt="" className="absolute inset-0 h-full w-full object-cover" src="/nowplaying/mobile-bg-gradient.png" />
                 <div className="relative px-1 pt-2 pb-2">
                     <h1 className="bitcount text-[clamp(1.35rem,6.5vw,2rem)] leading-tight text-white">Now Playing</h1>
                     <div
                         className="relative mt-0.5 overflow-hidden rounded-[5px] bg-[#dad7d2]/40 bg-cover bg-top-left p-2.5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
-                        style={{ backgroundImage: `url("/nowplaying/mobile-noise.png"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)` }}
+                        style={{ backgroundImage: `url("/nowplaying/mobile-noise.png"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)`, containerType: "inline-size" }}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <div className="relative h-[48px] w-[48px] shrink-0 overflow-hidden">
-                                <img alt="" className="absolute h-[278%] w-[177%] max-w-none" style={{ left: "-37.83%", top: "-121.06%" }} src="/nowplaying/cd.png" />
-                            </div>
-                            <div className="font-courierprime text-base leading-snug text-[#2b10ba]">
-                                <p className="mb-0">DJ: {djLink}</p>
-                                <p>Show: {showLink}</p>
-                            </div>
+                        {/* CD — top-right corner, spins in sync with VinylPlayer's isPlaying state */}
+                        <div
+                            className="animate-spin-vinyl absolute right-[3%] top-[3%] h-[13cqw] max-h-[44px] min-h-[28px] w-[13cqw] max-w-[44px] min-w-[28px] overflow-hidden rounded-full"
+                            style={{ animationPlayState: isPlaying ? "running" : "paused" }}
+                        >
+                            <img alt="" className="absolute h-[278%] w-[177%] max-w-none" style={{ left: "-37.83%", top: "-121.06%" }} src="/nowplaying/cd.png" />
                         </div>
-                        <div className="mt-2 flex items-center gap-2">
-                            <div className="w-3/5 bg-[#7d7575] px-3 py-1.5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+
+                        {/* Text + button share an explicit width (same rule as desktop) so the
+                            button reads as a long bar. Left-aligned, overriding the card's
+                            text-center. FitText scales the DJ/show text to fill that width. */}
+                        <div className="flex w-[75%] flex-col gap-2 text-left">
+                            <div className="h-[16cqw] max-h-[52px] min-h-[32px] min-w-0">
+                                <FitText maxRatio={0.14} minRatio={0.045} deps={[djname, title]}>
+                                    <p className="mb-0 font-courierprime leading-snug text-[#2b10ba]">DJ: {djLink}</p>
+                                    <p className="font-courierprime leading-snug text-[#2b10ba]">Show: {showLink}</p>
+                                </FitText>
+                            </div>
+                            <div className="bg-[#7d7575] px-3 py-1.5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
                                 <p className="font-courierprime text-xs text-[#fff7f7]">{exploreLink}</p>
                             </div>
-                            <div className="flex w-2/5 justify-center">
-                                <img alt="" className="pointer-events-none h-auto w-2/3 object-contain" src="/nowplaying/rat-doodle.png" />
-                            </div>
+                        </div>
+
+                        {/* rat doodle — bottom-right corner, sized by cqw so it can never
+                            overflow the card */}
+                        <div className="absolute right-[1%] bottom-[-15%] h-[34cqw] max-h-[122px] w-[24cqw] max-w-[90px]">
+                            <img alt="" className="pointer-events-none h-full w-full object-contain" src="/nowplaying/rat-doodle.png" />
                         </div>
                     </div>
                 </div>

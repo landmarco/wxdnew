@@ -8,7 +8,6 @@ import { useAudio } from '../AudioContext'
 import FitText from './FitText'
 import StreamButton from '../audioplayers/StreamButton'
 import { Music } from 'pixelarticons/react/Music.js'
-import { Headphone } from 'pixelarticons/react/Headphone.js'
 import Disc from './DiscIcon'
 
 export default function VinylPlayer() {
@@ -56,18 +55,19 @@ export default function VinylPlayer() {
             <FitText deps={[song.song, song.artist, song.album, song.label]}>
               <div lang="en" className="flex items-start gap-[2cqw] text-left font-courierprime leading-tight text-[#e0ff05]">
                 <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}><Music width="1.5em" height="1.5em" style={{ imageRendering: 'pixelated' }} /></span>
-                <span className="min-w-0">{song.song}</span>
+                <span className="min-w-0 font-bold">{song.song}</span>
               </div>
               {song.artist && (
-                <div lang="en" className="flex items-start gap-[2cqw] text-left font-courierprime leading-tight text-white">
-                  <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}><Headphone width="1.5em" height="1.5em" style={{ imageRendering: 'pixelated' }} /></span>
+                // No icon gutter here — pl-[5.2cqw] matches the Music icon's gutter (3.2cqw)
+                // + gap (2cqw) above, so "by:" lines up with the start of song.song's text.
+                <div lang="en" className="pl-[5.2cqw] text-left font-courierprime leading-tight text-white">
                   <span className="min-w-0">{song.artist}</span>
                 </div>
               )}
               {song.album && (
                 <div lang="en" className="flex items-start gap-[2cqw] text-left font-courierprime leading-tight text-[#e0ff05]">
                   <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}><Disc width="1.5em" height="1.5em" style={{ imageRendering: 'pixelated' }} /></span>
-                  <span className="min-w-0">{song.album}</span>
+                  <span className="min-w-0 italic">{song.album}</span>
                 </div>
               )}
               {/* Label hidden for now — felt too busy. Re-enable by uncommenting: */}

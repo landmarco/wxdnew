@@ -23,7 +23,7 @@ export default function Listen() {
                     max-w-7xl (was 5xl) makes the vinyl widget ~25% larger. */}
                 <div className="hidden w-full max-w-7xl lg:flex lg:items-center lg:gap-8">
                     <div className="w-1/3 min-w-0">
-                        <NowPlayingHeader currentPlaylist={currentPlaylist} />
+                        <NowPlayingHeader currentPlaylist={currentPlaylist}/>
                     </div>
                     <div className="w-2/3">
                         <VinylPlayer />

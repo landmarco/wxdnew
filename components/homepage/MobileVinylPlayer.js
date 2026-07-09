@@ -7,7 +7,6 @@ import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
 import StreamButton from '../audioplayers/StreamButton'
 import { Music } from 'pixelarticons/react/Music.js'
-import { Headphone } from 'pixelarticons/react/Headphone.js'
 import Disc from './DiscIcon'
 
 // Mobile-only vinyl player: turntable stacked on top, text panel + button below,
@@ -83,18 +82,19 @@ export default function MobileVinylPlayer() {
               <div lang="en" className="mt-[2vw] flex w-full min-w-0 flex-col gap-[1.5vw]">
                 <div className="flex items-start gap-[2vw] text-left font-courierprime text-[5.5vw] leading-tight text-[#e0ff05]">
                   <span aria-hidden="true" className="w-[5.5vw] shrink-0 text-center"><Music width="1em" height="1em" style={{ imageRendering: 'pixelated' }} /></span>
-                  <span className="min-w-0 hyphens-auto break-words">{song.song}</span>
+                  <span className="min-w-0 font-bold hyphens-auto break-words">{song.song}</span>
                 </div>
                 {song.artist && (
-                  <div className="flex items-start gap-[2vw] text-left font-courierprime text-[5.5vw] leading-tight text-white">
-                    <span aria-hidden="true" className="w-[5.5vw] shrink-0 text-center"><Headphone width="1em" height="1em" style={{ imageRendering: 'pixelated' }} /></span>
+                  // No icon gutter here — pl-[7.5vw] matches the Music icon's gutter (5.5vw)
+                  // + gap (2vw) above, so this lines up under the start of song.song's text.
+                  <div className="pl-[7.5vw] text-left font-courierprime text-[5.5vw] leading-tight text-white">
                     <span className="min-w-0 hyphens-auto break-words">{song.artist}</span>
                   </div>
                 )}
                 {song.album && (
                   <div className="flex items-start gap-[2vw] text-left font-courierprime text-[4vw] leading-tight text-[#e0ff05]">
                     <span aria-hidden="true" className="w-[4vw] shrink-0 text-center"><Disc width="1em" height="1em" style={{ imageRendering: 'pixelated' }} /></span>
-                    <span className="min-w-0 hyphens-auto break-words">{song.album}</span>
+                    <span className="min-w-0 italic hyphens-auto break-words">{song.album}</span>
                   </div>
                 )}
                 {/* Label hidden for now — felt too busy. Re-enable by uncommenting: */}
