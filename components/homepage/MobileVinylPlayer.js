@@ -7,6 +7,7 @@ import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
 import StreamButton from '../audioplayers/StreamButton'
 import { Music } from 'pixelarticons/react/Music.js'
+import { Mic } from 'pixelarticons/react/Mic.js'
 import Disc from './DiscIcon'
 
 // Mobile-only vinyl player: turntable stacked on top, text panel + button below,
@@ -85,9 +86,8 @@ export default function MobileVinylPlayer() {
                   <span className="min-w-0 font-bold hyphens-auto break-words">{song.song}</span>
                 </div>
                 {song.artist && (
-                  // No icon gutter here — pl-[7.5vw] matches the Music icon's gutter (5.5vw)
-                  // + gap (2vw) above, so this lines up under the start of song.song's text.
-                  <div className="pl-[7.5vw] text-left font-courierprime text-[5.5vw] leading-tight text-white">
+                  <div className="flex items-start gap-[2vw] text-left font-courierprime text-[5.5vw] leading-tight text-white">
+                    <span aria-hidden="true" className="w-[5.5vw] shrink-0 text-center"><Mic width="1em" height="1em" style={{ imageRendering: 'pixelated' }} /></span>
                     <span className="min-w-0 hyphens-auto break-words">{song.artist}</span>
                   </div>
                 )}

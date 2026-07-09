@@ -8,6 +8,7 @@ import { useAudio } from '../AudioContext'
 import FitText from './FitText'
 import StreamButton from '../audioplayers/StreamButton'
 import { Music } from 'pixelarticons/react/Music.js'
+import { Mic } from 'pixelarticons/react/Mic.js'
 import Disc from './DiscIcon'
 
 export default function VinylPlayer() {
@@ -58,9 +59,8 @@ export default function VinylPlayer() {
                 <span className="min-w-0 font-bold">{song.song}</span>
               </div>
               {song.artist && (
-                // No icon gutter here — pl-[5.2cqw] matches the Music icon's gutter (3.2cqw)
-                // + gap (2cqw) above, so "by:" lines up with the start of song.song's text.
-                <div lang="en" className="pl-[5.2cqw] text-left font-courierprime leading-tight text-white">
+                <div lang="en" className="flex items-start gap-[2cqw] text-left font-courierprime leading-tight text-white">
+                  <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}><Mic width="1.5em" height="1.5em" style={{ imageRendering: 'pixelated' }} /></span>
                   <span className="min-w-0">{song.artist}</span>
                 </div>
               )}
