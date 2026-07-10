@@ -145,6 +145,11 @@ export default function AnimatedBackgroundShader({ size = 17 }) {
   const containerRef = useRef(null)
 
   useEffect(() => {
+    // Respect the OS-level reduced-motion setting: skip mounting the canvas
+    // entirely rather than rendering a static frame, since users who set this
+    // are opting out of the animation, not just wanting it to hold still.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
     let renderer, program, mesh, canvas
     let rafId = null
     let onResize, onVisibilityChange
@@ -189,13 +194,20 @@ export default function AnimatedBackgroundShader({ size = 17 }) {
       resize()
       window.addEventListener('resize', onResize)
 
-      // Feed elapsed seconds into the shader each frame and issue the draw call.
-      // All animation state (noise offsets, hue) lives in the shader now.
+      // Feed elapsed seconds into the shader and issue the draw call, throttled to
+      // ~30fps — the color/square drift is slow enough that 60fps is wasted GPU work.
+      // Still schedules via rAF every display frame so it stays tab-synced and the
+      // visibilitychange pause/resume below keeps working unchanged; it just skips
+      // the actual render on alternating frames.
       const start = performance.now()
+      const frameInterval = 1000 / 30
+      let lastFrameTime = 0
       const update = (t) => {
+        rafId = requestAnimationFrame(update)
+        if (t - lastFrameTime < frameInterval) return
+        lastFrameTime = t
         program.uniforms.uTime.value = (t - start) / 1000
         renderer.render({ scene: mesh })
-        rafId = requestAnimationFrame(update)
       }
 
       // Same idea as the old canvas2D pause-on-hide, but here it's just gating
