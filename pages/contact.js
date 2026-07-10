@@ -58,7 +58,7 @@ export async function getStaticProps(){
 
 export default function Contact({ contacts }){
     return (
-        <main className="w-full bg-black text-white">
+        <main className="w-full text-white">
             <div className="w-full px-8 pb-10 md:px-16">
                 <h1 className="mb-12 font-kallisto text-6xl font-normal text-white">
                 Contacts
@@ -66,7 +66,7 @@ export default function Contact({ contacts }){
 
                 <section className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
                 {contacts.map((c, i) => (
-                    <article key={i} className="w-[320px] min-h-[360px] border-2 border-[#e0ff05] bg-black p-8 text-white" >
+                    <article key={i} className="w-[320px] min-h-[360px] border-2 border-[#e0ff05] bg-black/80 p-8 text-white" >
                         <h2 className="mb-8 text-4xl font-extrabold leading-tight text-[#e0ff05]">
                             {c.role}
                         </h2>
