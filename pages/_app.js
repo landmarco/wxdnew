@@ -11,6 +11,8 @@ import NavPlayer from '../components/audioplayers/NavPlayer'
 import DJRequestWidget from '../components/DJRequestWidget'
 import FeedbackWidget from '../components/FeedbackWidget'
 import KeyboardShortcutsHint from '../components/KeyboardShortcutsHint'
+import AnimatedBackgroundShader from '../components/AnimatedBackgroundShader'
+import MobileAnimatedBackgroundShader from '../components/MobileAnimatedBackgroundShader'
 
 const App = ({Component, pageProps}) => {
 	useEffect(() => {
@@ -43,13 +45,24 @@ const App = ({Component, pageProps}) => {
 						    position:sticky descendant (e.g. the schedule's day headers) and
 						    they'd never stick on page scroll. */}
 						<div className="m-0 flex h-full w-full flex-col overflow-x-clip bg-black font-courierprime text-base text-white">
-							{/* First-focus overlay: shows keyboard shortcuts + the
-							    skip-to-main-content link on the initial Tab press. */}
-							<KeyboardShortcutsHint />
-							<NavPlayer />
-							<Layout>
-								<Component {...pageProps} />
-							</Layout>
+							{/* Fixed, GPU-shader animated background — sits behind every page.
+							    Positioned elements paint after in-flow ones, so everything
+							    below needs `relative z-10` to stay above it. */}
+							<div className="hidden lg:block">
+								<AnimatedBackgroundShader size={17} />
+							</div>
+							<div className="lg:hidden">
+								<MobileAnimatedBackgroundShader />
+							</div>
+							<div className="relative z-10">
+								{/* First-focus overlay: shows keyboard shortcuts + the
+								    skip-to-main-content link on the initial Tab press. */}
+								<KeyboardShortcutsHint />
+								<NavPlayer />
+								<Layout>
+									<Component {...pageProps} />
+								</Layout>
+							</div>
 						</div>
 					</div>
 					<DJRequestWidget />
