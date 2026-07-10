@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { useAudio } from "../AudioContext";
-import { getNowPlaying } from "../../lib/nowPlaying";
+import { subscribeNowPlaying } from "../../lib/nowPlaying";
 import getCovers from "../../lib/getCovers";
 import cardinalsFallback from "../../images/cardinals.jpg";
 import Emerald from "../Emerald";
@@ -35,30 +35,21 @@ const NavPlayer = () => {
     // show the cardinals fallback below.
     const [nowPlayingCover, setNowPlayingCover] = useState(null);
 
-    // fetches directly from the external WXDU API (api.wxdu.art / api.wxdu.org).
-    // the old /api/now-playing Next route doesn't exist in the static export,
-    // so we call the API straight through the domain-aware apiFetch wrapper.
-    async function fetchNowPlaying() {
-        try {
-            const data = await getNowPlaying();
-
+    // Subscribe to live now-playing updates. This prefers the server's SSE
+    // stream (api.wxdu.art / api.wxdu.org), which pushes only when the track or
+    // show changes, and transparently falls back to polling if the stream is
+    // unavailable. The old /api/now-playing Next route doesn't exist in the
+    // static export, so this goes straight to the external API.
+    useEffect(() => {
+        const unsubscribe = subscribeNowPlaying((data) => {
             setNowPlaying({
                 artist: data.artist,
                 song: data.song,
                 album: data.album,
                 dj: data.dj
             });
-        } catch (error) {
-            console.error("Failed to fetch now-playing data:", error);
-        }
-    }
-
-    // do an immediate fetch and then refresh every 10 seconds
-    useEffect(() => {
-        fetchNowPlaying();
-
-        const interval = setInterval(fetchNowPlaying, 10000);
-        return () => clearInterval(interval);
+        });
+        return unsubscribe;
     }, []);
 
     // Look up the current track's cover art (by artist + album) for the OS media

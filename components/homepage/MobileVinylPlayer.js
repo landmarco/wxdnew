@@ -6,6 +6,9 @@ import cardinalsFallback from '../../images/cardinals.jpg'
 import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
 import StreamButton from '../audioplayers/StreamButton'
+import { Music } from 'pixelarticons/react/Music.js'
+import { Mic } from 'pixelarticons/react/Mic.js'
+import Disc from './DiscIcon'
 
 // Mobile-only vinyl player: turntable stacked on top, text panel + button below,
 // per the "Mobile Vinyl Player" Figma layout (node 8:2).
@@ -78,9 +81,22 @@ export default function MobileVinylPlayer() {
           ) : (
             <>
               <div lang="en" className="mt-[2vw] flex w-full min-w-0 flex-col gap-[1.5vw]">
-                <div className="hyphens-auto break-words font-courierprime text-[5.5vw] leading-tight text-[#e0ff05]">🎵 {song.song}</div>
-                {song.artist && <div className="hyphens-auto break-words font-courierprime text-[5.5vw] leading-tight text-white">👩‍🎤 {song.artist}</div>}
-                {song.album && <div className="hyphens-auto break-words font-courierprime text-[4vw] leading-tight text-[#e0ff05]">💿 {song.album}</div>}
+                <div className="flex items-start gap-[2vw] text-left font-courierprime text-[5.5vw] leading-tight text-[#e0ff05]">
+                  <span aria-hidden="true" className="w-[5.5vw] shrink-0 text-center"><Music width="1em" height="1em" style={{ imageRendering: 'pixelated' }} /></span>
+                  <span className="min-w-0 font-bold hyphens-auto break-words">{song.song}</span>
+                </div>
+                {song.artist && (
+                  <div className="flex items-start gap-[2vw] text-left font-courierprime text-[5.5vw] leading-tight text-white">
+                    <span aria-hidden="true" className="w-[5.5vw] shrink-0 text-center"><Mic width="1em" height="1em" style={{ imageRendering: 'pixelated' }} /></span>
+                    <span className="min-w-0 hyphens-auto break-words">{song.artist}</span>
+                  </div>
+                )}
+                {song.album && (
+                  <div className="flex items-start gap-[2vw] text-left font-courierprime text-[4vw] leading-tight text-[#e0ff05]">
+                    <span aria-hidden="true" className="w-[4vw] shrink-0 text-center"><Disc width="1em" height="1em" style={{ imageRendering: 'pixelated' }} /></span>
+                    <span className="min-w-0 italic hyphens-auto break-words">{song.album}</span>
+                  </div>
+                )}
                 {/* Label hidden for now — felt too busy. Re-enable by uncommenting: */}
                 {/* {song.label && <div className="hyphens-auto break-words font-courierprime text-[3.2vw] leading-tight text-white">🏷️ {song.label}</div>} */}
               </div>

@@ -226,6 +226,7 @@ const MobileNavDrawer = () => {
 					href={item.href}
 					legacyBehavior={false}
 					onClick={close}
+					tabIndex={openSide === side ? 0 : -1}
 					className="py-3 text-3xl text-white hover:text-blue-300"
 				>
 					{item.label}
@@ -236,10 +237,13 @@ const MobileNavDrawer = () => {
 
 	return (
 		<div className="lg:hidden">
-			{/* Backdrop */}
+			{/* Backdrop — tap to close, or swipe in the closing direction (the same
+			    gesture, and same handlers, as dragging the panel itself) so a swipe
+			    that starts outside the drawer dismisses it too. */}
 			<div
 				onClick={close}
 				aria-hidden="true"
+				{...(openSide ? dismissHandlers(openSide) : {})}
 				className={`fixed inset-0 z-[60] bg-black/60 transition-opacity duration-200 ${
 					openSide ? 'opacity-100' : 'pointer-events-none opacity-0'
 				}`}
@@ -250,8 +254,9 @@ const MobileNavDrawer = () => {
 
 			{/* Discoverability / keyboard affordances: slim green edge grips that
 			    also open the menu on tap and pulse gently while the stream plays.
-			    They retire once the user has opened the menu at least once. */}
-			{mounted && !openSide && !discovered && (
+			    Kept mounted permanently (not just pre-discovery) so keyboard/switch
+			    users always have a way to open the drawer, even after swiping once. */}
+			{mounted && !openSide && (
 				<>
 					<button
 						type="button"

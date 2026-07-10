@@ -45,7 +45,7 @@ export default function ShowPage() {
                 <h1 className="kallisto text-4xl lg:text-5xl">Playlist</h1>
             </div>
 
-            <PlaylistView show={show} tracks={tracks} djNode={djNode} />
+            <PlaylistView show={show} tracks={tracks} djNode={djNode} djName={show.djname || dj?.defdjname || null} />
         </div>
     );
 }

@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getDj, getDjShows, DJ_SHOWS_PAGE_SIZE } from "@/lib/djShows";
-import { showDate, showTime } from "@/lib/showFormat";
+import { showDate, showTime, showTitleOrDefault } from "@/lib/showFormat";
 
 export default function DjPage() {
     const router = useRouter();
@@ -105,7 +105,7 @@ export default function DjPage() {
                                         ) : null}
                                     </span>
                                     <span className="font-courierprime text-white">
-                                        {show.title || "Untitled show"}
+                                        {showTitleOrDefault(show, djName)}
                                     </span>
                                 </Link>
                             </li>

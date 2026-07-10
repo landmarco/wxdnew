@@ -1,3 +1,9 @@
+# ============================================================================
+# DEPRECATED — api.wxdu.art is now fronted by nginx, not Apache.
+# Use nginx.conf.example instead. This file is kept only as a record of the
+# previous Apache setup (and the SSE ProxyPass tuning it needed). Do not deploy.
+# ============================================================================
+#
 # /etc/apache2/sites-available/wxdu-api.conf
 #
 # Setup steps (on the server, as computing user):
@@ -38,10 +44,21 @@
 
     ProxyPreserveHost On
     ProxyPass        /.well-known !
+
+    # Server-Sent Events stream (live now-playing / current playlist). This MUST
+    # come before the catch-all ProxyPass below (first match wins) and needs its
+    # own worker settings: flushpackets=on disables Apache's response buffering
+    # so events reach the browser immediately, and timeout=3600 overrides the
+    # short ProxyTimeout below so the long-lived, mostly-idle connection (a
+    # heartbeat every ~25s) isn't dropped as a stalled backend.
+    ProxyPass        /api/playlists/current/stream http://127.0.0.1:3001/api/playlists/current/stream flushpackets=on timeout=3600
+    ProxyPassReverse /api/playlists/current/stream http://127.0.0.1:3001/api/playlists/current/stream
+
     ProxyPass        / http://127.0.0.1:3001/
     ProxyPassReverse / http://127.0.0.1:3001/
 
-    # Reasonable timeouts for DB queries
+    # Reasonable timeouts for DB queries (the SSE stream above opts out via its
+    # own timeout= so it isn't killed for being idle between events).
     ProxyTimeout 10
 
     ErrorLog  ${APACHE_LOG_DIR}/wxdu-api-error.log

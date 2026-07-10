@@ -6,14 +6,14 @@ const EventPreview = (props) => {
 	if (!props.published) {
 		return (
 			<div className=" flex w-full" key={props.id}>
-				<Link href={`/archive/${props.slug}`}>
+				<Link href={`/archive/${props.slug}`} legacyBehavior={false}>
 					<div className="mb-5 flex w-72 cursor-pointer flex-col gap-2 lg:w-[22rem]">
 						<img
 							src={props.cover}
 							alt={props.title || ''}
 							className="h-72 w-72 object-cover lg:h-[22rem] lg:w-[22rem]"
 						/>
-						<a className="text-center text-xl font-bold">{props.title}</a>
+						<span className="text-center text-xl font-bold">{props.title}</span>
 					</div>
 				</Link>
 			</div>
@@ -30,7 +30,7 @@ const EventPreview = (props) => {
 	// Formatting for individual events rendered on home page with "xx/xx" before title
 	return (
 		<div key={props.id}>
-			<Link href={`/archive/${props.slug}`}>
+			<Link href={`/archive/${props.slug}`} legacyBehavior={false}>
 				<div className="mb-5 flex w-72 cursor-pointer flex-col gap-2 md:w-[22rem]">
 					<img
 						src={props.cover}

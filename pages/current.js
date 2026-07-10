@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { apiFetch } from '../lib/api'
+import { subscribeCurrentPlaylist } from '../lib/nowPlaying'
 import PlaylistView from '../components/PlaylistView'
 
 export default function CurrentPlaylist() {
@@ -8,22 +8,19 @@ export default function CurrentPlaylist() {
 	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
-		async function load() {
-			try {
-				const result = await apiFetch('/api/playlists/current')
-				setData(result)
+		// Live updates via the SSE stream (falls back to polling internally), so
+		// newly logged tracks appear near-instantly instead of on a 30s timer.
+		const unsubscribe = subscribeCurrentPlaylist((payload) => {
+			if (payload && payload.show) {
+				setData(payload)
 				setOffAir(false)
-			} catch {
+			} else {
 				setData(null)
 				setOffAir(true)
-			} finally {
-				setLoading(false)
 			}
-		}
-
-		load()
-		const interval = setInterval(load, 30_000)
-		return () => clearInterval(interval)
+			setLoading(false)
+		})
+		return unsubscribe
 	}, [])
 
 	const { show, dj, tracks } = data ?? {}
@@ -60,7 +57,7 @@ export default function CurrentPlaylist() {
 			)}
 
 			{!loading && data && (
-				<PlaylistView show={show} tracks={tracks} djNode={djNode} />
+				<PlaylistView show={show} tracks={tracks} djNode={djNode} djName={show?.djname || dj?.defdjname || null} />
 			)}
 		</div>
 	)

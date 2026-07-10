@@ -178,7 +178,7 @@ export default function ShowCalendar() {
 	return (
 		<div className="mx-auto w-[60vw] text-sm text-white tracking-[0.1em]">
 			<h2 className="mb-3 text-lg text-white">Upcoming Shows</h2>
-			<div className="max-h-[50vh] overflow-y-auto border border-white p-4">
+			<div className="max-h-[50vh] overflow-y-auto rounded-lg border border-white bg-black/80 p-4">
 				{daysWithShows.map((day) => (
 					<section key={day.date} className="border-b-4 border-white py-4 last:border-b-0">
 						<h3 className="font-bold mb-3 text-base text-[#e0ff05]">{prettyDayLabel(day.date)}</h3>

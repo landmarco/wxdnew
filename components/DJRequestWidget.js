@@ -4,6 +4,7 @@ import { useModal } from './ModalContext'
 
 const COOLDOWN_SECONDS = 60
 const COOLDOWN_KEY = 'dj_request_cooldown_until' // localStorage key for persisting cooldown across page refreshes
+const REQUEST_TABS = ['song', 'message']
 
 export default function DJRequestWidget() {
     // Open state is shared via ModalContext so the footer/keyboard ("p") can open it too.
@@ -125,6 +126,28 @@ export default function DJRequestWidget() {
         }
     }
 
+    const handleTabKeyDown = (event) => {
+        const currentIndex = REQUEST_TABS.indexOf(activeTab)
+        let nextIndex = currentIndex
+
+        if (event.key === 'ArrowRight') {
+            nextIndex = (currentIndex + 1) % REQUEST_TABS.length
+        } else if (event.key === 'ArrowLeft') {
+            nextIndex = (currentIndex - 1 + REQUEST_TABS.length) % REQUEST_TABS.length
+        } else if (event.key === 'Home') {
+            nextIndex = 0
+        } else if (event.key === 'End') {
+            nextIndex = REQUEST_TABS.length - 1
+        } else {
+            return
+        }
+
+        event.preventDefault()
+        const nextTab = REQUEST_TABS[nextIndex]
+        setActiveTab(nextTab)
+        document.getElementById(`dj-request-${nextTab}-tab`)?.focus()
+    }
+
     return (
         <>
             {/* Floating button */}
@@ -181,13 +204,14 @@ export default function DJRequestWidget() {
                         </div>
 
                         {/* Tab buttons — both closed here, BEFORE the forms */}
-                        <div className="mb-6 flex gap-2" role="tablist" aria-label="DJ request form tabs">
+                        <div className="mb-6 flex gap-2" role="tablist" aria-label="DJ request form tabs" onKeyDown={handleTabKeyDown}>
                             <button
                                 id="dj-request-song-tab"
                                 type="button"
                                 role="tab"
                                 aria-selected={activeTab === 'song'}
                                 aria-controls="dj-request-song-panel"
+                                tabIndex={activeTab === 'song' ? 0 : -1}
                                 className={activeTab === 'song' ? 'font-courierprime bg-red-500 px-4 py-2 text-sm font-bold text-white' : 'font-courierprime bg-zinc-700 px-4 py-2 text-sm text-gray-300'}
                                 onClick={() => setActiveTab('song')}
                             >
@@ -199,6 +223,7 @@ export default function DJRequestWidget() {
                                 role="tab"
                                 aria-selected={activeTab === 'message'}
                                 aria-controls="dj-request-message-panel"
+                                tabIndex={activeTab === 'message' ? 0 : -1}
                                 className={activeTab === 'message' ? 'font-courierprime bg-red-500 px-4 py-2 text-sm font-bold text-white' : 'font-courierprime bg-zinc-700 px-4 py-2 text-sm text-gray-300'}
                                 onClick={() => setActiveTab('message')}
                             >

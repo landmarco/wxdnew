@@ -7,6 +7,9 @@ import { useNowPlaying } from '../../lib/useNowPlaying'
 import { useAudio } from '../AudioContext'
 import FitText from './FitText'
 import StreamButton from '../audioplayers/StreamButton'
+import { Music } from 'pixelarticons/react/Music.js'
+import { Mic } from 'pixelarticons/react/Mic.js'
+import Disc from './DiscIcon'
 
 export default function VinylPlayer() {
   const { song, loading } = useNowPlaying()
@@ -48,29 +51,29 @@ export default function VinylPlayer() {
                 then the text. Plain flex (no negative margins / absolute) and no
                 break-words/hyphens on the text, so FitText measures the real content
                 width and sizes the font so whole words fit (no mid-word snapping). The
-                StreamButton is indented by the full gutter (3.2 + 1 gap = pl-[4.2cqw])
+                StreamButton is indented by the full gutter (3.2 + 2 gap = pl-[5.2cqw])
                 so the text lines up with it. */}
             <FitText deps={[song.song, song.artist, song.album, song.label]}>
-              <div lang="en" className="flex items-baseline gap-[1cqw] text-left font-courierprime leading-tight text-[#e0ff05]">
-                <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}>🎵</span>
-                <span className="min-w-0">{song.song}</span>
+              <div lang="en" className="flex items-start gap-[2cqw] text-left font-courierprime leading-tight text-[#e0ff05]">
+                <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}><Music width="1.5em" height="1.5em" style={{ imageRendering: 'pixelated' }} /></span>
+                <span className="min-w-0 font-bold">{song.song}</span>
               </div>
               {song.artist && (
-                <div lang="en" className="flex items-baseline gap-[1cqw] text-left font-courierprime leading-tight text-white">
-                  <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}>👩‍🎤</span>
+                <div lang="en" className="flex items-start gap-[2cqw] text-left font-courierprime leading-tight text-white">
+                  <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}><Mic width="1.5em" height="1.5em" style={{ imageRendering: 'pixelated' }} /></span>
                   <span className="min-w-0">{song.artist}</span>
                 </div>
               )}
               {song.album && (
-                <div lang="en" className="flex items-baseline gap-[1cqw] text-left font-courierprime leading-tight text-[#e0ff05]">
-                  <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}>💿</span>
-                  <span className="min-w-0">{song.album}</span>
+                <div lang="en" className="flex items-start gap-[2cqw] text-left font-courierprime leading-tight text-[#e0ff05]">
+                  <span aria-hidden="true" className="w-[3.2cqw] shrink-0 text-center" style={{ fontSize: 'min(1em, 2.8cqw)' }}><Disc width="1.5em" height="1.5em" style={{ imageRendering: 'pixelated' }} /></span>
+                  <span className="min-w-0 italic">{song.album}</span>
                 </div>
               )}
               {/* Label hidden for now — felt too busy. Re-enable by uncommenting: */}
               {/* {song.label && <div lang="en" className="hyphens-auto break-words text-left font-courierprime leading-tight text-white" style={{ fontSize: '0.72em' }}>🏷️ {song.label}</div>} */}
             </FitText>
-            <div className="pl-[4.2cqw]">
+            <div className="pl-[5.2cqw]">
               <StreamButton />
             </div>
           </>
