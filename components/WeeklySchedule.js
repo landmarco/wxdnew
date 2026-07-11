@@ -16,7 +16,7 @@ fullArray is what scheduleParser.js returns (25x8)
 */
 
 // adding functionality to collapse 2+ otto-only rows to save space
-const ottoAlias = "Луноход 3"
+const ottoAlias = "Lunokhod 3"
 function isOttofulRow(hourRow) {
 	const djCells = hourRow.slice(1)
 
@@ -139,15 +139,15 @@ export default function WeeklySchedule({schedule}) {
 		return ""
 	}
 
-	const firstColumnClass = "sticky left-0 z-10 w-20 min-w-[5rem] max-w-[5rem] break-words border border-gray-300 bg-white px-2 py-2 text-center text-base leading-tight uppercase text-red-600 lg:w-auto lg:min-w-0 lg:max-w-none lg:px-4 lg:text-right lg:text-xl lg:whitespace-nowrap"
+	const firstColumnClass = "sticky left-0 z-10 w-16 min-w-[4rem] max-w-[4rem] break-words border border-gray-300 bg-black px-1 py-1.5 text-center text-sm leading-tight uppercase text-red-500 lg:w-auto lg:min-w-0 lg:max-w-none lg:px-3 lg:text-right lg:text-lg lg:whitespace-nowrap"
 
 	// Desktop: no fixed height — the grid extends full length and the page scrolls,
 	// overflow visible so the day headers stick to the viewport (below the fixed
 	// NavPlayer, via lg:top-16). Mobile: a capped-height scroll box so the wide grid
 	// scrolls both ways and the day headers stick to the top of that box (top-0).
 	return (
-		<div ref={scheduleScrollerRef} className="mx-auto h-[80vh] w-[calc(100vw-1rem)] max-w-full overflow-auto lg:h-auto lg:overflow-visible text-lg font-semibold tracking-[-0.07em] text-[#e0ff05] lg:w-[80vw] lg:text-xl">
-			<table className="min-w-[720px] table-fixed border-separate border-spacing-0 lg:w-full lg:min-w-0 lg:table-auto">
+		<div ref={scheduleScrollerRef} className="mx-auto h-[80vh] w-[calc(100vw-1rem)] max-w-full snap-x snap-mandatory overflow-auto scroll-smooth [scroll-padding-left:4rem] text-base font-semibold tracking-[-0.07em] text-[#e0ff05] lg:h-auto lg:w-[80vw] lg:snap-none lg:overflow-visible lg:text-lg">
+			<table className="min-w-[600px] table-fixed border-separate border-spacing-0 lg:w-full lg:min-w-0 lg:table-auto">
                     <caption className="sr-only">
                         WXDU on-air show schedule with DJ names per hour
                     </caption>
@@ -160,16 +160,19 @@ export default function WeeklySchedule({schedule}) {
 								key={dayIndex}
 								scope="col"
 								ref={dayIndex === 0 ? firstColumnHeaderRef : dayIndex === todayColumnIndex ? todayHeaderRef : null}
-								className={`sticky border border-gray-300 px-2 py-2 text-lg uppercase lg:px-4 lg:text-xl ${
+								className={`sticky snap-start border border-gray-300 px-1.5 py-1.5 text-base uppercase lg:px-3 lg:text-lg ${
 									dayIndex === 0
 										// Mobile sticks to the top of the scroll box (top-0); desktop
 										// sticks to the viewport at lg:top-16 so it clears the fixed
 										// 64px NavPlayer bar instead of hiding behind it.
-										? "top-0 lg:top-16 left-0 z-50 w-20 min-w-[5rem] max-w-[5rem] break-words bg-black text-base leading-tight lg:w-auto lg:min-w-0 lg:max-w-none lg:text-xl"
-										: "top-0 lg:top-16 z-30 bg-white text-red-600"
+										? "top-0 left-0 z-50 w-16 min-w-[4rem] max-w-[4rem] break-words bg-black text-sm leading-tight lg:top-16 lg:w-auto lg:min-w-0 lg:max-w-none lg:text-lg"
+										: dayIndex === todayColumnIndex
+											? "top-0 z-30 bg-black text-red-500 lg:top-16 border-b-4 border-b-[#e0ff05]"
+											: "top-0 z-30 bg-black text-red-500 lg:top-16"
 								}`}
 							>
 								{dayIndex === 0 ? "summer 2026" : day}
+								{dayIndex === todayColumnIndex && <span className="sr-only"> (today)</span>}
 							</th>
 						))}
 					</tr>
@@ -213,12 +216,12 @@ export default function WeeklySchedule({schedule}) {
 													key={`lunokhod-${dayIndex}`}
 													rowSpan={rowSpan}
 													// h-px gives the cell a definite height so the Link's h-full can fill the whole (taller) cell
-													className="h-px border border-gray-300 bg-black text-center align-middle"
+													className="h-px snap-start border border-gray-300 bg-black text-center align-middle"
 												>
 													{djName && (
 														// otto rows are the auto-DJ — link to the auto-DJ show list
 														// Link fills the whole cell so the entire cell is clickable, not just the text.
-															<Link href={djHref(AUTO_DJ_ID)} legacyBehavior={false} className="flex h-full items-center justify-center px-2 py-2 hover:underline lg:px-4">
+															<Link href={djHref(AUTO_DJ_ID)} legacyBehavior={false} className="flex h-full items-center justify-center px-1.5 py-1.5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#e0ff05] lg:px-3">
 																{djName}
 															</Link>
 													)}
@@ -249,7 +252,7 @@ export default function WeeklySchedule({schedule}) {
 										return (
 												<td
 													key={`${hour}-${dayIndex}`}
-													className="border border-gray-300 bg-black px-2 py-2 lg:px-4"
+													className="snap-start border border-gray-300 bg-black px-1.5 py-1.5 lg:px-3"
 												/>
 										)
 									}
@@ -281,18 +284,24 @@ export default function WeeklySchedule({schedule}) {
 												key={`${hour}-${dayIndex}`}
 												rowSpan={rowSpan}
 												// h-px gives the cell a definite height so the Link's h-full can fill the whole (taller) cell
-												className={`h-px border border-gray-300 text-center align-middle ${
+												className={`h-px snap-start border border-gray-300 text-center align-middle ${
 													specialtyShow ? "bg-[#e0ff05] text-black" : "bg-black" // HIGHLIGHT SPECIALTY SHOWS!!!
 												}`}
 											>
 												{/* Link fills the whole cell so the entire cell is clickable, not just the text.
 												    Cells without a resolved DJ id show as plain, non-clickable text. */}
 												{href ? (
-													<Link href={href} legacyBehavior={false} className="flex h-full items-center justify-center px-2 py-2 hover:underline lg:px-4">
+													<Link
+														href={href}
+														legacyBehavior={false}
+														className={`flex h-full items-center justify-center px-1.5 py-1.5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-inset lg:px-3 ${
+															specialtyShow ? "focus-visible:ring-black" : "focus-visible:ring-[#e0ff05]"
+														}`}
+													>
 														{djName}
 													</Link>
 												) : (
-													<span className="flex h-full items-center justify-center px-2 py-2 lg:px-4">
+													<span className="flex h-full items-center justify-center px-1.5 py-1.5 lg:px-3">
 														{djName}
 													</span>
 												)}
