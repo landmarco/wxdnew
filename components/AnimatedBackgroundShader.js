@@ -27,6 +27,7 @@ const fragment = /* glsl */ `
   uniform float uTime;
   uniform vec2 uResolution;
   uniform float uSize;
+  uniform vec3 uBgColor;
   varying vec2 vUv;
 
   // Simplex 3D noise (Ashima Arts / Ian McEwan, webgl-noise) for smooth effect
@@ -95,25 +96,17 @@ const fragment = /* glsl */ `
     return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
   }
 
-  // converter from hsb to rgb
-  vec3 hsb2rgb(vec3 c) {
-    vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
-    rgb = rgb * rgb * (3.0 - 2.0 * rgb);
-    return c.z * mix(vec3(1.0), rgb, c.y);
-  }
-
-
   // main p5.js sketch replacement below
   void main() {
     // PIXEL POSITION: vUv is 0..1 across the screen; scale up to actual pixel coordinates so
     // uSize (a pixel value, matching the old p5 grid cell size) means the same thing here. Ex: vUv gives a random number, and this function says which pixel number it is at.
     vec2 fragCoord = vUv * uResolution;
 
-    // BG COLOR: Background hue drifts over time only (no spatial input), so every pixel this
-    // frame gets the same hue — one continuous color wash, same as the old p.noise(bgOff).
-    // *0.5+0.5 remaps snoise's -1..1 output into 0..1 for use as a hue fraction.
-    float bgHue = snoise(vec3(uTime * 0.03, 0.0, 0.0)) * 0.5 + 0.5;
-    vec3 bgColor = hsb2rgb(vec3(bgHue, 0.4, 0.55));
+    // BG COLOR: the background hue drifts over time only (no spatial input), so it's the same
+    // for every pixel this frame. Rather than re-run simplex noise + hsb2rgb in all ~millions of
+    // pixels, it's computed once per frame on the CPU (see snoise3/hsb2rgb below) and passed in
+    // as uBgColor — one continuous color wash, same as the old p.noise(bgOff).
+    vec3 bgColor = uBgColor;
 
 
     // WHICH GRID SQUARE + DISTANCE FROM CENTER CALCULATION. This replaces the old p5 double for-loop over cols/rows — instead of iterating cells
@@ -140,6 +133,81 @@ const fragment = /* glsl */ `
     gl_FragColor = vec4(color, 1.0);
   }
 `
+
+// --- CPU ports of the two GLSL helpers, used only for the spatially-constant background
+// color (computed once per frame instead of once per pixel). Faithful ports of the same
+// Ashima simplex noise + hsb2rgb above, so the wash looks identical to the old per-pixel path.
+function mod289(x) { return x - Math.floor(x * (1 / 289)) * 289 }
+function permute(x) { return mod289((x * 34 + 1) * x) }
+function taylorInvSqrt(r) { return 1.79284291400159 - 0.85373472095314 * r }
+
+function snoise3(vx, vy, vz) {
+  const CX = 1 / 6, CY = 1 / 3
+  const dvy = (vx + vy + vz) * CY
+  let ix = Math.floor(vx + dvy), iy = Math.floor(vy + dvy), iz = Math.floor(vz + dvy)
+  const dix = (ix + iy + iz) * CX
+  const x0 = [vx - ix + dix, vy - iy + dix, vz - iz + dix]
+
+  const g = [x0[0] >= x0[1] ? 1 : 0, x0[1] >= x0[2] ? 1 : 0, x0[2] >= x0[0] ? 1 : 0]
+  const l = [1 - g[0], 1 - g[1], 1 - g[2]]
+  const i1 = [Math.min(g[0], l[2]), Math.min(g[1], l[0]), Math.min(g[2], l[1])]
+  const i2 = [Math.max(g[0], l[2]), Math.max(g[1], l[0]), Math.max(g[2], l[1])]
+
+  const x1 = [x0[0] - i1[0] + CX, x0[1] - i1[1] + CX, x0[2] - i1[2] + CX]
+  const x2 = [x0[0] - i2[0] + CY, x0[1] - i2[1] + CY, x0[2] - i2[2] + CY]
+  const x3 = [x0[0] - 0.5, x0[1] - 0.5, x0[2] - 0.5]
+
+  ix = mod289(ix); iy = mod289(iy); iz = mod289(iz)
+  let p = [0, i1[2], i2[2], 1].map((v) => permute(iz + v))
+  p = p.map((pv, k) => permute(pv + iy + [0, i1[1], i2[1], 1][k]))
+  p = p.map((pv, k) => permute(pv + ix + [0, i1[0], i2[0], 1][k]))
+
+  const n_ = 1 / 7
+  const nsx = n_ * 2, nsy = n_ * 0.5 - 1
+  // p is a non-negative integer here, so these use exact integer modulo/division. The GLSL
+  // does the same math as multiply-by-1/7 + floor(), which works on the GPU only because
+  // float32 rounds 7*(1/7) *up* to 1.0. In JS's float64 the truncated 0.142857… lands just
+  // under 1/7, so floor() drops by one at every multiple of 7 — flipping a gradient index and
+  // producing out-of-range noise. Integer ops sidestep the rounding entirely.
+  const j = p.map((pv) => pv % 49)
+  const x_ = j.map((jv) => Math.floor(jv / 7))
+  const y_ = j.map((jv, k) => jv - 7 * x_[k])
+  const xx = x_.map((v) => v * nsx + nsy)
+  const yy = y_.map((v) => v * nsx + nsy)
+  const h = xx.map((v, k) => 1 - Math.abs(v) - Math.abs(yy[k]))
+
+  const b0 = [xx[0], xx[1], yy[0], yy[1]]
+  const b1 = [xx[2], xx[3], yy[2], yy[3]]
+  const s0 = b0.map((v) => Math.floor(v) * 2 + 1)
+  const s1 = b1.map((v) => Math.floor(v) * 2 + 1)
+  const sh = h.map((v) => -(v <= 0 ? 1 : 0))
+
+  const a0 = [b0[0] + s0[0] * sh[0], b0[2] + s0[2] * sh[0], b0[1] + s0[1] * sh[1], b0[3] + s0[3] * sh[1]]
+  const a1 = [b1[0] + s1[0] * sh[2], b1[2] + s1[2] * sh[2], b1[1] + s1[1] * sh[3], b1[3] + s1[3] * sh[3]]
+
+  let g0 = [a0[0], a0[1], h[0]]
+  let g1 = [a0[2], a0[3], h[1]]
+  let g2 = [a1[0], a1[1], h[2]]
+  let g3 = [a1[2], a1[3], h[3]]
+  const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+  const norm = [g0, g1, g2, g3].map((gv) => taylorInvSqrt(dot3(gv, gv)))
+  g0 = g0.map((v) => v * norm[0]); g1 = g1.map((v) => v * norm[1])
+  g2 = g2.map((v) => v * norm[2]); g3 = g3.map((v) => v * norm[3])
+
+  let m = [dot3(x0, x0), dot3(x1, x1), dot3(x2, x2), dot3(x3, x3)].map((v) => Math.max(0.6 - v, 0))
+  m = m.map((v) => v * v)
+  const mm = m.map((v) => v * v)
+  return 42 * (mm[0] * dot3(g0, x0) + mm[1] * dot3(g1, x1) + mm[2] * dot3(g2, x2) + mm[3] * dot3(g3, x3))
+}
+
+function hsb2rgb(hue, sat, bri) {
+  return [0, 4, 2].map((o) => {
+    let v = (((hue * 6 + o) % 6) + 6) % 6
+    v = Math.min(Math.max(Math.abs(v - 3) - 1, 0), 1)
+    v = v * v * (3 - 2 * v)
+    return bri * (1 + (v - 1) * sat)
+  })
+}
 
 export default function AnimatedBackgroundShader({ size = 17 }) {
   const containerRef = useRef(null)
@@ -180,6 +248,7 @@ export default function AnimatedBackgroundShader({ size = 17 }) {
           uTime: { value: 0 },
           uResolution: { value: [window.innerWidth, window.innerHeight] },
           uSize: { value: size },
+          uBgColor: { value: hsb2rgb(0.5, 0.4, 0.55) },
         },
       })
       mesh = new Mesh(gl, { geometry, program })
@@ -194,19 +263,27 @@ export default function AnimatedBackgroundShader({ size = 17 }) {
       resize()
       window.addEventListener('resize', onResize)
 
-      // Feed elapsed seconds into the shader and issue the draw call, throttled to
-      // ~30fps — the color/square drift is slow enough that 60fps is wasted GPU work.
-      // Still schedules via rAF every display frame so it stays tab-synced and the
-      // visibilitychange pause/resume below keeps working unchanged; it just skips
-      // the actual render on alternating frames.
+      // Feed elapsed seconds into the shader and issue the draw call, throttled to ~30fps —
+      // the color/square drift is slow enough that 60fps is wasted work. Still schedules via
+      // rAF every display frame so it stays tab-synced and the visibilitychange pause/resume
+      // below keeps working; it just skips the render on frames inside the interval. The square
+      // sizes animate in the shader; the background hue drifts on the CPU (uBgColor) so it isn't
+      // recomputed per-pixel. Halving the frames roughly halves both the rAF/compositing CPU
+      // cost and the GPU shading load (which is what spins laptop fans on integrated graphics).
+      const targetFps = 30
+      const frameInterval = 1000 / targetFps
       const start = performance.now()
-      const frameInterval = 1000 / 30
-      let lastFrameTime = 0
+      let lastFrame = 0
       const update = (t) => {
         rafId = requestAnimationFrame(update)
-        if (t - lastFrameTime < frameInterval) return
-        lastFrameTime = t
-        program.uniforms.uTime.value = (t - start) / 1000
+        const elapsed = t - lastFrame
+        if (elapsed < frameInterval) return
+        lastFrame = t - (elapsed % frameInterval)
+
+        const time = (t - start) / 1000
+        program.uniforms.uTime.value = time
+        const bgHue = snoise3(time * 0.03, 0, 0) * 0.5 + 0.5
+        program.uniforms.uBgColor.value = hsb2rgb(bgHue, 0.4, 0.55)
         renderer.render({ scene: mesh })
       }
 
