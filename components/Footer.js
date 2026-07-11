@@ -13,6 +13,7 @@ import {AiFillGithub} from 'react-icons/ai'
 import {FaTumblr, FaBandcamp} from "react-icons/fa6";
 import {useAudio} from './AudioContext'
 import {useModal} from './ModalContext'
+import {useBackground} from './BackgroundContext'
 import Emerald from './Emerald'
 import CDLink from './homepage/CDLink'
 import {NAV_ITEMS, cdImageFor} from '../lib/navItems'
@@ -20,9 +21,16 @@ import {NAV_ITEMS, cdImageFor} from '../lib/navItems'
 const Footer = () => {
 	const {isHighQuality, setHighQuality, isPlaying} = useAudio()
 	const {openModal} = useModal()
+	const {backgroundEnabled, toggleBackground} = useBackground()
+	// Shared look for the footer action buttons — a bordered box rather than an
+	// underlined link, so they read as buttons.
+	const actionButtonClass =
+		'rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400'
 	return (
 		// Footer is formatted as a column on phone screen and as a row on tablet+desktop screens
-		<footer className="mx-auto mb-3 mt-10 px-2 lg:mt-36 lg:px-24">
+		// bg-black/80 scrim (matching the /about text card) keeps the footer text
+		// legible over the animated background while still letting it faintly show through.
+		<footer className="mx-auto mb-3 mt-10 rounded-lg bg-black/80 px-2 py-8 lg:mt-36 lg:px-24">
 			{/* CD nav: one tile per header tab, so the whole site stays reachable
 			    from the bottom of the page even without the header or swipe menu.
 			    Images cycle through the CD pool, so new tabs need no new artwork. */}
@@ -70,13 +78,23 @@ const Footer = () => {
 							<FaBandcamp size={32} className="ml-.5 mt-0.5" />
 						</a>
 				</div>
-				<button
-					type="button"
-					onClick={() => openModal('feedback')}
-					className="text-sm underline hover:no-underline"
-				>
-					submit a bug report/feedback
-				</button>
+				<div className="mt-1 flex flex-col items-start gap-2">
+					<button
+						type="button"
+						onClick={() => openModal('feedback')}
+						className={actionButtonClass}
+					>
+						submit a bug report/feedback
+					</button>
+					<button
+						type="button"
+						onClick={toggleBackground}
+						aria-pressed={!backgroundEnabled}
+						className={actionButtonClass}
+					>
+						{backgroundEnabled ? 'remove the background' : 'restore the background'}
+					</button>
+				</div>
 			</div>
 
 			{/* <div className="flex flex-col px-5">

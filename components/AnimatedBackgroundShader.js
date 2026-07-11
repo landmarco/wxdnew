@@ -209,8 +209,36 @@ function hsb2rgb(hue, sat, bri) {
   })
 }
 
-export default function AnimatedBackgroundShader({ size = 17 }) {
+// Animation drift speed as a fraction of real time — lower is slower. The square/color
+// motion reads best well below real time, and slowing it also thins GPU work a little more.
+const TIME_SCALE = 0.4
+
+// The background hue samples the noise at a single point (animTime), and animTime=0 lands
+// on a lattice point where the noise has a sharp dip (green) with a very steep slope right
+// beside it. Starting there means the first ~2s of drift rushes green->blue before settling
+// into the gentle roll everywhere else. Start past that singularity, at a spot that's also
+// green but on a gentle slope, so the paused frame rests green and drifting eases smoothly
+// green->blue instead of snapping. (The square-size noise samples per-cell, so it has no
+// such global singularity and is unaffected by the offset.)
+const HUE_START_OFFSET = 36
+
+export default function AnimatedBackgroundShader({ size = 17, animate = true }) {
   const containerRef = useRef(null)
+  // Latest desired animate state + the running loop's start/stop handles. Kept in refs so
+  // starting/stopping the drift on play/pause never tears down and rebuilds the GL context.
+  const animateRef = useRef(animate)
+  const controlsRef = useRef(null)
+
+  // Start or stop the drift when playback starts/stops. The loop controls only exist after
+  // the async ogl import resolves; until then this just records the intent in animateRef,
+  // which the setup effect reads once it's ready.
+  useEffect(() => {
+    animateRef.current = animate
+    const controls = controlsRef.current
+    if (!controls) return
+    if (animate) controls.start()
+    else controls.stop()
+  }, [animate])
 
   useEffect(() => {
     // Respect the OS-level reduced-motion setting: skip mounting the canvas
@@ -263,43 +291,62 @@ export default function AnimatedBackgroundShader({ size = 17 }) {
       resize()
       window.addEventListener('resize', onResize)
 
-      // Feed elapsed seconds into the shader and issue the draw call, throttled to ~30fps —
-      // the color/square drift is slow enough that 60fps is wasted work. Still schedules via
-      // rAF every display frame so it stays tab-synced and the visibilitychange pause/resume
-      // below keeps working; it just skips the render on frames inside the interval. The square
-      // sizes animate in the shader; the background hue drifts on the CPU (uBgColor) so it isn't
-      // recomputed per-pixel. Halving the frames roughly halves both the rAF/compositing CPU
-      // cost and the GPU shading load (which is what spins laptop fans on integrated graphics).
+      // The loop is throttled to ~30fps — the drift is slow enough that 60fps is wasted work.
+      // The square sizes animate in the shader; the background hue drifts on the CPU (uBgColor)
+      // so it isn't recomputed per-pixel. Halving the frames roughly halves both the
+      // rAF/compositing CPU cost and the GPU shading load (what spins fans on integrated GPUs).
       const targetFps = 30
       const frameInterval = 1000 / targetFps
-      const start = performance.now()
-      let lastFrame = 0
-      const update = (t) => {
-        rafId = requestAnimationFrame(update)
-        const elapsed = t - lastFrame
-        if (elapsed < frameInterval) return
-        lastFrame = t - (elapsed % frameInterval)
+      // Accumulated *animation* seconds — advances only while the loop runs, so pausing freezes
+      // the current frame and resuming picks up where it left off rather than jumping forward by
+      // the time spent paused. TIME_SCALE slows the drift relative to real time.
+      let animTime = HUE_START_OFFSET
+      let lastTs = null
 
-        const time = (t - start) / 1000
-        program.uniforms.uTime.value = time
-        const bgHue = snoise3(time * 0.03, 0, 0) * 0.5 + 0.5
+      // Draw one frame at the current animTime. Called by the loop and once up front, so a
+      // paused (or never-played) background still shows a static frame instead of blank.
+      const renderFrame = () => {
+        program.uniforms.uTime.value = animTime
+        const bgHue = snoise3(animTime * 0.03, 0, 0) * 0.5 + 0.5
         program.uniforms.uBgColor.value = hsb2rgb(bgHue, 0.4, 0.55)
         renderer.render({ scene: mesh })
       }
 
-      // Same idea as the old canvas2D pause-on-hide, but here it's just gating
-      // requestAnimationFrame since there's no p5 loop() / noLoop() API to call.
-      onVisibilityChange = () => {
-        if (document.hidden) {
-          if (rafId) cancelAnimationFrame(rafId)
+      const update = (t) => {
+        rafId = requestAnimationFrame(update)
+        if (lastTs === null) lastTs = t
+        const elapsed = t - lastTs
+        if (elapsed < frameInterval) return
+        lastTs = t - (elapsed % frameInterval)
+        animTime += (elapsed / 1000) * TIME_SCALE
+        renderFrame()
+      }
+
+      const startLoop = () => {
+        if (rafId || document.hidden) return
+        lastTs = null // don't count time spent stopped as elapsed animation
+        rafId = requestAnimationFrame(update)
+      }
+      const stopLoop = () => {
+        if (rafId) {
+          cancelAnimationFrame(rafId)
           rafId = null
-        } else if (!rafId) {
-          rafId = requestAnimationFrame(update)
         }
       }
-      document.addEventListener('visibilitychange', onVisibilityChange)
+      // Expose the handles so the animate-prop effect (play/pause) can gate the loop.
+      controlsRef.current = { start: startLoop, stop: stopLoop }
 
-      rafId = requestAnimationFrame(update)
+      // Show an initial static frame immediately, then only drift if the stream is already
+      // playing at mount (or once it starts, via the animate-prop effect above).
+      renderFrame()
+      if (animateRef.current) startLoop()
+
+      // Pause the loop while the tab is hidden; resume only if we're still meant to animate.
+      onVisibilityChange = () => {
+        if (document.hidden) stopLoop()
+        else if (animateRef.current) startLoop()
+      }
+      document.addEventListener('visibilitychange', onVisibilityChange)
     })
 
     return () => {
@@ -307,6 +354,7 @@ export default function AnimatedBackgroundShader({ size = 17 }) {
       if (rafId) cancelAnimationFrame(rafId)
       if (onResize) window.removeEventListener('resize', onResize)
       if (onVisibilityChange) document.removeEventListener('visibilitychange', onVisibilityChange)
+      controlsRef.current = null
       if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas)
     }
   }, [size])

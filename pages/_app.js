@@ -7,12 +7,12 @@ import {Router} from 'next/router'
 import posthog from 'posthog-js'
 import { AudioProvider } from '../components/AudioContext'
 import { ModalProvider } from '../components/ModalContext'
+import { BackgroundProvider } from '../components/BackgroundContext'
 import NavPlayer from '../components/audioplayers/NavPlayer'
 import DJRequestWidget from '../components/DJRequestWidget'
 import FeedbackWidget from '../components/FeedbackWidget'
 import KeyboardShortcutsHint from '../components/KeyboardShortcutsHint'
-import AnimatedBackgroundShader from '../components/AnimatedBackgroundShader'
-import MobileAnimatedBackgroundShader from '../components/MobileAnimatedBackgroundShader'
+import SiteBackground from '../components/SiteBackground'
 
 const App = ({Component, pageProps}) => {
 	useEffect(() => {
@@ -38,6 +38,7 @@ const App = ({Component, pageProps}) => {
 		<PostHogProvider client={posthog}>
 			<AudioProvider>
 				<ModalProvider>
+				<BackgroundProvider>
 					<div className="flex flex-col lg:items-center">
 						{/* overflow-x-clip (not overflow-hidden) prevents a horizontal
 						    scrollbar from full-bleed sections WITHOUT making this a scroll
@@ -47,13 +48,9 @@ const App = ({Component, pageProps}) => {
 						<div className="m-0 flex h-full w-full flex-col overflow-x-clip bg-black font-courierprime text-base text-white">
 							{/* Fixed, GPU-shader animated background — sits behind every page.
 							    Positioned elements paint after in-flow ones, so everything
-							    below needs `relative z-10` to stay above it. */}
-							<div className="hidden lg:block">
-								<AnimatedBackgroundShader size={17} />
-							</div>
-							<div className="lg:hidden">
-								<MobileAnimatedBackgroundShader />
-							</div>
+							    below needs `relative z-10` to stay above it. Gated by the footer
+							    toggle + stream play state (see SiteBackground). */}
+							<SiteBackground />
 							<div className="relative z-10">
 								{/* First-focus overlay: shows keyboard shortcuts + the
 								    skip-to-main-content link on the initial Tab press. */}
@@ -65,6 +62,7 @@ const App = ({Component, pageProps}) => {
 							</div>
 						</div>
 					</div>
+				</BackgroundProvider>
 					<DJRequestWidget />
 					<FeedbackWidget />
 				</ModalProvider>
