@@ -41,7 +41,7 @@ export default function TodayShows() {
 
 	return (
 		<section className="w-full text-[#e0ff05]">
-			<h2 className="bitcount sticky top-0 z-20 bg-black pb-6 text-4xl leading-none text-white sm:text-5xl md:text-6xl">
+			<h2 className="bitcount sticky top-0 z-20 bg-black/80 pb-6 text-4xl leading-none text-white sm:text-5xl md:text-6xl">
 				Today&apos;s Shows
 			</h2>
 			<ul className="border-t border-zinc-300/80">

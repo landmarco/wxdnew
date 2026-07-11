@@ -66,7 +66,7 @@ export default function Contact({ contacts }){
 
                 <section className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
                 {contacts.map((c, i) => (
-                    <article key={i} className="w-[320px] min-h-[360px] border-2 border-[#e0ff05] bg-black/80 p-8 text-white" >
+                    <article key={i} className="w-[320px] min-h-[360px] rounded-lg border-2 border-[#e0ff05] bg-black/80 p-8 text-white" >
                         <h2 className="mb-8 text-4xl font-extrabold leading-tight text-[#e0ff05]">
                             {c.role}
                         </h2>

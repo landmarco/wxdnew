@@ -13,7 +13,7 @@ export default function LastPlayed({currentPlaylist = {}}) {
 	return (
 		<section className="w-full">
 			<div className="w-full md:min-w-[840px]">
-				<div className="sticky top-0 z-50 bg-black pb-3 pt-1">
+				<div className="sticky top-0 z-50 bg-black/80 pb-3 pt-1">
 					<h4 className="text-center text-2xl font-light text-white">
 						Last Played 10 Songs
 					</h4>
@@ -21,7 +21,7 @@ export default function LastPlayed({currentPlaylist = {}}) {
 				<div role="table" aria-label="Last played songs" className="w-full">
 					<div
 						role="row"
-						className="sticky top-12 z-40 hidden grid-cols-[128px_88px_minmax(140px,1fr)_minmax(180px,1.25fr)_minmax(140px,1fr)] gap-4 border-b border-zinc-700/90 bg-black px-2 pb-3 pt-1 text-sm text-sky-100 sm:px-3 md:grid"
+						className="sticky top-12 z-40 hidden grid-cols-[128px_88px_minmax(140px,1fr)_minmax(180px,1.25fr)_minmax(140px,1fr)] gap-4 border-b border-zinc-700/90 bg-black/80 px-2 pb-3 pt-1 text-sm text-sky-100 sm:px-3 md:grid"
 					>
 						<div role="columnheader" aria-label="Album cover" />
 						<div role="columnheader">Time</div>
