@@ -90,7 +90,7 @@ export default function TodaySchedule({ schedule }) {
 
 					const inner = (
 						<>
-							<span className="w-24 shrink-0 whitespace-nowrap text-right text-base lg:text-lg">
+							<span className="w-24 shrink-0 whitespace-nowrap text-left text-base lg:text-lg">
 								{startLabel === endLabel ? (
 									startLabel
 								) : (
