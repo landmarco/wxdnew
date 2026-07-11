@@ -303,7 +303,7 @@ export default function PreviousShows() {
                     days.map((day) => (
                         <section key={day.key} className="mb-6">
                             <h2 className="mb-2 text-lg text-[#e0ff05]">{dayKeyLabel(day.key)}</h2>
-                            <ul className="border border-zinc-800">
+                            <ul className="overflow-hidden rounded-lg border border-zinc-800 bg-black/80">
                                 {groupConsecutive(day.shows).map((group) =>
                                     group.shows.length === 1 ? (
                                         <SingleShowRow key={group.shows[0].ID} show={group.shows[0]} />

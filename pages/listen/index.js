@@ -66,11 +66,11 @@ export default function Listen() {
                 </div>
             )}
 
-            <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 md:grid-cols-[minmax(0,1fr)_360px]">
-				<div className="listen-scrollbar h-auto min-w-0 rounded-lg bg-black/80 p-4 md:h-[calc(100vh-160px)] md:overflow-auto">
+            <div className="grid w-full grid-cols-1 gap-8 px-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+				<div className="h-auto min-w-0 p-4">
 					<LastPlayed currentPlaylist={currentPlaylist} />
 				</div>
-				<div className="listen-scrollbar flex h-auto justify-center rounded-lg bg-black/80 p-4 md:h-[calc(100vh-160px)] md:overflow-auto md:border-l md:border-gray-700 md:pl-8">
+				<div className="flex h-auto justify-center p-4 md:border-l md:border-gray-700 md:pl-8">
 					<TodayShows />
 				</div>
 			</div>

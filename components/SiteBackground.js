@@ -21,6 +21,11 @@ export default function SiteBackground() {
             <div className="lg:hidden">
                 <MobileAnimatedBackgroundShader animate={isPlaying} />
             </div>
+            {/* Global legibility scrim: one semi-transparent black layer over the whole
+                animated background so text is readable everywhere, instead of per-section
+                boxes. Sits above the canvas (z-0) and below page content (z-10). Tune the
+                /60 opacity to trade legibility against how vivid the background reads. */}
+            <div className="pointer-events-none fixed inset-0 z-[1] bg-black/60" aria-hidden="true" />
         </>
     )
 }

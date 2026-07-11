@@ -58,8 +58,7 @@ const PostPage = (props) => {
 						className="my-8 max-h-[40rem] object-cover mb-20"
 					/>
 				
-					{/* Increase dark-on-dark text contrast for article content. */}
-					<article className="prose lg:max-w-[60%] bg-neutral-800 bg-opacity-70 px-5 py-2 prose-lg text-white prose-h3:text-white prose-a:text-blue-300 prose-strong:text-slate-200 prose-h1:text-slate-200 prose-h2:text-slate-200 prose-em:italic prose-li:mb-1">
+					<article className="prose lg:max-w-[60%] px-5 py-2 prose-lg text-white prose-h3:text-white prose-a:text-blue-300 prose-strong:text-slate-200 prose-h1:text-slate-200 prose-h2:text-slate-200 prose-em:italic prose-li:mb-1">
 					{/* <TinaMarkdown content={data.blog.body} components={components} /> */}
 					<TinaMarkdown content={data.blog.body} components={markdownComponents} />
 				</article>

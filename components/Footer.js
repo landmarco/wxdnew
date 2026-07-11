@@ -28,9 +28,7 @@ const Footer = () => {
 		'rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400'
 	return (
 		// Footer is formatted as a column on phone screen and as a row on tablet+desktop screens
-		// bg-black/80 scrim (matching the /about text card) keeps the footer text
-		// legible over the animated background while still letting it faintly show through.
-		<footer className="mx-auto mb-3 mt-10 rounded-lg bg-black/80 px-2 py-8 lg:mt-36 lg:px-24">
+		<footer className="mx-auto mb-3 mt-10 px-2 lg:mt-36 lg:px-24">
 			{/* CD nav: one tile per header tab, so the whole site stays reachable
 			    from the bottom of the page even without the header or swipe menu.
 			    Images cycle through the CD pool, so new tabs need no new artwork. */}

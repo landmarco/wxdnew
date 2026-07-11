@@ -85,7 +85,7 @@ export default function DjPage() {
                         {page > 0 ? "No more shows." : "No shows found for this DJ."}
                     </p>
                 ) : (
-                    <ul className="border border-zinc-800">
+                    <ul className="overflow-hidden rounded-lg border border-zinc-800 bg-black/80">
                         {shows.map((show) => (
                             <li
                                 key={show.ID}

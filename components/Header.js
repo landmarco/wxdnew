@@ -14,8 +14,9 @@ const Header = () => {
 
 				{/* Parent container of web navbar */}
 				<div className="mb-20 hidden w-full lg:flex mt-10">
-					{/* Actual navbar */}
-					<div className="flex h-14 w-full flex-row justify-between bg-black px-1 py-4 ">
+					{/* Actual navbar — transparent so the animated site background shows
+					    through the tabs row (the fixed NavPlayer bar keeps its own bg). */}
+					<div className="flex h-14 w-full flex-row justify-between px-1 py-4 ">
 							{/* Home link (replaces the old WXDU logo) */}
 							<div className="my-auto flex flex-row">
 								<Link href="/" legacyBehavior={false} className="my-auto ml-10 flex h-12 items-center text-base text-white hover:text-blue-300">
