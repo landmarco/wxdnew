@@ -90,7 +90,7 @@ const Footer = () => {
 						aria-pressed={!backgroundEnabled}
 						className={actionButtonClass}
 					>
-						{backgroundEnabled ? 'remove the background' : 'restore the background'}
+						{backgroundEnabled ? 'banish the background' : 'bring back the background'}
 					</button>
 				</div>
 			</div>

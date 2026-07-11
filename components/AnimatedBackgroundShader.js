@@ -281,16 +281,6 @@ export default function AnimatedBackgroundShader({ size = 17, animate = true }) 
       })
       mesh = new Mesh(gl, { geometry, program })
 
-      // Resize the actual GL framebuffer and tell the shader the new pixel dimensions
-      // (uResolution) so grid cells stay screen-space-sized instead of stretching.
-      const resize = () => {
-        renderer.setSize(window.innerWidth, window.innerHeight)
-        program.uniforms.uResolution.value = [gl.canvas.width, gl.canvas.height]
-      }
-      onResize = resize
-      resize()
-      window.addEventListener('resize', onResize)
-
       // The loop is throttled to ~30fps — the drift is slow enough that 60fps is wasted work.
       // The square sizes animate in the shader; the background hue drifts on the CPU (uBgColor)
       // so it isn't recomputed per-pixel. Halving the frames roughly halves both the
@@ -303,14 +293,27 @@ export default function AnimatedBackgroundShader({ size = 17, animate = true }) 
       let animTime = HUE_START_OFFSET
       let lastTs = null
 
-      // Draw one frame at the current animTime. Called by the loop and once up front, so a
-      // paused (or never-played) background still shows a static frame instead of blank.
+      // Draw one frame at the current animTime. Called by the loop, on resize, and once up
+      // front, so a paused (or never-played) background still shows a static frame, not blank.
       const renderFrame = () => {
         program.uniforms.uTime.value = animTime
         const bgHue = snoise3(animTime * 0.03, 0, 0) * 0.5 + 0.5
         program.uniforms.uBgColor.value = hsb2rgb(bgHue, 0.4, 0.55)
         renderer.render({ scene: mesh })
       }
+
+      // Resize the GL framebuffer + tell the shader the new pixel dimensions (uResolution) so
+      // grid cells stay screen-space-sized, then repaint. The repaint matters while paused:
+      // resizing a WebGL canvas clears it and the loop isn't running to redraw it, so without
+      // this the background would blank on resize until playback resumes.
+      const resize = () => {
+        renderer.setSize(window.innerWidth, window.innerHeight)
+        program.uniforms.uResolution.value = [gl.canvas.width, gl.canvas.height]
+        renderFrame()
+      }
+      onResize = resize
+      resize()
+      window.addEventListener('resize', onResize)
 
       const update = (t) => {
         rafId = requestAnimationFrame(update)
@@ -336,9 +339,8 @@ export default function AnimatedBackgroundShader({ size = 17, animate = true }) 
       // Expose the handles so the animate-prop effect (play/pause) can gate the loop.
       controlsRef.current = { start: startLoop, stop: stopLoop }
 
-      // Show an initial static frame immediately, then only drift if the stream is already
-      // playing at mount (or once it starts, via the animate-prop effect above).
-      renderFrame()
+      // resize() above already painted the initial frame; start drifting only if the stream
+      // is already playing at mount (or once it starts, via the animate-prop effect above).
       if (animateRef.current) startLoop()
 
       // Pause the loop while the tab is hidden; resume only if we're still meant to animate.

@@ -10,8 +10,8 @@ import { useEffect, useRef } from 'react'
 // the skip link inside it is what the first Tab lands on.
 //
 // The shortcuts here mirror the global hotkeys registered in AudioContext.js
-// (k / r / e) and ModalContext.js (p / f). "s" is registered below and summons
-// this very panel.
+// (k / r / e), ModalContext.js (p / f), and BackgroundContext.js (b). "s" is
+// registered below and summons this very panel.
 const SHORTCUTS = [
 	{ keys: ['S'], description: 'summon this shortcut popup' },
 	{ keys: ['K'], description: 'play / pause the stream' },
@@ -19,6 +19,7 @@ const SHORTCUTS = [
 	{ keys: ['P'], description: 'phone in a request' },
 	{ keys: ['F'], description: 'send us feedback' },
 	{ keys: ['E'], description: 'receive / return a beautiful & alluring emerald' },
+	{ keys: ['B'], description: 'banish / bring back the background boxes' },
 ]
 
 export default function KeyboardShortcutsHint() {
