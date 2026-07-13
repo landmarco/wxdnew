@@ -22,7 +22,17 @@ const useMinWidth = (px) => {
 
 const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 	const [isClosed, setIsClosed] = useState(false)
-	const {isPlaying, togglePlayPause} = useAudio()
+	const {isPlaying, isHighQuality, togglePlayPause, setHighQuality} = useAudio()
+
+	// The center WXDU logo is a play/stop control that also guarantees the 320 kbps
+	// stream (and thus the header/footer emerald): stopped -> start in 320 (upgrading
+	// from 192 mid-switchover if needed, via setHighQuality); already 320 & stopped ->
+	// just start; playing -> stop. The surrounding collage tiles keep the plain
+	// play/pause toggle (renderBannerImage below).
+	const handleLogoClick = () => {
+		if (isPlaying || isHighQuality) togglePlayPause()
+		else setHighQuality(true, {startIfStopped: true})
+	}
 	// Extra collage columns are `hidden lg:flex` (desktop-only). Gate their actual
 	// rendering on this so mobile never downloads them; see useMinWidth above.
 	const isDesktop = useMinWidth(1024)
@@ -129,9 +139,9 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 					<div className="flex flex-col items-center py-2 px-2 lg:px-4 my-3 lg:my-6 rounded-3xl bg-black/80 shadow-lg shadow-black/20">
 						<button
 							type="button"
-							onClick={togglePlayPause}
-							aria-label={isPlaying ? 'Pause WXDU stream' : 'Play WXDU stream'}
-							title={isPlaying ? 'Pause stream' : 'Play stream'}
+							onClick={handleLogoClick}
+							aria-label={isPlaying ? 'Pause WXDU stream' : isHighQuality ? 'Play WXDU stream' : 'Play WXDU stream in 320 kbps'}
+							title={isPlaying ? 'Pause stream' : isHighQuality ? 'Play stream' : 'Play stream in 320 kbps'}
 							className="w-full cursor-pointer border-0 bg-transparent p-0"
 						>
 							<img src={logo.src} alt="WXDU Logo" className="w-full h-auto object-contain" />

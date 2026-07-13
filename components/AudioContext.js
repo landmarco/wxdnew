@@ -53,6 +53,11 @@ export const AudioProvider = ({ children }) => {
     // crossoverToLive). Distinct from isStalled so the overlay can say "Rejoining"
     // for a deliberate catch-up vs "Reconnecting" for a dropped mid-play stream.
     const [isRejoining, setIsRejoining] = useState(false)
+    // 'toHigh' while a 320 kbps upgrade is crossing over (header shows "MY
+    // EMERALD!"), 'toLow' while reverting to 192 kbps ("RELINQUISHING"), null
+    // otherwise. Set the instant a quality switch begins and cleared the moment
+    // the target bitrate actually starts playing (or the switch fails).
+    const [qualitySwitch, setQualitySwitch] = useState(null)
     // Two audio elements so we can buffer a new bitrate on the idle one and cut
     // over gaplessly. activeId marks which one is currently the live player.
     const audioARef = useRef(null)
@@ -439,36 +444,48 @@ export const AudioProvider = ({ children }) => {
         return () => document.removeEventListener('keydown', handleKeyDown)
     }, [])
 
-    // Switch the stream quality. Gapless when already playing: the new bitrate is
-    // buffered on the idle element and we only cut over once it's truly playing.
-    const setHighQuality = (toHigh) => {
+    // Switch the stream quality. Gapless when there's audio to keep: the target
+    // bitrate is buffered (muted) on the idle element and we only cut over once
+    // it's truly playing, so the two bitrates never overlap audibly.
+    //
+    // While playing, the listener keeps hearing the CURRENT bitrate until the cut,
+    // and the switch surfaces an overlay — "MY EMERALD!" upgrading to 320,
+    // "RELINQUISHING" reverting to 192 (see qualitySwitch), cleared when the target
+    // starts playing.
+    //
+    // While PAUSED, behavior depends on `startIfStopped`:
+    //  - false (footer emerald, "e" hotkey): silently re-arm the target bitrate
+    //    for the next play and stay paused — no audio, no overlay.
+    //  - true (the /listen buttons, homepage logo): start the current bitrate
+    //    immediately so there's audio during the switchover, then crossover to the
+    //    target (with the overlay), matching the "start it if stopped" behavior the
+    //    quality buttons call for.
+    const setHighQuality = (toHigh, { startIfStopped = false } = {}) => {
         if (toHigh === isHighQuality) return
 
-        const url = toHigh ? STREAM_HIGH : STREAM_LOW
-        currentSrcRef.current = url
+        const targetUrl = toHigh ? STREAM_HIGH : STREAM_LOW
+        // The bitrate currently playing/armed, which keeps sounding until the cut.
+        const sourceUrl = toHigh ? STREAM_LOW : STREAM_HIGH
+        currentSrcRef.current = targetUrl
         setIsHighQuality(toHigh)
 
         const active = getActive()
         if (!active) return
 
-        // Not playing: just arm the new source. Enabling HQ also starts playback
-        // so the upgrade is audible immediately; reverting stays paused.
-        if (!wantsToPlayRef.current) {
-            active.src = url
-            if (toHigh) {
-                wantsToPlayRef.current = true
-                active.load()
-                active.play().catch(() => {
-                    wantsToPlayRef.current = false
-                    setIsPlaying(false)
-                })
-            }
+        // Paused + no forced start: just arm the target for the next play, stay
+        // silent, and don't run a crossover or show an overlay.
+        if (!wantsToPlayRef.current && !startIfStopped) {
+            if (active.getAttribute('src') !== targetUrl) active.src = targetUrl
             return
         }
 
-        // Playing: crossover on the idle element.
+        setQualitySwitch(toHigh ? 'toHigh' : 'toLow')
+
         const next = getInactive()
-        if (!next) return
+        if (!next) {
+            setQualitySwitch(null)
+            return
+        }
 
         const cleanup = () => {
             next.removeEventListener('playing', onReady)
@@ -477,9 +494,14 @@ export const AudioProvider = ({ children }) => {
         const onReady = () => {
             cleanup()
             const old = getActive()
-            // Promote `next` to active; its listeners attach via the activeId effect.
+            // Unmute the freshly-buffered target and promote it to active; its
+            // listeners re-attach via the activeId effect.
+            next.muted = false
             setActiveId((id) => (id === 'a' ? 'b' : 'a'))
             setIsPlaying(true)
+            setQualitySwitch(null)
+            lastTimeRef.current = -1
+            lastProgressAtRef.current = Date.now()
             // Tear down the old element so its connection closes promptly.
             old.pause()
             old.removeAttribute('src')
@@ -487,24 +509,54 @@ export const AudioProvider = ({ children }) => {
         }
         const onError = () => {
             cleanup()
-            // 320 failed to connect — stay on the current stream, undo the flag.
+            next.muted = false
             next.removeAttribute('src')
             next.load()
-            currentSrcRef.current = toHigh ? STREAM_LOW : STREAM_HIGH
+            // Target bitrate failed to connect — stay on the source, undo the flag.
+            currentSrcRef.current = sourceUrl
             setIsHighQuality(!toHigh)
+            setQualitySwitch(null)
         }
 
+        // Buffer the target bitrate silently on the idle element; unmuted at the
+        // exact moment we cut over so it never overlaps the source audio.
         next.addEventListener('playing', onReady, { once: true })
         next.addEventListener('error', onError, { once: true })
-        next.src = url
+        next.muted = true
+        next.src = targetUrl
         next.load()
         next.play().catch(() => {})
+
+        // Stopped: start the current bitrate on the active element right away so
+        // audio is flowing during the switchover. (Already playing: leave the
+        // active element alone — it keeps playing the current bitrate until the
+        // cut.)
+        if (!wantsToPlayRef.current) {
+            wantsToPlayRef.current = true
+            lastProgressAtRef.current = 0
+            lastTimeRef.current = -1
+            // If the element is already warm on the source bitrate, resume its
+            // buffer instantly rather than reloading it.
+            if (active.getAttribute('src') !== sourceUrl) active.src = sourceUrl
+            active.play().catch(() => {
+                // Autoplay refused: abort the switch and stay stopped on source.
+                cleanup()
+                next.muted = false
+                next.removeAttribute('src')
+                next.load()
+                wantsToPlayRef.current = false
+                setIsPlaying(false)
+                currentSrcRef.current = sourceUrl
+                setIsHighQuality(!toHigh)
+                setQualitySwitch(null)
+            })
+        }
     }
     // Keep the "e" hotkey pointed at the latest setHighQuality closure.
     setHighQualityRef.current = setHighQuality
 
     return (
-        <AudioContext.Provider value={{ isPlaying, isStalled, isRejoining, isPreloading, togglePlayPause, rejoinLive, isHighQuality, setHighQuality }}>
+        <AudioContext.Provider value={{ isPlaying, isStalled, isRejoining, isPreloading, qualitySwitch, togglePlayPause, rejoinLive, isHighQuality, setHighQuality }}>
             {/* preload="auto" is explicit: keep the active element's stream warm so
                 the first play is instant, rather than depending on the browser's
                 default preload behavior (which varies). The idle element has no src

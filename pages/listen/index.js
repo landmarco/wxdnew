@@ -54,17 +54,29 @@ export default function Listen() {
 
 
 
-            {!isHighQuality && (
-                <div className="mt-10 flex justify-center pb-6">
+            {/* Quality toggle. Rather than disappearing after upgrading, the button
+                flips to offer the reverse switch: 320 -> emerald styling, 192 ->
+                muted slate. Both go through setHighQuality, which keeps audio
+                flowing during the crossover (and starts it if stopped). */}
+            <div className="mt-10 flex justify-center pb-6">
+                {isHighQuality ? (
                     <button
                         type="button"
-                        onClick={() => setHighQuality(true)}
+                        onClick={() => setHighQuality(false, { startIfStopped: true })}
+                        className="font-courierprime rounded border border-slate-400/60 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-400/10 hover:text-slate-100"
+                    >
+                        Gimme the 192 kbps stream
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => setHighQuality(true, { startIfStopped: true })}
                         className="font-courierprime rounded border border-emerald-500/60 px-4 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/10 hover:text-emerald-200"
                     >
                         Gimme the 320 kbps stream
                     </button>
-                </div>
-            )}
+                )}
+            </div>
 
             <div className="grid w-full grid-cols-1 gap-8 px-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
 				<div className="h-auto min-w-0 p-4">

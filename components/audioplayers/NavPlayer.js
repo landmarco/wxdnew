@@ -13,7 +13,7 @@ import Emerald from "../Emerald";
 const USE_REAL_COVER_ART = false;
 
 const NavPlayer = () => {
-    const { isPlaying, isStalled, isRejoining, isPreloading, togglePlayPause, isHighQuality } = useAudio();
+    const { isPlaying, isStalled, isRejoining, isPreloading, qualitySwitch, togglePlayPause, isHighQuality } = useAudio();
 
     // refs for measuring available ticker width vs text width
     const tickerContainerRef = useRef(null);
@@ -224,10 +224,26 @@ const NavPlayer = () => {
                         style={{ height: "75px", width: "175px", objectFit: "cover" }}
                     />
 
+                    {/* Quality-switch overlay: "MY EMERALD!" while the 320 kbps
+                        stream buffers in, "RELINQUISHING" while reverting to 192
+                        kbps. Takes precedence over the other overlays (a deliberate
+                        switch isn't a stall or a cold warm-up) and clears the moment
+                        the target bitrate starts playing. */}
+                    {qualitySwitch && (
+                        <span className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center px-1">
+                            <span
+                                className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
+                                style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
+                            >
+                                {qualitySwitch === 'toHigh' ? 'My Emerald!' : 'Relinquishing'}
+                            </span>
+                        </span>
+                    )}
+
                     {/* Keep the oscillation but overlay a label when the audio
                         dropped mid-play ("Reconnecting") or when we're catching
                         back up to live from a long pause ("Rejoining"). */}
-                    {(isStalled || isRejoining) && (
+                    {!qualitySwitch && (isStalled || isRejoining) && (
                         <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-1">
                             <span
                                 className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
@@ -242,7 +258,7 @@ const NavPlayer = () => {
                         its connection — overlay a label until it's ready to play. If
                         the user hits play before it's live, the label rides over the
                         moving oscillation until audio actually starts flowing. */}
-                    {isPreloading && !isStalled && (
+                    {!qualitySwitch && isPreloading && !isStalled && (
                         <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-1">
                             <span
                                 className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
