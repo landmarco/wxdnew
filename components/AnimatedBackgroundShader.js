@@ -100,7 +100,11 @@ const fragment = /* glsl */ `
   void main() {
     // PIXEL POSITION: vUv is 0..1 across the screen; scale up to actual pixel coordinates so
     // uSize (a pixel value, matching the old p5 grid cell size) means the same thing here. Ex: vUv gives a random number, and this function says which pixel number it is at.
-    vec2 fragCoord = vUv * uResolution;
+    // Measure Y from the TOP (vUv.y=1 at top): the canvas is position:fixed at top:0, so on
+    // resize the top-left corner stays put on screen while the bottom edge moves. Anchoring the
+    // grid to that stable top-left corner is what stops the pattern from "jumping" on mobile,
+    // where scrolling shows/hides the URL bar and fires a resize with a changed innerHeight.
+    vec2 fragCoord = vec2(vUv.x, 1.0 - vUv.y) * uResolution;
 
     // BG COLOR: the background hue drifts over time only (no spatial input), so it's the same
     // for every pixel this frame. Rather than re-run simplex noise + hsb2rgb in all ~millions of

@@ -65,8 +65,13 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                 }
             }}
         >
-            {/* Desktop */}
-            <div className={`relative overflow-hidden rounded-[5px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] ${forceMobile ? "hidden" : "hidden lg:block"}`}>
+            {/* Desktop. Capped at its design width (max-w-[36rem]) so it stops stretching
+                on 2K/4K monitors and sits left-aligned in its half of the header, with empty
+                space to the right. Without the cap the card keeps widening while its DJ/Show
+                text box stays a fixed height, so FitText's min font size eventually can't fit
+                two lines and the text clips. Only the card is capped — the vinyl player below
+                (a separate sibling) still fills the full column width. */}
+            <div className={`relative w-full max-w-[36rem] overflow-hidden rounded-[5px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] ${forceMobile ? "hidden" : "hidden lg:block"}`}>
                 <img alt="" className="absolute inset-0 h-full w-full object-cover" src="/nowplaying/desktop-bg-gradient.png" />
                 <div className="relative px-3 pt-3 pb-3">
                     <h1 className="bitcount pl-5 text-[clamp(1.75rem,3.5vw,2.75rem)] leading-tight text-white">Now Playing</h1>
