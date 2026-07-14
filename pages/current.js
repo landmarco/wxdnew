@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { subscribeCurrentPlaylist } from '../lib/nowPlaying'
+import { fixEncodingDeep } from '../lib/fixEncoding'
 import PlaylistView from '../components/PlaylistView'
 
 export default function CurrentPlaylist() {
@@ -12,7 +14,10 @@ export default function CurrentPlaylist() {
 		// newly logged tracks appear near-instantly instead of on a 30s timer.
 		const unsubscribe = subscribeCurrentPlaylist((payload) => {
 			if (payload && payload.show) {
-				setData(payload)
+				// Repair mojibake + HTML entities (e.g. 12&quot; -> 12") in every
+				// track field, matching /show (useShowPlaylist) and NowPlayingHeader
+				// (useCurrentPlaylist), which both run the payload through this.
+				setData(fixEncodingDeep(payload))
 				setOffAir(false)
 			} else {
 				setData(null)
@@ -26,15 +31,17 @@ export default function CurrentPlaylist() {
 	const { show, dj, tracks } = data ?? {}
 
 	const djName = show?.djname || dj?.defdjname || 'WXDU'
-	const djNode = dj?.link ? (
-		<a
-			href={dj.link}
-			target="_blank"
-			rel="noopener noreferrer"
+	// Link the DJ name to their shows page, matching /show. djId comes off the
+	// playlist payload (dj.ID), falling back to the show's userID.
+	const djId = dj?.ID ?? show?.userID
+	const djNode = djId ? (
+		<Link
+			href={`/dj/?id=${djId}`}
+			legacyBehavior={false}
 			className="underline hover:text-blue-300"
 		>
 			{djName}
-		</a>
+		</Link>
 	) : (
 		djName
 	)

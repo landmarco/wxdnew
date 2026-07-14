@@ -24,23 +24,32 @@ function makeSparkle(top, left) {
 }
 
 // Build a fresh, randomized set of sparkles so no two twinkles look the same.
-// Some are guaranteed to sit in the clear space just above and below the art
-// (where they stay legible over busy covers); the rest scatter over and around
-// the tile.
+// Some are guaranteed to sit in the clear space just above, below, and to either
+// side of the art (where they stay legible over busy covers); the rest scatter
+// over and around the tile.
 function makeSparkles() {
 	const sparkles = []
 
-	// 1–2 in the dark band above, and 1–2 below, spread across the art's width.
+	// 2–3 in the dark band above, and 2–3 below, spread across the art's width.
 	for (const above of [true, false]) {
-		const count = 1 + Math.floor(Math.random() * 2)
+		const count = 2 + Math.floor(Math.random() * 2)
 		for (let i = 0; i < count; i++) {
 			const top = above ? -(10 + Math.random() * 20) : 110 + Math.random() * 20
 			sparkles.push(makeSparkle(top, 10 + Math.random() * 80))
 		}
 	}
 
-	// 2–4 more scattered over and around the art (some spilling past the edges).
-	const overCount = 2 + Math.floor(Math.random() * 3)
+	// 2–3 just off the left edge, and 2–3 off the right, spread across the art's height.
+	for (const leftSide of [true, false]) {
+		const count = 2 + Math.floor(Math.random() * 2)
+		for (let i = 0; i < count; i++) {
+			const left = leftSide ? -(10 + Math.random() * 20) : 110 + Math.random() * 20
+			sparkles.push(makeSparkle(10 + Math.random() * 80, left))
+		}
+	}
+
+	// 3–5 more scattered over and around the art (some spilling past the edges).
+	const overCount = 3 + Math.floor(Math.random() * 3)
 	for (let i = 0; i < overCount; i++) {
 		sparkles.push(makeSparkle(Math.random() * 120 - 10, Math.random() * 120 - 10))
 	}
