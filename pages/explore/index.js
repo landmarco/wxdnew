@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ChartsTab from "@/components/explorepage/charts/ChartsTab"
 import ExploreTab from "@/components/explorepage/song/ExploreTab"
+import ShowCalendar from "@/components/homepage/ShowCalendar"
 
 // explore options are allowed
 const allowedChoices = [
@@ -49,6 +50,12 @@ export default function Explore(){
 
             {/* returns the component of the choice option that was selected */}
             {SelectedComponent && <SelectedComponent />}
+
+            {/* Upcoming Shows — moved here from the homepage. The homepage
+                "Shows we're stoked about" card links to this box (#upcoming-shows). */}
+            <div className="mt-16 flex w-full justify-center overflow-x-auto px-4">
+                <ShowCalendar />
+            </div>
         </div>
     )
 }

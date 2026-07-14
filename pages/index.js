@@ -10,7 +10,7 @@ import Image from 'next/image'
 import VinylPlayer from '../components/homepage/VinylPlayer'
 import MobileVinylPlayer from '../components/homepage/MobileVinylPlayer'
 import TodaySchedule from '../components/homepage/TodaySchedule'
-import ShowCalendar from "../components/homepage/ShowCalendar"
+import StokedShows from "../components/homepage/StokedShows"
 import NowPlayingHeader from '../components/listenpage/NowPlayingHeader'
 import useCurrentPlaylist from '../hooks/useCurrentPlaylist'
 import HomepageBannerFullBlack from '../components/HomepageBannerFullBlack'
@@ -73,30 +73,23 @@ export default function Home(props) {
 				<TodaySchedule schedule={schedule} />
 			</div>
 
-			<div className="mt-6 flex w-full justify-center overflow-x-auto lg:px-0 [&>*]:w-[92vw] lg:[&>*]:w-[60vw]">
-				<ShowCalendar />
-			</div>
-
 			<div className="mx-auto flex w-full flex-col gap-4">
 
-
 			<div className="mx-auto flex w-5/6 flex-col gap-4">
-				<div className="mt-5 flex w-full flex-col justify-center md:-mt-10 md:mr-10 lg:mt-5">
-					
-					
+				<div className="mt-5 flex w-full flex-col gap-6 md:flex-row md:items-stretch lg:mt-5">
 
-					{/* if no events: just blog posts + player */}
-					{events.length === 0 && posts && (
-						<BlogCarouselFull posts={posts} />
-					)}
+					{/* Blog posts — 3/4 width */}
+					<div className="w-full md:w-3/4">
+						{posts && <BlogCarouselFull posts={posts} />}
+					</div>
 
-					{/* if yes events: events + player
-					{events.length > 0 && <ArchiveCarousel events={events} />} */}
-					{/* ^ disables archive carousel, since WXDU doesn't use this function */}
+					{/* Shows we're stoked about — today + tomorrow only, 1/4 width,
+					    to the right of Blog Posts. The whole card links to the
+					    Upcoming Shows box on /explore. */}
+					<div className="w-full md:w-1/4">
+						<StokedShows />
+					</div>
 
-					{/* if yes events: blog posts full row */}
-					{events.length > 0 && posts && <BlogCarouselFull posts={posts} />}
-					
 					{/* Photo gallery (image cycle widget) — temporarily disabled.
 					    TODO: need to decide what images we want here and their
 					    purpose. Maybe from our archive project? */}

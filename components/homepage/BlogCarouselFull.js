@@ -5,13 +5,13 @@ import Link from 'next/link'
 
 const BlogCarouselFull = (props) => {
 	return (
-		<div className="mt-5 flex flex-col md:-mt-10 md:mr-10 lg:mt-5 lg:w-full lg:max-w-screen-xl">
-			<p className="kallisto mx-auto mb-2 whitespace-nowrap text-3xl text-white md:mx-0 md:mb-4 lg:text-5xl">
+		<div className="flex h-full flex-col rounded-lg border border-white bg-black/80 p-4">
+			<p className="kallisto mb-4 whitespace-nowrap text-3xl text-white lg:text-5xl">
 				Blog Posts
 			</p>
 
-			<div className="mx-auto md:mx-0">
-				<div className="scrollbar mx-auto mb-10 mt-6 flex snap-mandatory flex-col gap-6 md:flex-row md:items-start md:gap-4 md:overflow-x-auto lg:mt-0">
+			<div className="flex flex-1 flex-col">
+				<div className="scrollbar mb-6 flex snap-mandatory flex-col gap-6 md:flex-row md:items-start md:gap-4 md:overflow-x-auto">
 					{props.posts.map((post) => (
 						<div key={post.node.id}>
 							<PostPreview
@@ -25,7 +25,7 @@ const BlogCarouselFull = (props) => {
 						</div>
 					))}
 				</div>
-				<div className="w-1/8 mx-16 flex justify-center rounded-3xl bg-neutral-800 px-3 py-2 md:mx-0 md:mb-20 md:ml-auto md:inline-block md:bg-transparent md:px-0 md:py-0 lg:w-full lg:justify-start">
+				<div className="mt-auto flex justify-center rounded-3xl bg-neutral-800 px-3 py-2 md:ml-auto md:inline-block md:bg-transparent md:px-0 md:py-0 lg:justify-start">
 					<Link href="/blog">
 						<h2 className="my-1 cursor-pointer hover:underline">
 							Older blog posts {'>'}
