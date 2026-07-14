@@ -171,6 +171,23 @@ const NavPlayer = () => {
     // only animate if text overflows horizontally and motion is not reduced
     const shouldScrollTicker = tickerDistance > 0 && !prefersReducedMotion;
 
+    // The status label that rides over the oscillation on desktop. Priority: a
+    // deliberate quality switch, then a mid-play stall/rejoin, then the initial
+    // cold-connect warm-up. Null when the stream is simply playing or paused.
+    const overlayText = qualitySwitch
+        ? (qualitySwitch === "toHigh" ? "My Emerald!" : "Relinquishing")
+        : isStalled || isRejoining
+        ? (isRejoining ? "Rejoining" : "Reconnecting")
+        : isPreloading && !isStalled
+        ? "Lichenizing"
+        : null;
+
+    // On mobile there's no oscillation, so the same label temporarily replaces the
+    // "Stream Here" text instead — except the initial "Lichenizing" warm-up, which
+    // is intentionally silent on mobile.
+    const mobileOverlay = overlayText && overlayText !== "Lichenizing" ? overlayText : null;
+    const mobileLabel = mobileOverlay || "Stream Here";
+
     return (
         <div className="fixed left-0 top-0 z-50 flex h-16 w-full flex-row items-center overflow-hidden border-b-2 border-[#e0ff05] bg-black">
             {/* The whole left box toggles the stream: from the page's left edge,
@@ -184,16 +201,11 @@ const NavPlayer = () => {
             >
                 <span className="relative text-[#e0ff05] group-hover:text-yellow-200">
                     {isPlaying ? <FaPause size={18} /> : <FaPlay size={18} />}
-                    {/* Mobile/tablet reconnect indicator: the waveform overlay only
-                        exists on lg+, so pulse a ring over the icon below that. */}
-                    {(isStalled || isRejoining) && (
-                        <span
-                            aria-hidden="true"
-                            className="pointer-events-none absolute -inset-2 rounded-full border-2 border-[#e0ff05] animate-ping lg:hidden"
-                        />
-                    )}
                     {/* Mobile/tablet warm-up indicator: a mossy green ring that
-                        creeps round the icon while the stream buffers. */}
+                        creeps round the icon while the stream buffers. Stall/rejoin/
+                        quality-switch states surface as the label text on mobile (see
+                        below), so they don't need a ring; the cold-connect warm-up is
+                        silent on mobile except for this subtle ring. */}
                     {isPreloading && !isStalled && (
                         <span
                             aria-hidden="true"
@@ -203,8 +215,33 @@ const NavPlayer = () => {
                     )}
                 </span>
 
-                <span className="bitcount text-base uppercase tracking-widest text-[#e0ff05]">
+                {/* Desktop: a fixed "Stream Here" label; the oscillation and its
+                    overlay/emerald sit to the right of it. */}
+                <span className="bitcount hidden text-base uppercase tracking-widest text-[#e0ff05] lg:inline">
                     Stream Here
+                </span>
+
+                {/* Mobile: the label doubles as the status readout. Any overlay text
+                    that rides over the desktop oscillation temporarily replaces
+                    "Stream Here" here instead (styled like the desktop overlay), and
+                    the HQ emerald glows behind it — mirroring the desktop emerald
+                    behind the oscillation. */}
+                <span className="relative flex items-center lg:hidden">
+                    {isHighQuality && (
+                        <span className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+                            <Emerald size={60} animated={isPlaying} />
+                        </span>
+                    )}
+                    <span
+                        className={`bitcount relative z-10 whitespace-nowrap uppercase text-[#e0ff05] ${
+                            mobileOverlay
+                                ? "animate-pulse text-xl tracking-tight"
+                                : "text-base tracking-widest"
+                        }`}
+                        style={mobileOverlay ? { textShadow: "0 0 6px #000, 0 0 6px #000" } : undefined}
+                    >
+                        {mobileLabel}
+                    </span>
                 </span>
 
                 <span className="relative hidden shrink-0 items-center lg:flex">
@@ -224,47 +261,17 @@ const NavPlayer = () => {
                         style={{ height: "75px", width: "175px", objectFit: "cover" }}
                     />
 
-                    {/* Quality-switch overlay: "MY EMERALD!" while the 320 kbps
-                        stream buffers in, "RELINQUISHING" while reverting to 192
-                        kbps. Takes precedence over the other overlays (a deliberate
-                        switch isn't a stall or a cold warm-up) and clears the moment
-                        the target bitrate starts playing. */}
-                    {qualitySwitch && (
-                        <span className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center px-1">
-                            <span
-                                className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
-                                style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
-                            >
-                                {qualitySwitch === 'toHigh' ? 'My Emerald!' : 'Relinquishing'}
-                            </span>
-                        </span>
-                    )}
-
-                    {/* Keep the oscillation but overlay a label when the audio
-                        dropped mid-play ("Reconnecting") or when we're catching
-                        back up to live from a long pause ("Rejoining"). */}
-                    {!qualitySwitch && (isStalled || isRejoining) && (
+                    {/* A single status label rides over the oscillation: "MY EMERALD!"
+                        / "RELINQUISHING" during a quality switch, "RECONNECTING" /
+                        "REJOINING" for a mid-play stall or catch-up, "LICHENIZING" for
+                        the cold-connect warm-up (see overlayText for the priority). */}
+                    {overlayText && (
                         <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-1">
                             <span
                                 className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
                                 style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
                             >
-                                {isRejoining ? "Rejoining" : "Reconnecting"}
-                            </span>
-                        </span>
-                    )}
-
-                    {/* On first load (or returning to the tab) the stream is buffering
-                        its connection — overlay a label until it's ready to play. If
-                        the user hits play before it's live, the label rides over the
-                        moving oscillation until audio actually starts flowing. */}
-                    {!qualitySwitch && isPreloading && !isStalled && (
-                        <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-1">
-                            <span
-                                className="bitcount animate-pulse whitespace-nowrap text-xl uppercase tracking-tight text-[#e0ff05]"
-                                style={{ textShadow: "0 0 6px #000, 0 0 6px #000" }}
-                            >
-                                Lichenizing
+                                {overlayText}
                             </span>
                         </span>
                     )}
