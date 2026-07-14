@@ -24,6 +24,15 @@
 -- CONVERT(... USING latin1) reinterprets the blob's bytes as latin1 (lossless --
 -- latin1 maps every byte), matching how artist/song/album/label are stored, so
 -- all five can share one FULLTEXT index. Requires MySQL 5.7.8+ / MariaDB 10.2+.
+
+-- Legacy rows hold zero dates like '0000-00-00 00:00:00' (e.g. songstart) that a
+-- strict sql_mode rejects when the ADD COLUMN / first FULLTEXT index rebuilds the
+-- table. Relax sql_mode for THIS session only so the rebuild copies those values
+-- through untouched. Session-scoped: no other connection is affected, it reverts
+-- on disconnect, and no data is changed. Must precede the ALTERs in the same
+-- session (so run this file in one mysql invocation, not as separate statements).
+SET SESSION sql_mode = '';
+
 ALTER TABLE playlist
   ADD COLUMN shadow_comments TEXT
     CHARACTER SET latin1 COLLATE latin1_swedish_ci
