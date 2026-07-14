@@ -5,7 +5,7 @@ const router = Router();
 
 const DJ_SELECT = `
   SELECT u.ID, u.defdjname, u.deftitle, u.defsubtitle, u.defothergenre,
-         u.defdesc, u.link,
+         u.defgenre, u.defdesc, u.link,
          CASE WHEN u.emailpublish = 1 THEN u.email ELSE NULL END AS email
   FROM users u
 `;

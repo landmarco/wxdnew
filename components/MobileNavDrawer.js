@@ -1,24 +1,20 @@
-// Mobile navigation drawer, opened by a horizontal swipe across the screen
-// (swipe right opens the left panel, swipe left opens the right panel) instead
-// of a hamburger button. The open-swipe deliberately ignores the very edges of
-// the screen so it doesn't fight the browser's back/forward gesture, and it
-// ignores swipes that start on horizontally-scrollable content (carousels, the
-// schedule grid) so those keep scrolling normally. The panel follows the finger
-// on a dismiss swipe, and can also be closed by tapping the backdrop or Escape.
+// Mobile navigation drawer. It can be opened by the hamburger button (see
+// MobileTopBar) or by a horizontal swipe across the screen (swipe right opens
+// the left panel, swipe left opens the right panel). The open-swipe deliberately
+// ignores the very edges of the screen so it doesn't fight the browser's
+// back/forward gesture, and it ignores swipes that start on horizontally-
+// scrollable content (carousels, the schedule grid) so those keep scrolling
+// normally. The panel follows the finger on a dismiss swipe, and can also be
+// closed by tapping the backdrop or Escape.
 //
-// Small, low-opacity edge "grips" are rendered as a discoverability + keyboard
-// affordance — swipe is the primary interaction, but these keep the menu
-// reachable for anyone who can't (or doesn't think to) swipe.
+// Open/close state lives in NavDrawerContext so the hamburger trigger (rendered
+// elsewhere in the tree) shares it; the finger-follow drag state stays local.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Router } from 'next/router'
-import { useAudio } from './AudioContext'
 import { NAV_ITEMS } from '../lib/navItems'
-
-// Remembers (across visits) that the user has already found the swipe menu, so
-// the edge grips can retire after first use.
-const DISCOVERED_KEY = 'wxdu-nav-discovered'
+import { useNavDrawer } from './NavDrawerContext'
 
 // Only run the mobile drawer below Tailwind's lg breakpoint (the desktop navbar
 // takes over at lg).
@@ -46,52 +42,19 @@ function startedOnHorizontalScroller(node) {
 }
 
 const MobileNavDrawer = () => {
-	const { isPlaying } = useAudio()
+	const { openSide, open, close } = useNavDrawer()
 
-	// which edge's panel is open: 'left' | 'right' | null
-	const [openSide, setOpenSide] = useState(null)
 	// live finger offset (px) during a dismiss drag; 0 when not dragging
 	const [dragPx, setDragPx] = useState(0)
 	const [dragging, setDragging] = useState(false)
-	// once the menu has been opened, the edge grips have done their job and hide
-	const [discovered, setDiscovered] = useState(false)
-	// gate grip rendering on mount so SSR and the first client render agree
-	const [mounted, setMounted] = useState(false)
 	const dismissRef = useRef({ x: 0, tracking: false })
 
-	const markDiscovered = useCallback(() => {
-		setDiscovered(true)
-		try {
-			localStorage.setItem(DISCOVERED_KEY, '1')
-		} catch {
-			// private mode / storage disabled — grips just won't persist as hidden
-		}
-	}, [])
-
-	// Open a side and record that the menu has been discovered.
-	const open = useCallback(
-		(side) => {
-			setOpenSide(side)
-			markDiscovered()
-		},
-		[markDiscovered]
-	)
-
-	const close = () => {
-		setOpenSide(null)
+	// Close the drawer and clear any in-progress dismiss drag.
+	const closeDrawer = () => {
+		close()
 		setDragPx(0)
 		setDragging(false)
 	}
-
-	// After mount, read the persisted "already discovered" flag.
-	useEffect(() => {
-		setMounted(true)
-		try {
-			if (localStorage.getItem(DISCOVERED_KEY) === '1') setDiscovered(true)
-		} catch {
-			// ignore storage errors
-		}
-	}, [])
 
 	// Horizontal-swipe detection to OPEN the drawer. Listens on the document so a
 	// swipe anywhere on the page counts, but ignores swipes that start at the very
@@ -166,18 +129,20 @@ const MobileNavDrawer = () => {
 
 	// Close on navigation and on Escape.
 	useEffect(() => {
-		const onRoute = () => close()
+		const onRoute = () => closeDrawer()
 		Router.events.on('routeChangeStart', onRoute)
 		return () => Router.events.off('routeChangeStart', onRoute)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
 	useEffect(() => {
 		if (!openSide) return
 		const onKey = (event) => {
-			if (event.key === 'Escape') close()
+			if (event.key === 'Escape') closeDrawer()
 		}
 		document.addEventListener('keydown', onKey)
 		return () => document.removeEventListener('keydown', onKey)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [openSide])
 
 	// Dismiss-drag handlers for the open panel. The panel only follows the finger
@@ -197,7 +162,7 @@ const MobileNavDrawer = () => {
 			setDragging(false)
 			const threshold = window.innerWidth * 0.75 * CLOSE_FRACTION
 			const travelled = side === 'right' ? dragPx : -dragPx
-			if (travelled > threshold) close()
+			if (travelled > threshold) closeDrawer()
 			else setDragPx(0)
 		},
 	})
@@ -225,7 +190,7 @@ const MobileNavDrawer = () => {
 					key={item.href}
 					href={item.href}
 					legacyBehavior={false}
-					onClick={close}
+					onClick={closeDrawer}
 					tabIndex={openSide === side ? 0 : -1}
 					className="py-3 text-3xl text-white hover:text-blue-300"
 				>
@@ -241,7 +206,7 @@ const MobileNavDrawer = () => {
 			    gesture, and same handlers, as dragging the panel itself) so a swipe
 			    that starts outside the drawer dismisses it too. */}
 			<div
-				onClick={close}
+				onClick={closeDrawer}
 				aria-hidden="true"
 				{...(openSide ? dismissHandlers(openSide) : {})}
 				className={`fixed inset-0 z-[60] bg-black/60 transition-opacity duration-200 ${
@@ -251,31 +216,6 @@ const MobileNavDrawer = () => {
 
 			{renderPanel('left')}
 			{renderPanel('right')}
-
-			{/* Discoverability / keyboard affordances: slim green edge grips that
-			    also open the menu on tap and pulse gently while the stream plays.
-			    Kept mounted permanently (not just pre-discovery) so keyboard/switch
-			    users always have a way to open the drawer, even after swiping once. */}
-			{mounted && !openSide && (
-				<>
-					<button
-						type="button"
-						onClick={() => open('left')}
-						aria-label="Open menu"
-						className={`fixed left-0 top-1/2 z-40 h-16 w-1.5 -translate-y-1/2 rounded-r bg-[#e0ff05]/50 transition-colors hover:bg-[#e0ff05]/80 ${
-							isPlaying ? 'animate-pulse' : ''
-						}`}
-					/>
-					<button
-						type="button"
-						onClick={() => open('right')}
-						aria-label="Open menu"
-						className={`fixed right-0 top-1/2 z-40 h-16 w-1.5 -translate-y-1/2 rounded-l bg-[#e0ff05]/50 transition-colors hover:bg-[#e0ff05]/80 ${
-							isPlaying ? 'animate-pulse' : ''
-						}`}
-					/>
-				</>
-			)}
 		</div>
 	)
 }
