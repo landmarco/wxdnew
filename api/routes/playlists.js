@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { getPool } = require('../db');
+const { fixEncodingDeep } = require('../fixEncoding');
 
 const router = Router();
 
@@ -90,7 +91,9 @@ function signatureOf(payload) {
 }
 
 function writeEvent(res, payload) {
-  res.write(`data: ${JSON.stringify(payload)}\n\n`);
+  // Same mojibake/entity repair the REST responses get via the res.json wrapper
+  // in server.js — applied here because SSE writes raw, bypassing res.json.
+  res.write(`data: ${JSON.stringify(fixEncodingDeep(payload))}\n\n`);
 }
 
 function broadcast(payload) {
