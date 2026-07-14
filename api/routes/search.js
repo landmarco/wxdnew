@@ -41,7 +41,9 @@ function parsePaging(req) {
 
 // GET /api/search/playlists?q=&limit=100&offset=0
 // Distinct shows that have at least one track matching the query in any of
-// artist / song / album / label / comments, newest first.
+// artist / song / album / label / comments, newest first. `comments` is a BLOB
+// (not FULLTEXT-indexable), so we match its FULLTEXT-indexed text mirror,
+// `shadow_comments` (a STORED generated column; see api/search_indexes.sql).
 router.get('/playlists', async (req, res) => {
   try {
     const booleanQuery = toBooleanQuery(req.query.q);
@@ -55,7 +57,7 @@ router.get('/playlists', async (req, res) => {
        FROM shows s
        JOIN (
          SELECT DISTINCT showID FROM playlist
-         WHERE MATCH(artist, song, album, label, comments)
+         WHERE MATCH(artist, song, album, label, shadow_comments)
                AGAINST (? IN BOOLEAN MODE)
        ) m ON m.showID = s.ID
        LEFT JOIN users u ON s.userID = u.ID
