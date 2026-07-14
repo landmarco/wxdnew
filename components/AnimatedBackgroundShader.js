@@ -252,7 +252,7 @@ export default function AnimatedBackgroundShader({ size = 17, animate = true }) 
 
     let renderer, program, mesh, canvas
     let rafId = null
-    let onResize, onVisibilityChange
+    let onResize, onActivityChange
     let destroyed = false
 
     // ogl only touches the DOM/WebGL context, so it's loaded dynamically to keep it
@@ -329,8 +329,16 @@ export default function AnimatedBackgroundShader({ size = 17, animate = true }) 
         renderFrame()
       }
 
+      // The visualization should only run while the user is actually looking at the
+      // page. "Active" means the tab is visible AND the window has focus, so we stop
+      // not only when the tab is hidden (switched tab/app, phone locked) but also when
+      // the window merely loses focus (another window on top) — nothing to render for
+      // someone who isn't looking, same spirit as not keeping the stream warm for a
+      // listener who's navigated away.
+      const isActive = () => !document.hidden && document.hasFocus()
+
       const startLoop = () => {
-        if (rafId || document.hidden) return
+        if (rafId || !isActive()) return
         lastTs = null // don't count time spent stopped as elapsed animation
         rafId = requestAnimationFrame(update)
       }
@@ -347,19 +355,31 @@ export default function AnimatedBackgroundShader({ size = 17, animate = true }) 
       // is already playing at mount (or once it starts, via the animate-prop effect above).
       if (animateRef.current) startLoop()
 
-      // Pause the loop while the tab is hidden; resume only if we're still meant to animate.
-      onVisibilityChange = () => {
-        if (document.hidden) stopLoop()
-        else if (animateRef.current) startLoop()
+      // Re-sync the loop to activity: stop the instant the page goes hidden or loses
+      // focus, resume only once it's active again and we're still meant to animate.
+      // visibilitychange covers tab/app switches and phone lock; blur/focus cover a
+      // still-visible window losing or regaining focus.
+      onActivityChange = () => {
+        if (isActive()) {
+          if (animateRef.current) startLoop()
+        } else {
+          stopLoop()
+        }
       }
-      document.addEventListener('visibilitychange', onVisibilityChange)
+      document.addEventListener('visibilitychange', onActivityChange)
+      window.addEventListener('blur', onActivityChange)
+      window.addEventListener('focus', onActivityChange)
     })
 
     return () => {
       destroyed = true
       if (rafId) cancelAnimationFrame(rafId)
       if (onResize) window.removeEventListener('resize', onResize)
-      if (onVisibilityChange) document.removeEventListener('visibilitychange', onVisibilityChange)
+      if (onActivityChange) {
+        document.removeEventListener('visibilitychange', onActivityChange)
+        window.removeEventListener('blur', onActivityChange)
+        window.removeEventListener('focus', onActivityChange)
+      }
       controlsRef.current = null
       if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas)
     }
