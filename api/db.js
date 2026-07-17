@@ -5,6 +5,7 @@ let pool;
 let requestsPool;
 let feedbackPool;
 let ticketsPool;
+let shazamPool;
 let mongoClient;
 
 function getPool() {
@@ -67,6 +68,26 @@ function getTicketsPool() {
   return ticketsPool;
 }
 
+// Dedicated, least-privilege pool (INSERT-only user) for stream Shazam
+// ingest. Points at the plmanager DB, but its own user so an ingest-path
+// compromise can't touch anything but the shazamplaying table. utf8mb4 so
+// UTF-8 track metadata stores cleanly (the table is utf8mb4).
+function getShazamPool() {
+  if (!shazamPool) {
+    shazamPool = mysql.createPool({
+      host: process.env.SHAZAM_DB_HOST,
+      user: process.env.SHAZAM_DB_USER,
+      password: process.env.SHAZAM_DB_PASSWORD,
+      database: process.env.SHAZAM_DB_NAME,
+      charset: 'utf8mb4',
+      waitForConnections: true,
+      connectionLimit: 3,
+      queueLimit: 0,
+    });
+  }
+  return shazamPool;
+}
+
 async function getMongo() {
   if (!mongoClient) {
     mongoClient = new MongoClient(process.env.MONGO_URI, {
@@ -77,4 +98,4 @@ async function getMongo() {
   return mongoClient.db();
 }
 
-module.exports = { getPool, getRequestsPool, getFeedbackPool, getTicketsPool, getMongo };
+module.exports = { getPool, getRequestsPool, getFeedbackPool, getTicketsPool, getShazamPool, getMongo };
