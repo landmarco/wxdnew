@@ -7,6 +7,11 @@ concurrency:
   group: 'pages'
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   # Build job
   build:
@@ -65,7 +70,10 @@ jobs:
           SEARCH_TOKEN: ${{ secrets.SEARCH_TOKEN }}
         run: npx tinacms build
       - name: Notify Tina build failure
-        if: steps.tina-build.outcome == 'failure'
+        # Only same-repo PRs get a writable GITHUB_TOKEN; fork PRs get a
+        # read-only token and can't post comments (403). Skip the notify there.
+        if: steps.tina-build.outcome == 'failure' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
         uses: actions/github-script@v6
         with:
           script: |
@@ -84,7 +92,9 @@ jobs:
         continue-on-error: true
         run: ${{ steps.detect-package-manager.outputs.runner }} next export
       - name: Notify Next.js build failure
-        if: steps.next-build.outcome == 'failure' || steps.next-export.outcome == 'failure'
+        # Same fork-token limitation as the Tina notify step above.
+        if: (steps.next-build.outcome == 'failure' || steps.next-export.outcome == 'failure') && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
         uses: actions/github-script@v6
         with:
           script: |
