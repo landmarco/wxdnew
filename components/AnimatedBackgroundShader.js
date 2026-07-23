@@ -228,15 +228,22 @@ const HUE_START_OFFSET = 36
 export default function AnimatedBackgroundShader({ size = 17, brightness = 0.6, saturation = 0.75, speed = 8 }) {
   const containerRef = useRef(null)
   const [supported, setSupported] = useState(true)
+  const [reducedMotion, setReducedMotion] = useState(false)
 
   useEffect(() => {
     // Respect the OS-level reduced-motion setting: skip mounting the canvas
     // entirely rather than rendering a static frame, since users who set this
-    // are opting out of the animation, not just wanting it to hold still.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    // are opting out of the animation, not just wanting it to hold still. Render
+    // the same solid-black static fallback as the unsupported-GPU path (below) so
+    // both non-animated cases look identical instead of leaving a transparent gap.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setReducedMotion(true)
+      return
+    }
 
     let renderer, program, mesh, canvas
     let rafId = null
+    let resizeRafId = null
     let onResize, onActivityChange
     let destroyed = false
 
@@ -328,13 +335,26 @@ export default function AnimatedBackgroundShader({ size = 17, brightness = 0.6, 
       // Resize the GL framebuffer + tell the shader the new pixel dimensions (uResolution) so
       // grid cells stay screen-space-sized, then repaint. The repaint matters because resizing
       // a WebGL canvas clears it, and the loop may be stopped (tab hidden) when it fires.
-      const resize = () => {
-        renderer.setSize(window.innerWidth, window.innerHeight)
+      let lastW = 0, lastH = 0
+      const applyResize = () => {
+        resizeRafId = null
+        const w = window.innerWidth, h = window.innerHeight
+        // Skip no-op events: mobile fires resize on scroll even when nothing changed.
+        if (w === lastW && h === lastH) return
+        lastW = w; lastH = h
+        renderer.setSize(w, h)
         program.uniforms.uResolution.value = [gl.canvas.width, gl.canvas.height]
         renderFrame()
       }
+      // Coalesce resize events into at most one framebuffer resize per frame. Mobile browsers
+      // fire a *storm* of resize events while the URL bar collapses during scroll; handling each
+      // one synchronously reallocates the GL framebuffer on the main thread and can stutter the
+      // very scroll that triggered it. Batching to a single rAF caps it at one realloc per frame.
+      const resize = () => {
+        if (resizeRafId === null) resizeRafId = requestAnimationFrame(applyResize)
+      }
       onResize = resize
-      resize()
+      applyResize() // initial sizing + first paint, synchronously (before the loop starts)
       window.addEventListener('resize', onResize)
 
       const update = (t) => {
@@ -382,18 +402,28 @@ export default function AnimatedBackgroundShader({ size = 17, brightness = 0.6, 
     return () => {
       destroyed = true
       if (rafId) cancelAnimationFrame(rafId)
+      if (resizeRafId) cancelAnimationFrame(resizeRafId)
       if (onResize) window.removeEventListener('resize', onResize)
       if (onActivityChange) {
         document.removeEventListener('visibilitychange', onActivityChange)
+      }
+      // Explicitly drop the WebGL context so its GPU resources are freed now rather than
+      // waiting on GC. The footer toggle unmounts/remounts this component, and browsers cap
+      // the number of live WebGL contexts (~16) — without this, repeated toggling leaks
+      // contexts until the browser starts killing the oldest ones.
+      if (renderer) {
+        const loseCtx = renderer.gl.getExtension('WEBGL_lose_context')
+        if (loseCtx) loseCtx.loseContext()
       }
       if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas)
     }
   }, [size, brightness, saturation, speed])
 
   // If WebGL2 creation failed (e.g. failIfMajorPerformanceCaveat rejected a
-  // software-rendering fallback), render a plain static background instead of
-  // silently paying for a fullscreen shader running on the CPU.
-  if (!supported) {
+  // software-rendering fallback), or the user has reduced-motion set, render a
+  // plain static background instead of silently paying for a fullscreen shader
+  // running on the CPU (or animating against the user's stated preference).
+  if (!supported || reducedMotion) {
     return (
       <div
         style={{
