@@ -107,6 +107,9 @@ When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the follo
 | GET | `/api/charts/mostplayed` | Most played songs (or albums, with `?isChart=true`) over a date range. Accepts `?dateStart=` and `?dateEnd=` (`YYYY-MM-DD`); if both are omitted, defaults to the last month. Accepts `?limit=` (max 500, default 50). |
 | GET | `/api/events` | Upcoming events with venue info, ordered by date. Pass `?all=1` to include past events. |
 | GET | `/api/events/:id` | One or more events with venue info. Accepts comma-separated IDs. |
+| GET | `/api/shazam` | Dump of the `shazamplaying` table — every column, newest first. Returns all rows by default; accepts `?limit=`, `?offset=`, `?since=`. |
+| GET | `/api/shazam/latest` | The single most recent track recognized on the live stream. `404` if nothing has been recognized yet. |
+| POST | `/api/shazam` | Ingest a recognized track. Shared-secret gated (`X-Ingest-Secret`); rate-limited to 30 per minute per IP. |
 
 ### Multi-ID lookups
 
@@ -246,6 +249,93 @@ MONGO_URI=mongodb://wxdu_api_reader:<strong_password>@localhost:27017/wxdu
 The `GET /api/releases/:id/cover` endpoint serves cover images directly from disk at `/mnt/md1/music-database/public/media/{downloads_id}/`. It picks the best available `.jpg` from the release's `nonaudio` file list (prefers a file with "cover" in the name, falls back to `embeddedcover.jpg`).
 
 **Fields stripped from all releases responses:** `review`, `reviewer`, `edits`, `alphabetize_by`, and from linked downloads data: `edits`, `checkedoutby_*`, `reuploader_*`, `assignee_*`, `origfilename`, `dirname`, `rec_alph`, and track `absolute_path` / `itunes_unique_id`.
+
+### Stream Shazam recognition (MySQL `plmanager.shazamplaying`)
+
+The [stream-sleuth](https://github.com/wxdufm/stream-sleuth) tool runs on the WXDU iMac, samples the live stream every ~25 seconds, identifies the track with Shazam, and — **only when the song changes** — POSTs it to `/api/shazam`. The API stores it in `plmanager.shazamplaying`, an append-only log of distinct tracks heard on air. Adrenalin's playlist entry page reads the 5 most recent rows and renders them as one-click suggestions for live DJs.
+
+```
+stream-sleuth  ──POST /api/shazam (X-Ingest-Secret)──▶  wxdu API  ──▶  plmanager.shazamplaying
+                                                                              │
+                          GET /api/shazam · /api/shazam/latest  ◀──────────────┘
+```
+
+Run `api/shazam_table.sql` once to create the table, its index, and the dedicated `wxdu_shazam` MySQL user (`SELECT, INSERT` on that one table — no `UPDATE`/`DELETE`, since the log is append-only). Then add to `.env`:
+
+```
+SHAZAM_DB_HOST=localhost
+SHAZAM_DB_USER=wxdu_shazam
+SHAZAM_DB_PASSWORD=<strong_password>
+SHAZAM_DB_NAME=plmanager
+SHAZAM_INGEST_SECRET=<shared_secret>
+```
+
+`SHAZAM_INGEST_SECRET` must match `WXDU_SHAZAM_SECRET` in stream-sleuth's `.env`. Generate one with `openssl rand -hex 32`.
+
+The table is `utf8mb4` even though the surrounding legacy `plmanager` tables are `latin1` — charset is per-table in MySQL, so it coexists fine and stores Shazam's UTF-8 metadata losslessly. The pool sets `charset: 'utf8mb4'` to match.
+
+#### Reading the data
+
+Both read endpoints return **all columns** — `id`, `created`, `artist`, `song`, `album`, `label` — ordered newest first.
+
+```
+GET /api/shazam/latest    # single object: the most recent recognized track
+GET /api/shazam           # array: the whole table
+```
+
+```json
+{
+  "id": 1482,
+  "created": "2026-07-29T14:03:21.000Z",
+  "artist": "Björk",
+  "song": "Hunter",
+  "album": "Homogenic",
+  "label": "One Little Indian"
+}
+```
+
+`/api/shazam/latest` returns `404 {"error":"No tracks recognized yet"}` when the table is empty (same convention as `/api/nowplaying` when off air).
+
+`/api/shazam` returns the **full table by default** — there is no forced limit, because a whole-table dump is the point of the endpoint. The recognizer only writes on a song change (~300 rows/day), so the dump stays small for years. Narrow it with:
+
+```
+GET /api/shazam?limit=5                        # 5 most recent
+GET /api/shazam?limit=100&offset=100           # page back through history
+GET /api/shazam?since=2026-07-29               # only rows after this date
+GET /api/shazam?since=2026-07-29T14:03:21.000Z # incremental poll (feed back the last `created`)
+```
+
+`?since=` accepts anything `Date` can parse, and is exclusive (`created > since`). Feeding back the `created` value from a previous response is the intended incremental-poll pattern and round-trips exactly. Note that a bare `YYYY-MM-DD` is parsed as **UTC** midnight per the JS `Date` rules, so it lands a few hours before local midnight — pass a full timestamp if that matters.
+
+Both endpoints order by `id`, not `created`, so tracks recognized within the same second still come back in stable insertion order and `?offset=` paging stays consistent between requests. Invalid `?limit=`/`?offset=`/`?since=` values return `400`.
+
+Responses carry `Cache-Control: s-maxage=15` — short, since the data turns over as fast as the songs do.
+
+Reads are public (no secret); only the `POST` ingest is gated. The table holds nothing but broadcast track metadata, which is already public on air.
+
+#### POST `/api/shazam`
+
+Sent by stream-sleuth, not by browsers. Requires an `X-Ingest-Secret` header matching `SHAZAM_INGEST_SECRET`; rate-limited to 30 requests per minute per IP.
+
+**Request body** (JSON):
+
+| Field | Required | Max length | Notes |
+|-------|----------|------------|-------|
+| `artist` | Yes | 255 chars | Longer values are truncated, not rejected |
+| `song` | Yes | 255 chars | |
+| `album` | No | 255 chars | Stored as `''` when absent |
+| `label` | No | 255 chars | Stored as `''` when absent |
+
+**Response:** `201 {"ok":true}` on success, `400` if `artist` or `song` is missing, `401` on a bad/missing secret, `429` if rate-limited.
+
+```bash
+curl -X POST https://api.wxdu.art/api/shazam \
+  -H 'Content-Type: application/json' \
+  -H "X-Ingest-Secret: $SHAZAM_INGEST_SECRET" \
+  -d '{"artist":"Björk","song":"Hunter","album":"Homogenic","label":"One Little Indian"}'
+```
+
+The shared secret is the only auth on the ingest endpoint — keep `.env` readable only by the service account. Optionally also restrict `/api/shazam` `POST` to the iMac's static IP at the nginx/Apache layer.
 
 ## Live now-playing stream (SSE)
 
