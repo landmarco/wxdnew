@@ -20,6 +20,33 @@ const useMinWidth = (px) => {
 	return matches
 }
 
+// Soft fade on the collage's top and bottom edges, so the tiles dissolve into
+// the page instead of ending on a hard line.
+//
+// The top fade's length is what makes it read as gradual rather than abrupt —
+// but it's ALSO empty space at the top of the element, so it pushes the splash
+// down. The two are only in tension if the element starts below the nav. It
+// doesn't: pages/index.js pulls the collage up flush against the tabs with a
+// negative margin, so this ramp fades in ACROSS that gap instead of on top of
+// it. Keep the two in sync — lengthening the top stop without pulling further up
+// just reintroduces the gap.
+//
+// `min(%, px)` on the top stops, rather than a bare percentage, is what keeps
+// that tuning stable. The collage is viewport-height at `lg` (see the height
+// classes below), so a plain 10% would grow with the window — a taller monitor
+// would push the solid content further down and undo the alignment. The px terms
+// cap the ramp at the length tuned against the old 45rem box (4% -> 29px,
+// 10% -> 72px), while the percentages still win on small screens, where the
+// collage is only 15rem tall and 72px would swallow a third of it.
+//
+// The bottom stop stays proportional on purpose: it fades into the page below,
+// where there's nothing to stay aligned with.
+//
+// The extra 0.35-alpha stop early in the ramp eases the curve, so opacity
+// arrives gently instead of hitting full black on a straight line.
+const EDGE_FADE =
+	'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.35) min(4%, 29px), black min(10%, 72px), black 90%, transparent 100%)'
+
 const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 	const [isClosed, setIsClosed] = useState(false)
 	const {isPlaying, isHighQuality, togglePlayPause, setHighQuality} = useAudio()
@@ -87,13 +114,17 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 		<div className="mx-auto mb-1 lg:mb-10 w-11/12 md:w-5/6 lg:w-full text-white">
 			
 
-			<div className="flex gap-2 md:gap-4 items-stretch h-[15rem] sm:h-[28rem] md:h-[26rem] lg:h-[45rem]">
+			{/* Desktop height fills the initial landing view: the viewport minus
+			    everything stacked above the collage. That's 120px / 7.5rem — the
+			    fixed NavPlayer's 64px (cleared by Header's mt-16) plus the 56px nav
+			    row (h-14); Header's mb-20 below it is cancelled by the -mt-20 on the
+			    wrapper in pages/index.js. Adjust this if any of those three change.
+			    Small screens keep fixed heights — mobile chrome makes 100vh
+			    unreliable, and the collage isn't the whole first screen there. */}
+			<div className="flex gap-2 md:gap-4 items-stretch h-[15rem] sm:h-[28rem] md:h-[26rem] lg:h-[calc(100vh-7.5rem)]">
 				<div
 					className="flex-1 flex gap-1 md:gap-4 overflow-hidden"
-					style={{
-						maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)',
-						WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)',
-					}}
+					style={{maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE}}
 				>
 					{leftColumns.map((column, colIndex) => {
 						// colIndex > 0 columns are desktop-only; don't render (or download) on mobile.
@@ -114,8 +145,8 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 					className="flex-none w-[55%] md:w-[55%] lg:w-[45%] grid overflow-hidden"
 					style={{
 						gridTemplateRows: '1fr auto 1fr',
-						maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)',
-						WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)',
+						maskImage: EDGE_FADE,
+						WebkitMaskImage: EDGE_FADE,
 					}}
 				>
 					{/* Top row: above-logo images, pinned to the bottom of this area (closest to logo) */}
@@ -171,10 +202,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 
 				<div
 					className="flex-1 flex gap-1 md:gap-4 overflow-hidden"
-					style={{
-						maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)',
-						WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 90%, transparent 100%)',
-					}}
+					style={{maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE}}
 				>
 					{rightColumns.map((column, colIndex) => {
 						// colIndex > 0 columns are desktop-only; don't render (or download) on mobile.

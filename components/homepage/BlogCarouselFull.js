@@ -48,7 +48,13 @@ const BlogCarouselFull = (props) => {
 					))}
 				</div>
 				<div className="mt-auto flex justify-center rounded-3xl bg-neutral-800 px-3 py-2 md:ml-auto md:inline-block md:bg-transparent md:px-0 md:py-0 lg:justify-start">
-					<Link href="/blog" onClick={(e) => e.stopPropagation()}>
+					{/* legacyBehavior={false} (the repo's convention) makes Link render
+					    its own <a> and accept onClick/className directly. Under the
+					    legacy default it silently dropped this onClick — and, since the
+					    child is an <h2> rather than an <a>, never rendered an anchor at
+					    all, so this wasn't a real link: no href, no middle-click, no
+					    open-in-new-tab. */}
+					<Link href="/blog" legacyBehavior={false} onClick={(e) => e.stopPropagation()}>
 						<h2 className="my-1 cursor-pointer hover:underline">
 							Older blog posts {'>'}
 						</h2>
