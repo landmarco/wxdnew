@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 
 const nowplaying = require('./routes/nowplaying');
+const shazam = require('./routes/shazam');
 const playlists = require('./routes/playlists');
 const djs = require('./routes/djs');
 const schedule = require('./routes/schedule');
@@ -50,6 +51,7 @@ app.use(
 );
 
 app.use('/api/nowplaying', nowplaying);
+app.use('/api/shazam', shazam);
 app.use('/api/playlists', playlists);
 app.use('/api/djs', djs);
 app.use('/api/schedule', schedule);

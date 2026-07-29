@@ -39,7 +39,19 @@ export default function Home(props) {
 
 	return (
 		<div>
-			<div data-tina-field={pageData?.page ? tinaField(pageData.page, 'homepageBanner') : undefined} className="pt-5 lg:mt-0 lg:px-16">
+			{/* The splash is the hero, so it should sit just under the nav tabs.
+			    Header.js gives every desktop page an 80px bottom margin (mb-20),
+			    which is right for ordinary page content but leaves a big gap here.
+			    Cancel it here rather than shrinking the shared header margin, so no
+			    other page's layout shifts: 80px - 80px (-mt-20) puts the collage's
+			    top edge flush with the nav.
+			    Flush is the floor, not an arbitrary number — going further would
+			    slide the collage behind the tabs row, which is transparent on
+			    purpose, so the faded tiles would show through the nav text. The
+			    collage's own top fade (EDGE_FADE in HomepageBanner) then does the
+			    easing across this space, which is why it can be long without
+			    pushing the splash back down. */}
+			<div data-tina-field={pageData?.page ? tinaField(pageData.page, 'homepageBanner') : undefined} className="pt-5 lg:-mt-20 lg:pt-0 lg:px-16">
 				{/* HomepageBanner is a component for adding a closeable banner announcement to the homepage. Toggle on or off in Components > HomepageBanner.js */}
 				<HomepageBanner columns={bannerColumns} aboveLogo={bannerAboveLogo} belowLogo={bannerBelowLogo} />
 			</div>

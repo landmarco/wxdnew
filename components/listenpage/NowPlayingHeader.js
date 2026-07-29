@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import FitText from '../homepage/FitText';
 import { useAudio } from '../AudioContext';
+import { showTitleOrDefault } from '@/lib/showFormat';
 
 export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = false }) {
     const router = useRouter();
@@ -26,10 +27,10 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
     const dj = currentPlaylist.dj || {};
 
     const djname = show.djname || dj.defdjname || "";
-    // Fall back to "<DJ name>'s show" when the show has no title of its own, so
-    // the label and its /current link stay present. Only truly empty when we
-    // don't even know the DJ.
-    const title = show.title || (djname ? `${djname}'s show` : "");
+    // Never blank: falls back to "<DJ name>'s show", then to "Untitled show".
+    // The old inline version still went empty when the DJ name was missing too,
+    // which left the label blank and its /current link unclickable.
+    const title = showTitleOrDefault(show, djname);
     // user ID for the DJ's show-list page; present on the current-playlist payload
     const djId = dj.ID ?? show.userID;
 

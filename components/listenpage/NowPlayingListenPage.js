@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import FitText from '../homepage/FitText';
 import { useAudio } from '../AudioContext';
+import { showTitleOrDefault } from '@/lib/showFormat';
 
 export default function NowPlayingCard({ currentPlaylist = {} }) {
     const router = useRouter();
@@ -29,7 +30,10 @@ export default function NowPlayingCard({ currentPlaylist = {} }) {
     const dj = currentPlaylist.dj || {};
 
     const djname = show.djname || dj.defdjname || "";
-    const title = show.title || "";
+    // Never blank: falls back to "<DJ name>'s show", then to "Untitled show".
+    // An empty title used to render an empty, unclickable label — so a show
+    // with no title of its own gave visitors no way through to /current.
+    const title = showTitleOrDefault(show, djname);
     // user ID for the DJ's show-list page; present on the current-playlist payload
     const djId = dj.ID ?? show.userID;
 
