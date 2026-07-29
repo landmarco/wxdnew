@@ -60,8 +60,45 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+
+        # --- Optional: response caching ---
+        # Several routes send `Cache-Control: s-maxage=...`, which does nothing
+        # unless a shared cache sits in front of Node. Uncommenting the block
+        # below makes nginx that cache, so repeat requests never reach Node or
+        # MySQL. Prerequisite — add the zone to the `http { }` block in
+        # /etc/nginx/nginx.conf (it CANNOT live in server/location context):
+        #
+        #   proxy_cache_path /var/cache/nginx/wxdu-api levels=1:2
+        #                    keys_zone=wxdu_api:10m max_size=512m
+        #                    inactive=10m use_temp_path=off;
+        #
+        # Keep these directives HERE rather than at server level: the SSE
+        # location above must never be cached, and sibling locations don't
+        # inherit from this one.
+        #
+        # proxy_cache wxdu_api;
+        # # Fallback TTL for responses with no Cache-Control of their own.
+        # # nginx prefers the upstream header when present, so routes that set
+        # # s-maxage keep control of their own freshness.
+        # proxy_cache_valid 200 15s;
+        # # One request repopulates a cold/expired entry; the rest wait for it
+        # # instead of stampeding Node.
+        # proxy_cache_lock on;
+        # # Serve the stale copy while that refresh happens in the background —
+        # # nginx's equivalent of the `stale-while-revalidate` the routes send.
+        # proxy_cache_use_stale updating error timeout;
+        # proxy_cache_background_update on;
+        # # HIT / MISS / EXPIRED / UPDATING — check with `curl -I`.
+        # add_header X-Cache-Status $upstream_cache_status always;
     }
 }
+
+# NOTE ON CACHING: nginx only caches GET and HEAD by default, so the
+# `POST /api/shazam` ingest endpoint is never served from cache. The cache key
+# includes the query string, so `?limit=5` and `?limit=all` are separate
+# entries. nginx also honours `Vary: Origin` (which the CORS middleware sets),
+# so each allowed origin gets its own entry rather than one origin's
+# Access-Control-Allow-Origin header being served to another.
 
 # NOTE: express-rate-limit in the API keys on the real client IP, which comes
 # from the X-Forwarded-For header set above plus `app.set('trust proxy', 1)` in

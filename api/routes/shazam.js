@@ -20,6 +20,11 @@ const postLimiter = rateLimit({
 // here rather than a silent change in the API's response shape.
 const COLUMNS = 'id, created, artist, song, album, label';
 
+// Rows returned by GET / when no ?limit= is given. Roughly three days of
+// recognitions — plenty for any "what's been on lately" use — while keeping the
+// default response well under a megabyte. ?limit=all lifts it entirely.
+const DEFAULT_LIMIT = 1000;
+
 // POST /api/shazam
 // Ingest a track recognized on the live stream (from the WXDU iMac recognizer).
 // Shared-secret gated; writes to plmanager.shazamplaying via a narrowly-scoped
@@ -79,21 +84,32 @@ router.get('/latest', async (req, res) => {
 });
 
 // GET /api/shazam
-// Dump of the shazamplaying table, all columns, newest first. Returns every row
-// by default; ?limit=/?offset=/?since= narrow it.
+// Dump of the shazamplaying table, all columns, newest first. Returns the most
+// recent DEFAULT_LIMIT rows; ?limit=all opts into the whole table, and
+// ?limit=/?offset=/?since= narrow it.
 //
 // Ordered by id (not created) so rows recognized within the same second still
 // come back in a stable, insertion-order sequence — which also makes ?offset=
 // paging consistent across requests.
 router.get('/', async (req, res) => {
   try {
-    // No cap: the point of this endpoint is the full table. The recognizer only
-    // writes on song change (~300 rows/day), so the whole dump stays small for
-    // years — but pass ?limit= for anything latency-sensitive.
+    // The table is an append-only log that grows ~300 rows/day forever, so an
+    // unbounded default would slowly turn a careless `curl` into a multi-hundred
+    // -MB response. Both mysql2 (materializing the result set) and res.json
+    // (building the whole string) hold that in memory at once, in the same
+    // process that serves every other endpoint — so the default is bounded and
+    // pulling everything has to be deliberate.
     const rawLimit = req.query.limit;
-    const limit = rawLimit === undefined ? null : parseInt(rawLimit, 10);
-    if (limit !== null && (!Number.isFinite(limit) || limit < 1)) {
-      return res.status(400).json({ error: 'limit must be a positive integer' });
+    let limit;
+    if (rawLimit === undefined) {
+      limit = DEFAULT_LIMIT;
+    } else if (String(rawLimit).trim().toLowerCase() === 'all') {
+      limit = null; // explicit opt-in to the unbounded dump
+    } else {
+      limit = parseInt(rawLimit, 10);
+      if (!Number.isFinite(limit) || limit < 1) {
+        return res.status(400).json({ error: "limit must be a positive integer or 'all'" });
+      }
     }
 
     const rawOffset = req.query.offset;
@@ -135,6 +151,17 @@ router.get('/', async (req, res) => {
       `SELECT ${COLUMNS} FROM shazamplaying${whereSql} ORDER BY id DESC${limitSql}`,
       params
     );
+
+    // A bare array gives a client no way to tell "these are all the rows" from
+    // "you hit the cap" — both are just N objects. Advertise the effective limit,
+    // and flag a full page as probably-truncated so pagination is discoverable
+    // rather than something you find out about by missing data.
+    //
+    // Access-Control-Expose-Headers is required for browser JS to read custom
+    // headers on a cross-origin response; the frontend is on a different host.
+    res.set('X-Limit', limit === null ? 'all' : String(limit));
+    if (limit !== null && rows.length === limit) res.set('X-Truncated', 'true');
+    res.set('Access-Control-Expose-Headers', 'X-Limit, X-Truncated');
 
     res.set('Cache-Control', 's-maxage=15, stale-while-revalidate=30');
     res.json(rows);

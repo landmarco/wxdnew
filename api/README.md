@@ -107,7 +107,7 @@ When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the follo
 | GET | `/api/charts/mostplayed` | Most played songs (or albums, with `?isChart=true`) over a date range. Accepts `?dateStart=` and `?dateEnd=` (`YYYY-MM-DD`); if both are omitted, defaults to the last month. Accepts `?limit=` (max 500, default 50). |
 | GET | `/api/events` | Upcoming events with venue info, ordered by date. Pass `?all=1` to include past events. |
 | GET | `/api/events/:id` | One or more events with venue info. Accepts comma-separated IDs. |
-| GET | `/api/shazam` | Dump of the `shazamplaying` table — every column, newest first. Returns all rows by default; accepts `?limit=`, `?offset=`, `?since=`. |
+| GET | `/api/shazam` | Dump of the `shazamplaying` table — every column, newest first. Defaults to the 1000 most recent rows; `?limit=all` returns the whole table. Also accepts `?limit=`, `?offset=`, `?since=`. |
 | GET | `/api/shazam/latest` | The single most recent track recognized on the live stream. `404` if nothing has been recognized yet. |
 | POST | `/api/shazam` | Ingest a recognized track. Shared-secret gated (`X-Ingest-Secret`); rate-limited to 30 per minute per IP. |
 
@@ -296,20 +296,33 @@ GET /api/shazam           # array: the whole table
 
 `/api/shazam/latest` returns `404 {"error":"No tracks recognized yet"}` when the table is empty (same convention as `/api/nowplaying` when off air).
 
-`/api/shazam` returns the **full table by default** — there is no forced limit, because a whole-table dump is the point of the endpoint. The recognizer only writes on a song change (~300 rows/day), so the dump stays small for years. Narrow it with:
+`/api/shazam` returns the **1000 most recent rows by default**, and `?limit=all` opts into the whole table:
 
 ```
+GET /api/shazam                                # 1000 most recent (default)
+GET /api/shazam?limit=all                      # the entire table, no cap
 GET /api/shazam?limit=5                        # 5 most recent
 GET /api/shazam?limit=100&offset=100           # page back through history
 GET /api/shazam?since=2026-07-29               # only rows after this date
 GET /api/shazam?since=2026-07-29T14:03:21.000Z # incremental poll (feed back the last `created`)
 ```
 
+The table is an append-only log that grows forever (~300 rows/day — roughly 16 MB of JSON per year, or ~80 MB after five years), so an unbounded default would eventually turn a careless `curl` into a very large response. mysql2 materializes the whole result set and `res.json` builds the entire string on top of it, both in the process that serves every other endpoint — so the default is bounded and the full dump has to be asked for by name. `?limit=all` itself has no ceiling.
+
+Two response headers make the cap visible, so a capped result is never silently mistaken for a complete one:
+
+| Header | Meaning |
+|--------|---------|
+| `X-Limit` | The effective limit — a number, or `all` |
+| `X-Truncated` | `true` when the result filled the limit exactly, so more rows probably exist |
+
+Both are listed in `Access-Control-Expose-Headers`, which browser JS needs in order to read them on a cross-origin response. `X-Truncated` is deliberately conservative: a table with exactly 1000 rows reports `true` even though there is nothing more to fetch.
+
 `?since=` accepts anything `Date` can parse, and is exclusive (`created > since`). Feeding back the `created` value from a previous response is the intended incremental-poll pattern and round-trips exactly. Note that a bare `YYYY-MM-DD` is parsed as **UTC** midnight per the JS `Date` rules, so it lands a few hours before local midnight — pass a full timestamp if that matters.
 
 Both endpoints order by `id`, not `created`, so tracks recognized within the same second still come back in stable insertion order and `?offset=` paging stays consistent between requests. Invalid `?limit=`/`?offset=`/`?since=` values return `400`.
 
-Responses carry `Cache-Control: s-maxage=15` — short, since the data turns over as fast as the songs do.
+Responses carry `Cache-Control: s-maxage=15, stale-while-revalidate=30` — short, since the data turns over as fast as the songs do. That header only does something if a shared cache is running in front of Node; see [Response caching](#response-caching).
 
 Reads are public (no secret); only the `POST` ingest is gated. The table holds nothing but broadcast track metadata, which is already public on air.
 
@@ -336,6 +349,57 @@ curl -X POST https://api.wxdu.art/api/shazam \
 ```
 
 The shared secret is the only auth on the ingest endpoint — keep `.env` readable only by the service account. Optionally also restrict `/api/shazam` `POST` to the iMac's static IP at the nginx/Apache layer.
+
+## Response caching
+
+Several routes set `Cache-Control: s-maxage=...` (`/api/shazam`, `/api/shazam/latest`, `/api/recenttracks`). `s-maxage` targets **shared** caches — it is ignored by browsers' private caches. Since `api.wxdu.art` is served by nginx straight to Node with no CDN in front, **nothing currently acts on those headers**: every request reaches Node and MySQL. They are inert until you turn nginx into a cache.
+
+To enable it:
+
+**1. Declare the cache zone** in the `http { }` block of `/etc/nginx/nginx.conf`. It cannot go in the site file's `server`/`location` blocks — this is the usual first stumble:
+
+```nginx
+proxy_cache_path /var/cache/nginx/wxdu-api levels=1:2
+                 keys_zone=wxdu_api:10m max_size=512m
+                 inactive=10m use_temp_path=off;
+```
+
+**2. Uncomment the caching directives** in the `location /` block of `nginx.conf.example` (already written out there, with comments):
+
+```nginx
+proxy_cache wxdu_api;
+proxy_cache_valid 200 15s;
+proxy_cache_lock on;
+proxy_cache_use_stale updating error timeout;
+proxy_cache_background_update on;
+add_header X-Cache-Status $upstream_cache_status always;
+```
+
+**3. Create the directory and reload:**
+
+```bash
+sudo mkdir -p /var/cache/nginx/wxdu-api
+sudo chown www-data:www-data /var/cache/nginx/wxdu-api
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+**4. Verify** — the second request should report `HIT`:
+
+```bash
+curl -sI https://api.wxdu.art/api/shazam/latest | grep -i x-cache-status   # MISS
+curl -sI https://api.wxdu.art/api/shazam/latest | grep -i x-cache-status   # HIT
+```
+
+### Things worth knowing
+
+- **`proxy_cache_valid` is only a fallback.** nginx prefers the upstream `Cache-Control` when the response has one, so routes that set `s-maxage` keep control of their own freshness; `proxy_cache_valid 200 15s` covers the routes that send nothing. Support for reading `s-maxage` specifically landed in **nginx 1.19.7** — on anything older nginx falls back to `max-age` (which these routes don't send) and then to `proxy_cache_valid`, so caching still works, just at the fallback TTL. Check with `nginx -v`.
+- **Keep the directives in `location /`, not `server`.** The SSE endpoint at `/api/playlists/current/stream` must never be cached. It has its own `location`, and sibling locations don't inherit from each other — but they *do* inherit from `server`, so hoisting the directives up would break the live stream.
+- **Writes are unaffected.** nginx caches only `GET`/`HEAD` by default, so `POST /api/shazam` always reaches Node.
+- **The cache key includes the query string**, so `?limit=5` and `?limit=all` are separate entries. A large `?limit=all` response is cached to disk and counts against `max_size`.
+- **CORS is handled correctly.** The middleware sets `Vary: Origin`, which nginx honours, so one origin's `Access-Control-Allow-Origin` is never replayed to another. The cost is one cache entry per origin.
+- **Purging** requires the commercial `proxy_cache_purge` directive. On open-source nginx, drop entries by deleting files: `sudo rm -rf /var/cache/nginx/wxdu-api/* && sudo systemctl reload nginx`.
+
+With `s-maxage=15`, a busy endpoint collapses to at most 4 origin requests per minute regardless of client count — the same shape of win as the SSE poller, one tier further out.
 
 ## Live now-playing stream (SSE)
 
