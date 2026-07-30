@@ -1,5 +1,6 @@
 ---
 title: Lalitree Darnielle interview & set LIVE on WXDU
+cover: /uploads/first-frame-lalitree-darnielle.png
 published: 2026-07-29T04:00:00.000Z
 ---
 
