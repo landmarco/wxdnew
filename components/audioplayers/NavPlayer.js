@@ -279,12 +279,12 @@ const NavPlayer = () => {
             </button>
 
             {/* The rest of the bar — all the blank space around the ticker —
-                opens the /listen page, not just the text. */}
-            <Link href="/listen" legacyBehavior>
+                opens the /current page, not just the text. */}
+            <Link href="/current" legacyBehavior>
                 <a
                     className="group flex h-full min-w-0 flex-1 items-center overflow-hidden cursor-pointer transition-colors duration-150 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                    aria-label="Open listen page"
-                    title="Open listen page"
+                    aria-label="Open currently playing page"
+                    title="Open currently playing page"
                     onClick={(event) => {
                         event.currentTarget.blur();
                     }}
