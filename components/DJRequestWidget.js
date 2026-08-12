@@ -247,7 +247,7 @@ export default function DJRequestWidget() {
                                         value={songTitle}
                                         onChange={(e) => setSongTitle(e.target.value)}
                                         className="font-courierprime w-full rounded bg-zinc-800 px-3 py-2 text-white"
-                                        placeholder="e.g. Wasted in Athens"
+                                        placeholder="e.g. Birch Tree Melody"
                                     />
                                 </div>
                                 <div className="mb-3">
@@ -258,7 +258,7 @@ export default function DJRequestWidget() {
                                         value={songArtist}
                                         onChange={(e) => setSongArtist(e.target.value)}
                                         className="font-courierprime w-full rounded bg-zinc-800 px-3 py-2 text-white"
-                                        placeholder="e.g. The Ocho"
+                                        placeholder="e.g. Reese McHenry"
                                     />
                                 </div>
                                 <div className="mb-5">
@@ -269,7 +269,7 @@ export default function DJRequestWidget() {
                                         value={songName}
                                         onChange={(e) => setSongName(e.target.value)}
                                         className="font-courierprime w-full rounded bg-zinc-800 px-3 py-2 text-white"
-                                        placeholder="e.g. Ben"
+                                        placeholder="e.g. You"
                                     />
                                 </div>
                                 <button
@@ -300,7 +300,7 @@ export default function DJRequestWidget() {
                                         value={messageName}
                                         onChange={(e) => setMessageName(e.target.value)}
                                         className="font-courierprime w-full rounded bg-zinc-800 px-3 py-2 text-white"
-                                        placeholder="e.g. Ben"
+                                        placeholder="e.g. You"
                                     />
                                 </div>
                                 <div className="mb-5">
