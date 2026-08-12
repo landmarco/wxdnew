@@ -7,8 +7,8 @@ import {
 // import LazyLoad from 'react-lazyload';
 import ArchiveDropdown from '../../components/DropdownArchive'
 import ArchiveLayout from '../../components/ArchiveLayout'
-import photo from '/images/crowd.jpg'
-import mobilephoto from '/images/crowdmobile.jpeg'
+import photo from '/images/crowd.webp'
+import mobilephoto from '/images/crowdmobile.webp'
 import Image from 'next/image'
 import React, {useState} from 'react'
 import SeeMoreButton from '../../components/SeeMoreButton'

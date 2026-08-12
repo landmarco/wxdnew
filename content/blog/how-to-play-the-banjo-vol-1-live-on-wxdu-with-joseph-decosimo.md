@@ -1,7 +1,7 @@
 ---
 title: How to Play the Banjo Vol. 1 LIVE on WXDU with Joseph Decosimo
 author: southpawpaw
-cover: /uploads/How to Play the Banjo Vol. 1 LIVE on WXDU.png
+cover: /uploads/how-to-play-the-banjo-vol-1-live-on-wxdu.webp
 categories:
   - category: content/category/artist-interview.md
 published: 2026-07-05T04:00:00.000Z

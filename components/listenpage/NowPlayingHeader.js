@@ -73,12 +73,12 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                 two lines and the text clips. Only the card is capped — the vinyl player below
                 (a separate sibling) still fills the full column width. */}
             <div className={`relative w-full max-w-[36rem] overflow-hidden rounded-[5px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] ${forceMobile ? "hidden" : "hidden lg:block"}`}>
-                <img alt="" className="absolute inset-0 h-full w-full object-cover" src="/nowplaying/desktop-bg-gradient.png" />
+                <img alt="" className="absolute inset-0 h-full w-full object-cover" src="/nowplaying/desktop-bg-gradient.webp" />
                 <div className="relative px-3 pt-3 pb-3">
                     <h1 className="bitcount pl-5 text-[clamp(1.75rem,3.5vw,2.75rem)] leading-tight text-white">Now Playing</h1>
                     <div
                         className="relative mt-2 overflow-hidden rounded-[5px] bg-[#dad7d2]/40 bg-cover bg-top-left p-3 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
-                        style={{ backgroundImage: `url("/nowplaying/desktop-noise.png"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)`, containerType: "inline-size" }}
+                        style={{ backgroundImage: `url("/nowplaying/noise.webp"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)`, containerType: "inline-size" }}
                     >
                         {/* CD in top-right corner. The clipping box itself spins (not the
                             oversized/offset image inside it), so it rotates around its own
@@ -87,7 +87,7 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                             className="animate-spin-vinyl absolute right-[4%] top-[4%] h-[11cqw] max-h-[52px] min-h-[32px] w-[11cqw] max-w-[52px] min-w-[32px] overflow-hidden rounded-full"
                             style={{ animationPlayState: isPlaying ? "running" : "paused" }}
                         >
-                            <img alt="" className="absolute h-[278%] w-[177%] max-w-none" style={{ left: "-37.83%", top: "-121.06%" }} src="/nowplaying/cd.png" />
+                            <img alt="" className="absolute h-[278%] w-[177%] max-w-none" style={{ left: "-37.83%", top: "-121.06%" }} src="/nowplaying/cd.webp" />
                         </div>
 
                         {/* Text + button share an explicit width (not just content-driven) so the
@@ -108,7 +108,7 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                         {/* rat doodle: bottom-right corner, sized by cqw so it can never
                             overflow the card */}
                         <div className="absolute right-[2%] bottom-[-17%] h-[28cqw] max-h-[116px] w-[21cqw] max-w-[88px]">
-                            <img alt="" className="pointer-events-none h-full w-full object-contain" src="/nowplaying/rat-doodle.png" />
+                            <img alt="" className="pointer-events-none h-full w-full object-contain" src="/nowplaying/rat-doodle.webp" />
                         </div>
                     </div>
                 </div>
@@ -118,19 +118,19 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                 max-w-[35rem]) so the two widgets always line up edge-to-edge, regardless
                 of how wide the parent container is on a given page. */}
             <div className={`relative mx-auto w-full max-w-[35rem] overflow-hidden rounded-[5px] text-center shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] ${forceMobile ? "" : "lg:hidden"}`}>
-                <img alt="" className="absolute inset-0 h-full w-full object-cover" src="/nowplaying/mobile-bg-gradient.png" />
+                <img alt="" className="absolute inset-0 h-full w-full object-cover" src="/nowplaying/mobile-bg-gradient.webp" />
                 <div className="relative px-1 pt-2 pb-2">
                     <h1 className="bitcount text-[clamp(1.35rem,6.5vw,2rem)] leading-tight text-white">Now Playing</h1>
                     <div
                         className="relative mt-0.5 overflow-hidden rounded-[5px] bg-[#dad7d2]/40 bg-cover bg-top-left p-2.5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
-                        style={{ backgroundImage: `url("/nowplaying/mobile-noise.png"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)`, containerType: "inline-size" }}
+                        style={{ backgroundImage: `url("/nowplaying/noise.webp"), linear-gradient(90deg, rgba(218, 215, 210, 0.4) 0%, rgba(218, 215, 210, 0.4) 100%)`, containerType: "inline-size" }}
                     >
                         {/* CD: top-right corner, spins in sync with VinylPlayer's isPlaying state */}
                         <div
                             className="animate-spin-vinyl absolute right-[3%] top-[3%] h-[13cqw] max-h-[44px] min-h-[28px] w-[13cqw] max-w-[44px] min-w-[28px] overflow-hidden rounded-full"
                             style={{ animationPlayState: isPlaying ? "running" : "paused" }}
                         >
-                            <img alt="" className="absolute h-[278%] w-[177%] max-w-none" style={{ left: "-37.83%", top: "-121.06%" }} src="/nowplaying/cd.png" />
+                            <img alt="" className="absolute h-[278%] w-[177%] max-w-none" style={{ left: "-37.83%", top: "-121.06%" }} src="/nowplaying/cd.webp" />
                         </div>
 
                         {/* Text + button share an explicit width (same rule as desktop) so the
@@ -151,7 +151,7 @@ export default function NowPlayingHeader({ currentPlaylist = {}, forceMobile = f
                         {/* rat doodle: bottom-right corner, sized by cqw so it can never
                             overflow the card */}
                         <div className="absolute right-[1%] bottom-[-15%] h-[34cqw] max-h-[122px] w-[24cqw] max-w-[90px]">
-                            <img alt="" className="pointer-events-none h-full w-full object-contain" src="/nowplaying/rat-doodle.png" />
+                            <img alt="" className="pointer-events-none h-full w-full object-contain" src="/nowplaying/rat-doodle.webp" />
                         </div>
                     </div>
                 </div>

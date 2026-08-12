@@ -161,7 +161,7 @@ export default function DJRequestWidget() {
             >
                 {/* Keep the phone "off the hook" while the request overlay is open. */}
                 <img
-                    src={isHovered || isOpen ? '/requestwidget_hover_bg.png' : '/requestwidget_bg.png'}
+                    src={isHovered || isOpen ? '/requestwidget_hover_bg.webp' : '/requestwidget_bg.webp'}
                     alt="Send DJ Request"
                     className={
                         isHovered || isOpen ? "w-[10vw]" : "w-[9.5vw]"

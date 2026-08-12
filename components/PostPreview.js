@@ -5,7 +5,7 @@ import {AiFillTag} from 'react-icons/ai'
 // Fallback cover for blog posts that don't have their own image (or whose image
 // fails to load), so image-optional posts render a friendly baby goat instead of
 // a broken-image placeholder.
-const PLACEHOLDER_COVER = '/uploads/baby_goat.jpg'
+const PLACEHOLDER_COVER = '/uploads/baby_goat.webp'
 
 // Formats individual blog post previews in /blog
 const PostPreview = (props) => {
