@@ -3,7 +3,7 @@
 -- Run these once, on the production MySQL box, before the search endpoints will
 -- return anything. They power MATCH(...) AGAINST(... IN BOOLEAN MODE):
 --   /api/search/playlists  -> playlist artist/song/album/label/shadow_comments
---   /api/search/shows      -> shows title/subtitle
+--   /api/search/shows      -> shows title/subtitle/othergenre
 --
 -- Notes:
 --  * FULLTEXT matches whole words and (because the app appends "*") word
@@ -39,7 +39,30 @@ ALTER TABLE playlist
     GENERATED ALWAYS AS (CONVERT(comments USING latin1)) STORED;
 
 ALTER TABLE playlist ADD FULLTEXT INDEX ft_playlist_search (artist, song, album, label, shadow_comments);
-ALTER TABLE shows    ADD FULLTEXT INDEX ft_shows_search (title, subtitle);
+ALTER TABLE shows    ADD FULLTEXT INDEX ft_shows_search (title, subtitle, othergenre);
+
+-- ---------------------------------------------------------------------------
+-- MIGRATION: adding othergenre (the sub-genre tag) to show search.
+--
+-- Only for databases where ft_shows_search was already created as
+-- (title, subtitle). Fresh installs get the right columns from the statement
+-- above and should SKIP this. MATCH(...) resolves against an index covering
+-- exactly its column list, so the index has to be rebuilt, not extended:
+--
+--   SET SESSION sql_mode = '';
+--   ALTER TABLE shows DROP INDEX ft_shows_search;
+--   ALTER TABLE shows ADD FULLTEXT INDEX ft_shows_search (title, subtitle, othergenre);
+--
+-- Run both ALTERs in ONE mysql invocation (the sql_mode relaxation above is
+-- session-scoped and the rebuild needs it for the same legacy zero-date rows).
+-- `shows` is small next to `playlist`, so this is quick.
+--
+-- Until it runs, /api/search/shows detects the missing index (MySQL errno 1191)
+-- and falls back to title/subtitle-only search, so deploying the API before the
+-- migration degrades sub-genre search rather than breaking the search page.
+--
+-- Note: ~1 in 4 shows store the literal "Playlist" in othergenre as a default,
+-- so after this runs a search for "playlist" will match all of them.
 
 -- ---------------------------------------------------------------------------
 -- Fallback for MySQL older than 5.7.8 (no generated columns / no FULLTEXT on

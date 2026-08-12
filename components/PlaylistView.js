@@ -13,8 +13,10 @@
 // ("artist|album").
 
 import { useEffect, useRef, useState } from 'react'
+import { AiFillTag } from 'react-icons/ai'
 import getCovers from '../lib/getCovers'
 import { fixEncoding } from '../lib/fixEncoding'
+import { showSubGenre } from '../lib/showFormat'
 import AlbumArtGrid from './AlbumArtGrid'
 
 function formatTime(unix) {
@@ -88,6 +90,10 @@ export default function PlaylistView({ show, tracks, djNode, djName }) {
 	const showTitle =
 		show?.title || show?.othergenre || (djName ? `${djName}'s show` : 'Playlist')
 	const endTime = show?.duration ? show.starttime + show.duration * 3600 : null
+
+	// Free-text sub-genre, blank when it would add nothing (see showSubGenre).
+	// showTitle is passed because untitled shows already fall back to it above.
+	const subGenre = showSubGenre(show, showTitle)
 
 	const visibleTracks = tracks?.filter((t) => t.artist !== '*****') ?? []
 
@@ -225,6 +231,14 @@ export default function PlaylistView({ show, tracks, djNode, djName }) {
 						<h2 className="kallisto text-2xl lg:text-3xl">{showTitle}</h2>
 						{show?.subtitle && (
 							<p className="mt-1 text-neutral-400 italic">{show.subtitle}</p>
+						)}
+						{subGenre && (
+							<p className="mt-2">
+								<span className="inline-flex items-center rounded-full border border-neutral-600 py-1 pl-1 pr-3 text-sm text-neutral-200">
+									<AiFillTag size={16} className="mr-2" />
+									{subGenre}
+								</span>
+							</p>
 						)}
 						{djNode && (
 							<p className="mt-2 text-lg text-neutral-300">with {djNode}</p>

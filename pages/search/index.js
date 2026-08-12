@@ -1,13 +1,14 @@
 // Site-wide search results page.
 // URL: /search?q=<text>&pp=<playlists page>&sp=<shows page> — client-fetched for
 // the static export. Two independently-paged sections: playlists (shows whose
-// tracks match) and shows (whose title/subtitle match), 100 per page.
+// tracks match) and shows (whose title/subtitle/sub-genre match), 100 per page.
 
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { AiFillTag } from "react-icons/ai";
 import { searchPlaylists, searchShows, SEARCH_PAGE_SIZE } from "@/lib/search";
-import { showDate, showTime, showTitleOrDefault } from "@/lib/showFormat";
+import { showDate, showTime, showTitleOrDefault, showSubGenre } from "@/lib/showFormat";
 
 export default function SearchPage() {
     const router = useRouter();
@@ -88,7 +89,7 @@ export default function SearchPage() {
                 />
                 <ResultsSection
                     title="Shows matching your text"
-                    emptyText="No show titles or subtitles matched your text."
+                    emptyText="No show titles, subtitles or sub-genres matched your text."
                     rows={shows}
                     page={sp}
                     pageParam="sp"
@@ -121,7 +122,9 @@ function ResultsSection({ title, emptyText, rows, page, pageParam, q, otherParam
                 </p>
             ) : (
                 <ul className="overflow-hidden rounded-lg border border-zinc-800 bg-black/80">
-                    {rows.map((show) => (
+                    {rows.map((show) => {
+                        const subGenre = showSubGenre(show);
+                        return (
                         <li key={show.ID} className="border-b border-zinc-800 last:border-b-0">
                             <Link
                                 href={`/show/?id=${show.ID}`}
@@ -145,10 +148,19 @@ function ResultsSection({ title, emptyText, rows, page, pageParam, q, otherParam
                                             {show.defdjname || show.djname}
                                         </span>
                                     ) : null}
+                                    {/* Surfaces the sub-genre a result may have matched
+                                        on, which is otherwise invisible here. */}
+                                    {subGenre ? (
+                                        <span className="mt-1 inline-flex items-center rounded-full border border-zinc-600 py-0.5 pl-1 pr-2 text-xs text-zinc-300">
+                                            <AiFillTag size={12} className="mr-1" />
+                                            {subGenre}
+                                        </span>
+                                    ) : null}
                                 </span>
                             </Link>
                         </li>
-                    ))}
+                        );
+                    })}
                 </ul>
             )}
 
