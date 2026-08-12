@@ -1,5 +1,10 @@
 import {defineConfig, defineSchema} from 'tinacms'
 
+// Side-effect import: patches Tina's media store to downscale images in the
+// browser before they're uploaded. See tina/shrinkUploads.js for why it's done
+// this way rather than via loadCustomStore.
+import './shrinkUploads.js'
+
 import collectionPage from './collections/page.js'
 import collectionBlog from './collections/blog.js'
 import collectionArchive from './collections/archive.js'

@@ -1,7 +1,7 @@
 ---
 title: Brickside Music Festival 2026
 author: LNM
-cover: /uploads/IMG_0017.png
+cover: /uploads/IMG_0017.webp
 categories:
   - category: content/category/event.md
 published: 2026-03-29T04:00:00.000Z

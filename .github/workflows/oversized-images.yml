@@ -1,0 +1,111 @@
+# Backstop for images that bypass the Tina media store.
+#
+# tina/shrinkUploads.js shrinks anything uploaded through the CMS, but it can't
+# see files committed by hand (dropped straight into public/uploads or images/ in
+# a PR). This flags those. It deliberately does NOT rewrite them: committing a
+# fixed-up version would still leave the full-size original in git history, which
+# is the thing we're trying to avoid. Warn, and let the author re-export.
+name: Check image sizes
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          # Need the base commit to diff against.
+          fetch-depth: 0
+
+      - name: Find oversized images added or changed in this PR
+        id: scan
+        run: |
+          set -uo pipefail
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          # 1600px is the ceiling in CLAUDE.md; 1MB catches badly-encoded files
+          # that are within the ceiling but still far too heavy.
+          MAX_EDGE=1600
+          MAX_BYTES=1048576
+
+          REPORT=""
+          # -z + read -d handles the spaces and non-ASCII that are common in
+          # Tina upload filenames.
+          while IFS= read -r -d '' f; do
+            case "$f" in
+              public/uploads/*|images/*|public/nowplaying/*) ;;
+              *) continue ;;
+            esac
+            case "${f,,}" in
+              *.png|*.jpg|*.jpeg|*.webp|*.gif|*.avif) ;;
+              *) continue ;;
+            esac
+            [ -f "$f" ] || continue
+
+            bytes=$(stat -c%s "$f")
+            dims=$(identify -format '%w %h' "$f[0]" 2>/dev/null || echo "0 0")
+            w=$(echo "$dims" | cut -d' ' -f1)
+            h=$(echo "$dims" | cut -d' ' -f2)
+            edge=$(( w > h ? w : h ))
+
+            if [ "$bytes" -gt "$MAX_BYTES" ] || [ "$edge" -gt "$MAX_EDGE" ]; then
+              kb=$(( bytes / 1024 ))
+              echo "::warning file=$f::${w}x${h}, ${kb}KB — exceeds ${MAX_EDGE}px / $(( MAX_BYTES / 1024 ))KB"
+              REPORT="${REPORT}| \`$(basename "$f")\` | ${w}x${h} | ${kb} KB |"$'\n'
+            fi
+          done < <(git diff -z --name-only --diff-filter=AM "$BASE" "$HEAD")
+
+          if [ -n "$REPORT" ]; then
+            {
+              echo "report<<__EOF__"
+              echo "$REPORT"
+              echo "__EOF__"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment on the PR
+        # Only same-repo PRs get a writable GITHUB_TOKEN; fork PRs get a
+        # read-only token and can't post comments (403). The ::warning
+        # annotations above still show up either way.
+        if: steps.scan.outputs.report != '' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        uses: actions/github-script@v6
+        env:
+          REPORT: ${{ steps.scan.outputs.report }}
+        with:
+          script: |
+            const body = [
+              '### 🖼️ Oversized images in this PR',
+              '',
+              'These exceed the standard in `CLAUDE.md` (max 1600px on the long edge, WebP).',
+              'This site uses `next export`, so **the stored file is the delivered file** — there is no optimizer at build time.',
+              '',
+              '| File | Dimensions | Size |',
+              '| --- | --- | --- |',
+              process.env.REPORT.trim(),
+              '',
+              'Images uploaded through TinaCMS are resized automatically. These were committed directly, so they need re-exporting by hand:',
+              '',
+              '```bash',
+              'convert in.png -auto-orient -resize "1600x1600>" +profile "!icc,*" \\',
+              '  -quality 80 -define webp:method=6 webp:out.webp',
+              '```',
+              '',
+              '_Not blocking — merge anyway if the size is intentional._'
+            ].join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            })
