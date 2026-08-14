@@ -151,7 +151,6 @@ const Footer = () => {
 
 				<p className="mt-5">
 					WXDU 88.7FM <br></br>
-					PO Box 90687 <br></br>
 					2020 Campus Drive <br></br>
 					Durham, NC 27708
 				</p>
