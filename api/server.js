@@ -14,6 +14,7 @@ const events = require('./routes/events');
 const recenttracks = require('./routes/recenttracks');
 const charts = require('./routes/charts');
 const search = require('./routes/search');
+const twitch = require('./routes/twitch');
 const { fixEncodingDeep } = require('./fixEncoding');
 
 const app = express();
@@ -62,6 +63,7 @@ app.use('/api/events', events);
 app.use('/api/recenttracks', recenttracks);
 app.use('/api/charts', charts);
 app.use('/api/search', search);
+app.use('/api/twitch', twitch);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 

@@ -13,6 +13,7 @@ import TodaySchedule from '../components/homepage/TodaySchedule'
 import StokedShows from "../components/homepage/StokedShows"
 import NowPlayingHeader from '../components/listenpage/NowPlayingHeader'
 import useCurrentPlaylist from '../hooks/useCurrentPlaylist'
+import TwitchTakeover from '../components/homepage/TwitchTakeover'
 import HomepageBannerFullBlack from '../components/HomepageBannerFullBlack'
 
 
@@ -39,6 +40,13 @@ export default function Home(props) {
 
 	return (
 		<div>
+			{/* Twitch takeover — renders only while we're actually livestreaming (and
+			    loads nothing Twitch-related otherwise). When it's there it becomes the
+			    top element, so it carries the -mt-20 described below and hands the
+			    collage back a matching bottom margin; see the layout note in
+			    TwitchTakeover.js. That's why the collage's wrapper needs no
+			    conditional here — its margins are the same either way. */}
+			<TwitchTakeover />
 			{/* The splash is the hero, so it should sit just under the nav tabs.
 			    Header.js gives every desktop page an 80px bottom margin (mb-20),
 			    which is right for ordinary page content but leaves a big gap here.
