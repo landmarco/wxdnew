@@ -10,7 +10,7 @@ import Image from 'next/image'
 import {FaPhone} from 'react-icons/fa6'
 
 import {AiFillGithub} from 'react-icons/ai'
-import {FaTumblr, FaBandcamp} from "react-icons/fa6";
+import {FaTumblr, FaBandcamp, FaTwitch} from "react-icons/fa6";
 import {useAudio} from './AudioContext'
 import {useModal} from './ModalContext'
 import {useBackground} from './BackgroundContext'
@@ -66,7 +66,7 @@ const Footer = () => {
 						{' '}
 						<BsSpotify size={32} className="ml-;5 mt-0.5" />
 					</a> */}
-						<a target="_blank" rel="noopener noreferrer" href="https://github.com/wxdu" aria-label="WXDU GitHub">
+						<a target="_blank" rel="noopener noreferrer" href="https://github.com/wxdufm" aria-label="WXDU GitHub">
 							<AiFillGithub size={32} className="ml-.5 mt-0.5" />
 						</a>
 						<a target="_blank" rel="noopener noreferrer" href="https://wxduarchive.tumblr.com/" aria-label="WXDU Tumblr archive">
@@ -74,6 +74,12 @@ const Footer = () => {
 						</a>
 						<a target="_blank" rel="noopener noreferrer" href="https://wxdu.bandcamp.com/" aria-label="WXDU Bandcamp">
 							<FaBandcamp size={32} className="ml-.5 mt-0.5" />
+						</a>
+						{/* Channel matches TWITCH_CHANNEL in the API's .env — the homepage
+						    takeover only appears while we're live, so this is the way to
+						    reach the channel the rest of the time. */}
+						<a target="_blank" rel="noopener noreferrer" href="https://twitch.tv/wxdu887" aria-label="WXDU Twitch">
+							<FaTwitch size={32} className="ml-.5 mt-0.5" />
 						</a>
 				</div>
 				<div className="mt-1 flex flex-col items-start gap-2">
