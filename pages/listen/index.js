@@ -10,6 +10,7 @@ import TodayShows from '@/components/listenpage/TodayShows'
 import VinylPlayer from "@/components/homepage/VinylPlayer";
 import MobileVinylPlayer from "@/components/homepage/MobileVinylPlayer";
 import { useAudio } from "@/components/AudioContext";
+import TwitchTakeover from "@/components/homepage/TwitchTakeover";
 
 export default function Listen() {
 
@@ -18,7 +19,11 @@ export default function Listen() {
 
     return(
         <div className="min-h-screen text-white pb-2">
-            
+            {/* Renders nothing unless we're actually livestreaming. Above the
+                vinyl player because it's the same "what's on right now" question
+                the rest of this page answers. */}
+            <TwitchTakeover />
+
             <div className="flex flex-col items-center gap-4 px-4 pt-4 pb-6">
                 {/* Desktop: current show info sits to the left of the vinyl player.
                     max-w-7xl (was 5xl) makes the vinyl widget ~25% larger. */}

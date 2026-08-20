@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ChartsTab from "@/components/explorepage/charts/ChartsTab"
 import ExploreTab from "@/components/explorepage/song/ExploreTab"
 import ShowCalendar from "@/components/homepage/ShowCalendar"
+import TwitchTakeover from "@/components/homepage/TwitchTakeover"
 
 // explore options are allowed
 const allowedChoices = [
@@ -25,6 +26,9 @@ export default function Explore(){
 
     return (
         <div>
+            {/* Renders nothing unless we're actually livestreaming. */}
+            <TwitchTakeover />
+
             <div className="flex flex-col items-center">
                 <h1 className="mb-12 font-kallisto text-6xl font-normal text-white">
                     Explore and Find New Music

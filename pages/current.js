@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { subscribeCurrentPlaylist } from '../lib/nowPlaying'
 import { fixEncodingDeep } from '../lib/fixEncoding'
 import PlaylistView from '../components/PlaylistView'
+import TwitchTakeover from '../components/homepage/TwitchTakeover'
 
 export default function CurrentPlaylist() {
 	const [data, setData] = useState(null)
@@ -47,7 +48,13 @@ export default function CurrentPlaylist() {
 	)
 
 	return (
-		<div className="mx-auto w-5/6 pb-16 text-white">
+		<>
+			{/* Renders nothing unless we're actually livestreaming. Kept outside the
+			    w-5/6 wrapper below so it isn't narrowed twice — it brings its own
+			    width, matching the homepage and /listen. */}
+			<TwitchTakeover />
+
+			<div className="mx-auto w-5/6 pb-16 text-white">
 			<div className="mb-8 mt-4">
 				<h1 className="kallisto text-4xl lg:text-5xl">Current Playlist</h1>
 			</div>
@@ -66,6 +73,7 @@ export default function CurrentPlaylist() {
 			{!loading && data && (
 				<PlaylistView show={show} tracks={tracks} djNode={djNode} djName={show?.djname || dj?.defdjname || null} />
 			)}
-		</div>
+			</div>
+		</>
 	)
 }
