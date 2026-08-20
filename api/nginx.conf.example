@@ -1,39 +1,65 @@
-# /etc/nginx/sites-available/api.wxdu.art
-#
 # nginx reverse proxy for the wxdu-api Node service (127.0.0.1:3001).
 # nginx terminates TLS and proxies straight to Node — there is no Apache in
 # this path. (The old Apache setup is kept for reference in apache.conf.example.)
 #
-# Setup steps (on the server):
-#   1. Copy this file:
-#        sudo cp nginx.conf.example /etc/nginx/sites-available/api.wxdu.art
+# WHERE THIS LIVES ON THE SERVER: beachyhead names nginx site files after the
+# IP they bind to, not the hostname, so the live copy of this config is
+# /etc/nginx/sites-available/152.229 (the 152.3.0.229 front door) — not
+# `api.wxdu.art`. Locate it rather than assuming:
+#     grep -rln "api.wxdu.art" /etc/nginx/sites-available/
+#
+# THIS FILE IS ONLY PART OF 152.229. That file also carries the
+# beachyhead.wxdu.duke.edu default_server blocks (:80 and :443) that proxy to
+# Apache on :8080 — 6 GB album uploads, relaxed body timeouts, and the plain-
+# http /api/confirm, /api/special_confirm and /api/upload carve-outs the old
+# itunes-crawler depends on. Never `cp` this example over 152.229; you would
+# delete all of that. Edit the api.wxdu.* blocks in place instead.
+#
+# Setup steps (on a genuinely fresh host):
+#   1. Copy this file in, using whatever name matches local convention:
+#        sudo cp nginx.conf.example /etc/nginx/sites-available/152.229
 #   2. Enable it:
-#        sudo ln -s /etc/nginx/sites-available/api.wxdu.art /etc/nginx/sites-enabled/
+#        sudo ln -s /etc/nginx/sites-available/152.229 /etc/nginx/sites-enabled/
 #   3. Test and reload:
 #        sudo nginx -t && sudo systemctl reload nginx
-#   4. Get / install a Let's Encrypt cert (certbot edits this file and sets up
-#      auto-renewal via the nginx authenticator):
-#        sudo certbot --nginx -d api.wxdu.art
+#   4. Get / install a Let's Encrypt cert covering BOTH API hostnames (certbot
+#      edits this file and sets up auto-renewal via the nginx authenticator):
+#        sudo certbot --nginx -d api.wxdu.art -d api.wxdu.org
 #
-# --- Switching to api.wxdu.org later ---
-# When Duke IT adds the api.wxdu.org DNS A record (152.3.0.229):
-#   1. Add it to server_name on BOTH blocks:  server_name api.wxdu.art api.wxdu.org;
-#   2. Expand the cert:  sudo certbot --nginx -d api.wxdu.art -d api.wxdu.org
-#   3. Update NEXT_PUBLIC_API_URL in Cloudflare Pages env vars to https://api.wxdu.org
-#      (ALLOWED_ORIGINS in .env already covers both domains — no change needed there)
-#   4. Reload: sudo systemctl reload nginx
+# --- api.wxdu.org ---
+# Both names are on server_name below. api.wxdu.org already resolves to
+# 152.3.0.229, so nothing here is waiting on Duke OIT. Two failure modes to
+# know about:
+#   - Drop api.wxdu.org from server_name and requests for it fall through to
+#     the catch-all block, which proxies to Apache and returns a 404.
+#   - Until the cert is expanded, TLS to api.wxdu.org fails outright — the
+#     api.wxdu.art cert has a single SAN and does not cover it. Browsers hard-
+#     fail before CORS is ever reached. Use the certbot line above and take the
+#     "expand" option so renewal stays one lineage.
+#
+# The frontend needs NO rebuild for the switch: lib/api.js derives the API host
+# from window.location.hostname at runtime (wxdu.org -> api.wxdu.org). Do NOT
+# set NEXT_PUBLIC_API_URL in Cloudflare Pages to chase this — it only affects
+# hostnames that aren't wxdu.art/.org, i.e. *.pages.dev previews, which should
+# keep pointing at api.wxdu.art.
+#
+# ALLOWED_ORIGINS in .env DOES need every origin you actually serve. Note that
+# https://www.wxdu.org is a different origin from https://wxdu.org; a missing
+# entry surfaces as a 500, not a clean CORS rejection (see server.js).
 
 server {
     listen 152.3.0.229:80;
-    server_name api.wxdu.art;
+    server_name api.wxdu.art api.wxdu.org;
+    # $host, not a literal — .org requests redirect to themselves, not to .art.
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 152.3.0.229:443 ssl;
-    server_name api.wxdu.art;
+    server_name api.wxdu.art api.wxdu.org;
 
-    # certbot --nginx manages these two lines:
+    # certbot --nginx manages these two lines. The cert must cover both names
+    # above — see the api.wxdu.org note in the header.
     ssl_certificate     /etc/letsencrypt/live/api.wxdu.art/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/api.wxdu.art/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;

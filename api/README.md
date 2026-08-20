@@ -25,6 +25,15 @@ Node/Express API  (127.0.0.1:3001)
 
 > **Note:** `api.wxdu.art` is fronted by **nginx** (it terminates TLS and proxies straight to Node). It used to sit behind Apache; that setup is preserved for reference in `apache.conf.example`, but the live config is `nginx.conf.example`.
 
+> **Where the live config actually is:** beachyhead names nginx site files after
+> the **IP they bind to**, not the hostname — so this config lives at
+> `/etc/nginx/sites-available/152.229`, not `.../api.wxdu.art`. Don't guess the
+> filename; find it:
+>
+> ```bash
+> grep -rln "api.wxdu.art" /etc/nginx/sites-available/
+> ```
+
 ```bash
 # 1. Install dependencies
 cd api/
@@ -33,7 +42,8 @@ npm install
 # 2. Configure environment
 cp .env.example .env
 # Edit .env — set DB_PASSWORD, REQUESTS_DB_PASSWORD
-# ALLOWED_ORIGINS already includes both wxdu.art and wxdu.org
+# ALLOWED_ORIGINS must list EVERY origin you serve, exactly. Note that
+# https://www.wxdu.org and https://wxdu.org are different origins.
 
 # 3. Start with PM2
 #    First update ecosystem.config.js with the correct cwd and interpreter paths,
@@ -41,11 +51,17 @@ cp .env.example .env
 pm2 start ecosystem.config.js
 pm2 save
 
-# 4. Set up the nginx server block and TLS
-sudo cp nginx.conf.example /etc/nginx/sites-available/api.wxdu.art
-sudo ln -s /etc/nginx/sites-available/api.wxdu.art /etc/nginx/sites-enabled/
+# 4. Set up the nginx server block and TLS.
+#    ON BEACHYHEAD, DO NOT `cp` THIS FILE OVER 152.229 — that file also holds
+#    the beachyhead.wxdu.duke.edu default_server blocks (Apache :8080, 6 GB
+#    upload limits, the itunes-crawler /api/confirm carve-outs). Copying over
+#    it deletes them. Merge the two api.wxdu.* server blocks in by hand.
+#    On a genuinely fresh host, copy it in under whatever name matches local
+#    convention (beachyhead uses the bound IP):
+sudo cp nginx.conf.example /etc/nginx/sites-available/152.229
+sudo ln -s /etc/nginx/sites-available/152.229 /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d api.wxdu.art
+sudo certbot --nginx -d api.wxdu.art -d api.wxdu.org
 
 # 5. Smoke test
 curl https://api.wxdu.art/api/health
@@ -66,23 +82,52 @@ git pull
 pm2 restart wxdu-api
 ```
 
-## Switching from api.wxdu.art to api.wxdu.org
+## Serving api.wxdu.org
 
-When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the following:
+`api.wxdu.org` already resolves to `152.3.0.229` — the DNS record exists, so
+nothing here waits on Duke OIT. Until the steps below are done it is *not*
+served: requests fall through to nginx's catch-all block, get proxied to
+Apache, and return a 404. TLS fails first anyway, because the `api.wxdu.art`
+cert has a single SAN that does not cover `.org`.
 
-1. **nginx config** — add `api.wxdu.org` to the `server_name` line in both server blocks of `/etc/nginx/sites-available/api.wxdu.art`:
+This matters on a deadline: the moment `wxdu.org` serves the new frontend,
+`lib/api.js` starts sending every call to `https://api.wxdu.org`. **Do this
+before the DNS cutover, not after.**
+
+1. **nginx config** — add `api.wxdu.org` to `server_name` on **both** server
+   blocks (find the file with the `grep` under "Server setup" — it's
+   `152.229`, not `api.wxdu.art`):
    ```nginx
    server_name api.wxdu.art api.wxdu.org;
    ```
-   then `sudo nginx -t && sudo systemctl reload nginx`.
-2. **Expand the TLS cert** to cover both names:
+   then `sudo nginx -t && sudo systemctl reload nginx`. Reload *before*
+   certbot, so nginx already answers for the name when validation runs.
+2. **Expand the TLS cert** to cover both names — take certbot's "expand"
+   option rather than creating a second lineage, so renewal stays one job:
    ```bash
    sudo certbot --nginx -d api.wxdu.art -d api.wxdu.org
+   sudo systemctl reload nginx
    ```
-3. **Cloudflare Pages env var** — in the Cloudflare Pages dashboard, update `NEXT_PUBLIC_API_URL` to `https://api.wxdu.org` and redeploy.
-4. **Local dev** — update `wxdnew/.env.local` to `NEXT_PUBLIC_API_URL=https://api.wxdu.org`.
-5. `ALLOWED_ORIGINS` in `.env` already includes both domains — no change needed there.
-6. Once confirmed working, the `api.wxdu.art` DNS record and `ServerAlias` can be removed at your discretion.
+3. **`ALLOWED_ORIGINS` in `.env`** — add every frontend origin you will serve.
+   `https://www.wxdu.org` is **not** covered by `https://wxdu.org`; if `www` is
+   canonical it needs its own entry, as does any temporary test hostname.
+   Then `pm2 restart wxdu-api` — `allowedOrigins` is read once at module load,
+   so a reload won't pick it up.
+4. **No frontend change is needed.** `lib/api.js` derives the API host from
+   `window.location.hostname` at runtime, so the same build works on either
+   domain. Leave `NEXT_PUBLIC_API_URL` unset in Cloudflare Pages: it only
+   applies to hostnames that aren't `wxdu.art`/`wxdu.org` — i.e. `*.pages.dev`
+   previews — which should keep pointing at `api.wxdu.art`.
+5. **Verify** before touching frontend DNS:
+   ```bash
+   curl https://api.wxdu.org/api/health                       # {"ok":true}, valid TLS
+   curl -N https://api.wxdu.org/api/playlists/current/stream  # immediate data: line, stays open
+   curl -s -o /dev/null -w "%{http_code}\n" https://api.wxdu.org/api/health \
+     -H "Origin: https://www.wxdu.org"                        # 200, not 500
+   ```
+6. Once `.org` is confirmed working, the `api.wxdu.art` name can be retired at
+   your discretion — but only after no deployed frontend falls back to it
+   (`*.pages.dev` previews still do).
 
 ## Endpoints
 
@@ -110,6 +155,7 @@ When Duke IT adds an A record for `api.wxdu.org` → `152.3.0.229`, do the follo
 | GET | `/api/shazam` | Dump of the `shazamplaying` table — every column, newest first. Defaults to the 1000 most recent rows; `?limit=all` returns the whole table. Also accepts `?limit=`, `?offset=`, `?since=`. |
 | GET | `/api/shazam/latest` | The single most recent track recognized on the live stream. `404` if nothing has been recognized yet. |
 | POST | `/api/shazam` | Ingest a recognized track. Shared-secret gated (`X-Ingest-Secret`); rate-limited to 30 per minute per IP. |
+| GET | `/api/twitch/status` | Whether the WXDU Twitch channel is live right now. Powers the homepage takeover widget (see below). |
 
 ### Multi-ID lookups
 
@@ -349,6 +395,42 @@ curl -X POST https://api.wxdu.art/api/shazam \
 ```
 
 The shared secret is the only auth on the ingest endpoint — keep `.env` readable only by the service account. Optionally also restrict `/api/shazam` `POST` to the iMac's static IP at the nginx/Apache layer.
+
+### Twitch live status (Twitch Helix API)
+
+Backs the homepage **takeover** widget (`components/homepage/TwitchTakeover.js`), which shows the livestream at the top of the homepage whenever [twitch.tv/wxdu887](https://twitch.tv/wxdu887) is broadcasting.
+
+This lives on the server because the Twitch API needs an app access token, which needs a client **secret** — and the frontend is a static export with no secrets. It also means visitors load no Twitch code at all while the channel is dark.
+
+#### One-time setup
+
+1. Sign in at [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps) → **Register Your Application**.
+   - Name: anything (`WXDU website`), Category: *Website Integration*.
+   - OAuth Redirect URL: `http://localhost` — unused. We only use the client-credentials flow, which authenticates the *app*, not a Twitch user, so nobody has to stay logged in and nothing expires that we don't refresh ourselves.
+2. Copy the **Client ID**, then **New Secret** and copy that too (it's shown once).
+3. Add both to `api/.env`:
+   ```
+   TWITCH_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   TWITCH_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   TWITCH_CHANNEL=wxdu887
+   ```
+4. `pm2 restart wxdu-api`, then smoke test:
+   ```bash
+   curl https://api.wxdu.art/api/twitch/status
+   # {"live":false,"channel":"wxdu887"}   → widget hidden
+   # {"live":true,"channel":"wxdu887","title":"...","viewers":12,"startedAt":"..."}
+   ```
+
+Leaving the credentials blank is a supported state: the endpoint returns `{"live":false,...,"configured":false}` and the widget simply never appears.
+
+#### Behaviour
+
+- **Cached ~60s in memory.** Every homepage visitor polls this once a minute, so without the cache a busy homepage would eat Twitch's rate limit (800 points/min per client id). With it we make at most one Helix call per minute regardless of traffic, and concurrent misses are collapsed into a single upstream request.
+- **App access tokens are cached until just before they expire** (~60 days) and re-fetched automatically; a `401` drops the token and retries once, so a rotated secret self-heals.
+- **Fails soft.** If Twitch is unreachable we serve the last known answer for up to 10 minutes, then fall back to "not live". The endpoint always returns `200` — the widget treats any failure as offline, and a 500 would just spam every visitor's console once a minute.
+- No database involvement; nothing to provision.
+
+The uncached upstream call is Twitch's, not ours, so this endpoint costs nothing when the widget is idle beyond one small HTTPS request a minute — and only while people are actually on the homepage.
 
 ## Response caching
 
