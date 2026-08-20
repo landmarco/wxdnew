@@ -46,7 +46,7 @@ export default function Home(props) {
 			    collage back a matching bottom margin; see the layout note in
 			    TwitchTakeover.js. That's why the collage's wrapper needs no
 			    conditional here — its margins are the same either way. */}
-			<TwitchTakeover />
+			<TwitchTakeover hero />
 			{/* The splash is the hero, so it should sit just under the nav tabs.
 			    Header.js gives every desktop page an 80px bottom margin (mb-20),
 			    which is right for ordinary page content but leaves a big gap here.

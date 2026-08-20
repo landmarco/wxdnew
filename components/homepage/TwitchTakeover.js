@@ -36,6 +36,16 @@ const UNMUTE_VOLUME = 0.8
 // state, so we poll it. Only runs while the takeover is actually on screen.
 const MUTE_POLL_MS = 500
 
+// Known behaviour, deliberately not worked around: scrolling the player out of
+// view pauses it, because playback started as muted autoplay and browsers pause
+// offscreen autoplaying media. Once the viewer presses play themselves the
+// session counts as user-initiated and stops being paused that way. Detecting
+// the pause through the embed API and calling play() again was tried and does
+// not hold — the player is a cross-origin iframe, so the intervention happens in
+// a document we can neither observe nor control at the layer it acts on. Leave
+// it be; a mini-player that follows the scroll is the real fix if this ever
+// matters enough.
+
 // Matches Tailwind's `md` breakpoint (>=768px), which is where this component's
 // own md: classes switch over. Below it we treat the visit as a phone and wait
 // for a tap before loading any video.
@@ -65,7 +75,11 @@ function loadTwitchPlayer() {
 	return scriptPromise
 }
 
-export default function TwitchTakeover() {
+// `hero` is the homepage placement: it sits directly under the nav tabs and has
+// to cancel Header's desktop margin (see the layout note further down). Every
+// other page just wants the widget to flow with the rest of the content, which
+// is the default.
+export default function TwitchTakeover({ hero = false }) {
 	const status = useTwitchStatus()
 	const { isPlaying, togglePlayPause } = useAudio()
 
@@ -280,7 +294,7 @@ export default function TwitchTakeover() {
 
 	if (!live) return null
 
-	/* Layout note — the margins here are load-bearing on desktop.
+	/* Layout note — the `hero` margins are load-bearing on desktop.
 	   pages/index.js pulls its first child up by 80px (lg:-mt-20) to cancel
 	   Header's mb-20 and sit flush under the nav tabs; the collage carries that
 	   -mt-20 normally. When we render, WE are the first child, so we take the
@@ -288,11 +302,22 @@ export default function TwitchTakeover() {
 	   so its own -mt-20 has something to cancel. 6.5rem = that 80px plus the
 	   24px gap we actually want to see. The upshot is that index.js needs no
 	   conditional: whether we render or not, the collage lands in the same
-	   place. Keep the two in sync if Header's margin ever changes. The collapsed
-	   bar below carries the identical margins for the same reason — once we're
-	   live we always occupy that slot, whatever we're showing in it. */
-	const wrapperClass =
-		"mx-auto mb-6 w-11/12 max-w-4xl pt-5 text-white md:w-5/6 lg:-mt-20 lg:mb-[6.5rem] lg:w-full lg:pt-0"
+	   place. Keep the two in sync if Header's margin ever changes.
+
+	   Every page that shows this wants the SAME gap below the tabs, so the
+	   -mt-20/pt-0 pair is in the base class, not the hero variant — Header's
+	   mb-20 is on the desktop nav row itself (Header.js), so it applies
+	   everywhere, and so must the cancellation. What's homepage-only is the
+	   bottom margin: nothing on /listen, /current or /explore has a -mt-20 of
+	   its own needing 80px handed back to it. The collapsed bar below reuses
+	   whichever set applies, because once we're live we always occupy that
+	   slot, whatever we're showing in it. */
+	const wrapperClass = [
+		"mx-auto mb-6 w-11/12 max-w-4xl pt-5 text-white md:w-5/6 lg:-mt-20 lg:w-full lg:pt-0",
+		hero ? "lg:mb-[6.5rem]" : "",
+	]
+		.filter(Boolean)
+		.join(" ")
 
 	// Dismissed: leave a way back, and nothing else.
 	if (dismissed) {
