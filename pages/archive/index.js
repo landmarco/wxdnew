@@ -5,11 +5,11 @@ import {
 	generateStructuredData,
 } from '../../components/OrganizingArchive'
 // import LazyLoad from 'react-lazyload';
-import ArchiveDropdown from '../../components/DropdownArchive'
+// import ArchiveDropdown from '../../components/DropdownArchive'
 import ArchiveLayout from '../../components/ArchiveLayout'
-import photo from '/images/crowd.webp'
-import mobilephoto from '/images/crowdmobile.webp'
-import Image from 'next/image'
+// import photo from '/images/crowd.webp'
+// import mobilephoto from '/images/crowdmobile.webp'
+// import Image from 'next/image'
 import React, {useState} from 'react'
 import SeeMoreButton from '../../components/SeeMoreButton'
 import Link from 'next/link'
@@ -26,21 +26,27 @@ export default function EventList(props) {
 	const groupedEvents = groupEventsByWeek(eventsList)
 	const structuredData = generateStructuredData(groupedEvents)
 
-	let specialtyShows = []
-	props.data.categoryConnection.edges.forEach((category) => {
-		specialtyShows.push({
-			label: category.node.title,
-			value: category.node._sys.filename,
-		})
-	})
+	// Only feeds the commented-out Filter dropdown below. The categoryConnection
+	// query in getStaticProps is left in place so restoring the dropdown is a
+	// matter of uncommenting, with no query changes.
+	// let specialtyShows = []
+	// props.data.categoryConnection.edges.forEach((category) => {
+	// 	specialtyShows.push({
+	// 		label: category.node.title,
+	// 		value: category.node._sys.filename,
+	// 	})
+	// })
 
 	return (
 		<ArchiveLayout>
 			<div className="relative z-10 -mt-2 flex w-full flex-col items-center justify-between md:w-5/6 md:flex-row">
 				<div className="relative z-20 mt-5 text-sm md:text-base">
-						An archive of WXDU&apos;s activities (WIP):{""}
-						<br></br>
-						{/* Use Link for internal nav to preserve SPA navigation + semantics. */}
+						Coming soon: an archive of WXDU&apos;s activities from our 75+ years as a
+						radio station. Watch this space!
+						{/* Hidden until there is enough in the archive to be worth browsing. Both
+						    destinations still exist and still build, so this is uncommenting when
+						    ready. Use Link for internal nav to preserve SPA navigation + semantics. */}
+						{/* <br></br>
 						<Link href="/schedule" className="underline">
 							Learn more about WXDU&apos;s specialty programming
 						</Link>
@@ -49,22 +55,37 @@ export default function EventList(props) {
 						<Link href="/archive/legacy" className="underline">
 							Browse historical collections
 						</Link>
-					{"."}
+						{"."} */}
+						{/* Restore alongside the links above when the archive opens up. */}
+						{/* <br></br>
+						If you would like to help us build this out, contact our computing
+						team at{" "}
+						<a href="mailto:computing@wxdu.org" className="underline">
+							computing@wxdu.org
+						</a>
+						{"."} */}
 				</div>
-				<div className="mt-3">
+				{/* Filter dropdown — hidden for now. Uncomment this along with the
+				    ArchiveDropdown import and the specialtyShows list above to bring
+				    it back. */}
+				{/* <div className="mt-3">
 					<ArchiveDropdown specialtyShows={specialtyShows} />
-				</div>
+				</div> */}
 			</div>
 
+			{/* Banner image — hidden until images/crowd.webp and images/crowdmobile.webp
+			    are replaced with a WXDU asset. Restore this along with the photo,
+			    mobilephoto and next/image imports at the top of the file, and make sure
+			    the replacements are pre-sized per the image standard in CLAUDE.md. */}
 			{/* Desktop banner image */}
-			<div className="relative z-5 -mt-10 hidden md:block">
+			{/* <div className="relative z-5 -mt-10 hidden md:block">
 				<Image src={photo} alt="A crowded dancefloor at a WXDU event." />
-			</div>
+			</div> */}
 
 			{/* Mobile banner image */}
-			<div className="relative z-10 -mt-10 md:hidden">
+			{/* <div className="relative z-10 -mt-10 md:hidden">
 				<Image src={mobilephoto} alt="A crowded dancefloor at a WXDU event." />
-			</div>
+			</div> */}
 
 			<div className="archive-grid mx-auto lg:max-w-screen-xl">
 				{structuredData.slice(0, eventsToShow).map((event) => (
