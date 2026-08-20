@@ -18,7 +18,7 @@ sync, so they can't ping-pong.
 */
 
 import { useEffect, useRef, useState } from "react"
-import { IoVolumeHigh, IoVolumeMute, IoClose } from "react-icons/io5"
+import { IoVolumeHigh, IoVolumeMute, IoClose, IoPlay } from "react-icons/io5"
 import { useAudio } from "../AudioContext"
 import useTwitchStatus from "../../hooks/useTwitchStatus"
 
@@ -35,6 +35,11 @@ const UNMUTE_VOLUME = 0.8
 // Twitch's player fires no event when its own built-in controls change the mute
 // state, so we poll it. Only runs while the takeover is actually on screen.
 const MUTE_POLL_MS = 500
+
+// Matches Tailwind's `md` breakpoint (>=768px), which is where this component's
+// own md: classes switch over. Below it we treat the visit as a phone and wait
+// for a tap before loading any video.
+const PHONE_QUERY = "(max-width: 767px)"
 
 let scriptPromise = null
 
@@ -72,6 +77,18 @@ export default function TwitchTakeover() {
 	const [ready, setReady] = useState(false)
 	const [failed, setFailed] = useState(false)
 
+	// Phones get a poster and a play button instead of autoplay: a homepage visit
+	// during a broadcast shouldn't start pulling video over somebody's cell data
+	// uninvited. Read synchronously so we never briefly mount the player before
+	// finding out we're on a phone — safe against hydration mismatch because the
+	// server render is always `live: false`, i.e. this component returns null
+	// there regardless. Tracked live so a desktop window narrowed past the
+	// breakpoint behaves like a phone too.
+	const [isPhone, setIsPhone] = useState(
+		() => typeof window !== "undefined" && window.matchMedia(PHONE_QUERY).matches
+	)
+	const [tappedPlay, setTappedPlay] = useState(false)
+
 	const playerRef = useRef(null)
 	// Previous values, so the audio-coordination effects below fire on the
 	// TRANSITION into a state rather than on every render in it.
@@ -88,6 +105,7 @@ export default function TwitchTakeover() {
 	// and the first client render agree.
 	useEffect(() => {
 		setEndedLive(false)
+		setTappedPlay(false)
 		if (!streamKey) {
 			setDismissed(false)
 			return
@@ -99,6 +117,14 @@ export default function TwitchTakeover() {
 			setDismissed(false)
 		}
 	}, [streamKey])
+
+	useEffect(() => {
+		const mq = window.matchMedia(PHONE_QUERY)
+		const apply = () => setIsPhone(mq.matches)
+		apply()
+		mq.addEventListener("change", apply)
+		return () => mq.removeEventListener("change", apply)
+	}, [])
 
 	// Once the server agrees we're dark, clear the embed-driven flag so the next
 	// broadcast starts from a clean slate no matter what the OFFLINE event did.
@@ -115,7 +141,21 @@ export default function TwitchTakeover() {
 		}
 	}
 
-	const shouldMount = live && !dismissed
+	// Dismissing collapses the takeover to a one-line bar rather than removing it
+	// outright. The dismissal is remembered for the rest of the session, so
+	// without something left on the page there'd be no way back to a broadcast
+	// that's still going — a reload wouldn't even do it.
+	const restore = () => {
+		setDismissed(false)
+		try {
+			window.sessionStorage.removeItem("wxdu-twitch-dismissed")
+		} catch {
+			/* storage unavailable; clearing the state above is enough */
+		}
+	}
+
+	// On a phone the player is only created once someone asks for it.
+	const shouldMount = live && !dismissed && (!isPhone || tappedPlay)
 
 	// Create the player when we go live, tear it down when we don't. Everything
 	// Twitch-related — script, iframe, sockets — exists only inside this window.
@@ -147,7 +187,21 @@ export default function TwitchTakeover() {
 				playerRef.current = player
 
 				player.addEventListener(Twitch.Player.READY, () => {
-					if (!cancelled) setReady(true)
+					if (cancelled) return
+					// The constructor options above ask for muted autoplay, but the embed
+					// restores the viewer's stored volume/mute from their own twitch.tv
+					// visits, and a restored unmuted state makes the browser refuse to
+					// autoplay at all (muted is the only autoplay browsers allow) — so a
+					// regular Twitch user can land on a silent, paused player. Re-assert
+					// both once the player exists, which is the earliest point the API
+					// accepts them.
+					try {
+						player.setMuted(true)
+						if (player.isPaused()) player.play()
+					} catch {
+						/* player torn down between READY and here */
+					}
+					setReady(true)
 				})
 				// The broadcast ended under us — retire the widget instead of
 				// leaving Twitch's offline screen sitting on the homepage.
@@ -224,19 +278,48 @@ export default function TwitchTakeover() {
 		setMuted(next)
 	}
 
-	if (!shouldMount) return null
+	if (!live) return null
+
+	/* Layout note — the margins here are load-bearing on desktop.
+	   pages/index.js pulls its first child up by 80px (lg:-mt-20) to cancel
+	   Header's mb-20 and sit flush under the nav tabs; the collage carries that
+	   -mt-20 normally. When we render, WE are the first child, so we take the
+	   -mt-20 instead — and then hand the collage its 80px back as bottom margin
+	   so its own -mt-20 has something to cancel. 6.5rem = that 80px plus the
+	   24px gap we actually want to see. The upshot is that index.js needs no
+	   conditional: whether we render or not, the collage lands in the same
+	   place. Keep the two in sync if Header's margin ever changes. The collapsed
+	   bar below carries the identical margins for the same reason — once we're
+	   live we always occupy that slot, whatever we're showing in it. */
+	const wrapperClass =
+		"mx-auto mb-6 w-11/12 max-w-4xl pt-5 text-white md:w-5/6 lg:-mt-20 lg:mb-[6.5rem] lg:w-full lg:pt-0"
+
+	// Dismissed: leave a way back, and nothing else.
+	if (dismissed) {
+		return (
+			<div className={wrapperClass}>
+				<div className="flex items-center gap-3 rounded-lg border border-white/40 bg-black/60 px-3 py-2 md:rounded-full md:px-4">
+					<span className="flex flex-none items-center gap-2 text-xs tracking-[0.15em] text-[#e0ff05] kallisto">
+						<span className="inline-block h-2 w-2 flex-none animate-pulse rounded-full bg-red-500" />
+						LIVE
+					</span>
+					<span className="min-w-0 flex-1 truncate text-sm kallisto">
+						{status?.title || "WXDU is streaming live"}
+					</span>
+					<button
+						type="button"
+						onClick={restore}
+						className="flex-none rounded-full border border-white px-3 py-1 text-xs tracking-[0.1em] transition hover:border-[#e0ff05] hover:text-[#e0ff05] kallisto"
+					>
+						WATCH
+					</button>
+				</div>
+			</div>
+		)
+	}
 
 	return (
-		/* Layout note — the margins here are load-bearing on desktop.
-		   pages/index.js pulls its first child up by 80px (lg:-mt-20) to cancel
-		   Header's mb-20 and sit flush under the nav tabs; the collage carries that
-		   -mt-20 normally. When we render, WE are the first child, so we take the
-		   -mt-20 instead — and then hand the collage its 80px back as bottom margin
-		   so its own -mt-20 has something to cancel. 6.5rem = that 80px plus the
-		   24px gap we actually want to see. The upshot is that index.js needs no
-		   conditional: whether we render or not, the collage lands in the same
-		   place. Keep the two in sync if Header's margin ever changes. */
-		<div className="mx-auto mb-6 w-11/12 max-w-4xl pt-5 text-white md:w-5/6 lg:-mt-20 lg:mb-[6.5rem] lg:w-full lg:pt-0">
+		<div className={wrapperClass}>
 			<section
 				aria-label="WXDU livestream"
 				className="overflow-hidden rounded-lg border border-white bg-black/80 shadow-lg shadow-black/20 md:rounded-3xl"
@@ -248,25 +331,17 @@ export default function TwitchTakeover() {
 						LIVE
 					</span>
 
+					{/* Title only — no viewer count. A low number reads as "nobody is
+					    watching" and talks people out of clicking, which is the opposite
+					    of what this widget is for. The API still returns `viewers` if we
+					    ever want it back. */}
 					<div className="min-w-0 flex-1">
 						<div className="truncate text-sm md:text-base kallisto">
 							{status?.title || "WXDU is streaming live"}
 						</div>
-						{status?.viewers > 0 && (
-							<div className="text-xs text-neutral-400 courier-prime">
-								{status.viewers} watching on{" "}
-								<a
-									href={`https://twitch.tv/${channel}`}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="underline hover:no-underline"
-								>
-									Twitch
-								</a>
-							</div>
-						)}
 					</div>
 
+					{shouldMount && (
 					<button
 						type="button"
 						onClick={toggleMuted}
@@ -278,6 +353,7 @@ export default function TwitchTakeover() {
 						{muted ? <IoVolumeMute size={16} /> : <IoVolumeHigh size={16} />}
 						<span className="hidden sm:inline">{muted ? "UNMUTE" : "MUTE"}</span>
 					</button>
+					)}
 
 					<button
 						type="button"
@@ -293,12 +369,35 @@ export default function TwitchTakeover() {
 				{/* 16:9 stage. The player fills it absolutely so the box keeps its
 				    shape while the iframe loads (no layout jump when it arrives). */}
 				<div className="relative aspect-video w-full bg-black">
-					<div id={PLAYER_ID} className="absolute inset-0 [&>iframe]:h-full [&>iframe]:w-full" />
+					{shouldMount ? (
+						<>
+							<div id={PLAYER_ID} className="absolute inset-0 [&>iframe]:h-full [&>iframe]:w-full" />
 
-					{!ready && (
-						<div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm tracking-[0.15em] text-neutral-400 kallisto">
-							{failed ? "COULDN'T LOAD THE STREAM" : "CONNECTING TO THE STREAM..."}
-						</div>
+							{!ready && (
+								<div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm tracking-[0.15em] text-neutral-400 kallisto">
+									{failed ? "COULDN'T LOAD THE STREAM" : "CONNECTING TO THE STREAM..."}
+								</div>
+							)}
+						</>
+					) : (
+						/* Phone poster. Deliberately drawn rather than an image: there is
+						   no thumbnail in the status payload, and the point of this state
+						   is that a visit costs no video bytes — fetching a poster frame
+						   to say so would undercut it. Tapping loads the embed, which is
+						   also a user gesture, so playback is guaranteed from here. */
+						<button
+							type="button"
+							onClick={() => setTappedPlay(true)}
+							aria-label="Play the WXDU livestream"
+							className="absolute inset-0 flex flex-col items-center justify-center gap-3 transition hover:bg-white/5"
+						>
+							<span className="flex h-14 w-14 items-center justify-center rounded-full border border-white">
+								<IoPlay size={26} className="ml-1" />
+							</span>
+							<span className="px-6 text-center text-xs tracking-[0.15em] text-neutral-300 kallisto">
+								TAP TO WATCH THE LIVESTREAM
+							</span>
+						</button>
 					)}
 				</div>
 			</section>

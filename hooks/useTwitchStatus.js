@@ -31,9 +31,36 @@ export default function useTwitchStatus() {
 		// live: load the homepage with ?twitch=preview. The embed will show
 		// Twitch's own offline screen, but everything around it — layout, controls,
 		// the audio hand-off — is the real thing. No polling in this mode.
-		if (new URLSearchParams(window.location.search).get("twitch") === "preview") {
-			setStatus({ live: true, channel: "wxdu887", title: "Preview (not actually live)", startedAt: "preview" })
-			return
+		//
+		// In development only, ?twitch=<channel> borrows somebody else's live
+		// channel instead (e.g. ?twitch=rahresh), which is the only way to exercise
+		// the parts that need real playing video: unmute, the radio-stream
+		// hand-off, and the OFFLINE teardown.
+		//
+		// The arbitrary-channel form is dev-gated on purpose. It is read straight
+		// off the query string, so shipping it would mean anyone could hand out
+		// wxdu.org/?twitch=<anything> and have an arbitrary Twitch stream play
+		// inside our chrome, under a LIVE badge. ?twitch=preview stays available
+		// everywhere because it can only ever point at our own channel.
+		const previewParam = new URLSearchParams(window.location.search).get("twitch")
+		if (previewParam) {
+			const isDev = process.env.NODE_ENV !== "production"
+			// Twitch logins are [A-Za-z0-9_], max 25 — anything else isn't a channel.
+			const borrowed =
+				isDev && previewParam !== "preview" && /^\w{1,25}$/.test(previewParam)
+					? previewParam
+					: null
+			if (borrowed || previewParam === "preview") {
+				setStatus({
+					live: true,
+					channel: borrowed || "wxdu887",
+					title: borrowed
+						? `Preview: twitch.tv/${borrowed} (not WXDU)`
+						: "Preview (not actually live)",
+					startedAt: "preview",
+				})
+				return
+			}
 		}
 
 		const check = async () => {
