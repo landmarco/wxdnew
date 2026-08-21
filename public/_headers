@@ -6,22 +6,64 @@
 # to `public, max-age=0, must-revalidate`. The edge still caches, so the site
 # is fast from anywhere, but browsers re-check every single asset on every
 # navigation. That's a wasted round trip per file for returning visitors.
+#
+# The rule of thumb below: cache hard when the filename changes with the
+# contents, cache briefly when it doesn't, and never cache HTML.
 
-# Build assets. Next.js derives these filenames from a hash of their contents
+# ---------------------------------------------------------------------------
+# Build assets — safe to cache forever.
+#
+# Next.js derives these filenames from a hash of their contents
 # (polyfills-c67a75d1b6f99dc8.js), so a changed file is a different URL and
 # this cache can never serve something stale. `immutable` tells the browser not
-# to bother revalidating even on a reload.
+# to bother revalidating even on a reload. This is the bulk of the bytes.
+# ---------------------------------------------------------------------------
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 
-# TinaCMS media. Deliberately shorter, because these are NOT content-hashed —
-# an editor replacing a photo keeps the same filename, and a year-long cache
-# would strand the old one. A week is long enough to help repeat visitors and
-# short enough that a swap lands on its own.
+# ---------------------------------------------------------------------------
+# Media and static images — cache briefly.
+#
+# These are NOT content-hashed: an editor replacing a photo keeps the same
+# filename, so anything long-lived would strand the old one. A day caps how
+# stale an image can get, while stale-while-revalidate lets a returning visitor
+# still get an instant paint for up to a week — the browser serves the cached
+# copy and refreshes it in the background rather than blocking on the network.
+# (Safari ignores stale-while-revalidate and just revalidates after the day.
+# That's fine; it degrades to plain max-age.)
+#
+# If you lengthen these, understand the trade: you're choosing how long a
+# swapped image can keep showing the old picture.
+#
+# /uploads/* is a no-op on wxdu.org, whose Tina project serves media from
+# assets.tina.io — a different origin, so nothing set here reaches it, and
+# Tina sends no Cache-Control of its own. Kept because wxdu.art does use
+# public/uploads, and it costs nothing if media moves back into the repo.
+# ---------------------------------------------------------------------------
 /uploads/*
-  Cache-Control: public, max-age=604800
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/*.jpg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/*.jpeg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/*.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/*.webp
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/*.svg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/*.ico
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
-# HTML keeps the Pages default (edge-cached, browser-revalidated) on purpose:
-# it's what makes a TinaCMS edit appear immediately rather than after an
-# expiry. Don't add a max-age here without deciding you're fine with content
-# updates lagging by that long.
+# ---------------------------------------------------------------------------
+# HTML — deliberately absent from this file.
+#
+# Every page route ends in a slash (trailingSlash: true in next.config.js), so
+# none of the extension rules above can match one. HTML keeps the Pages default
+# of `max-age=0, must-revalidate`: edge-cached, but revalidated by the browser
+# on every navigation. That's what makes a TinaCMS text edit appear immediately
+# instead of after an expiry, and it costs one cheap 304.
+#
+# Don't add a max-age rule for HTML without deciding you're fine with published
+# content lagging by that long.
+# ---------------------------------------------------------------------------
