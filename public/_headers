@@ -1,0 +1,27 @@
+# Cloudflare Pages reads this from the root of the build output. `next export`
+# copies public/ verbatim, so this lands at out/_headers. Pages consumes the
+# file rather than serving it.
+#
+# Without it, Pages defaults every response — HTML, JS, CSS and images alike —
+# to `public, max-age=0, must-revalidate`. The edge still caches, so the site
+# is fast from anywhere, but browsers re-check every single asset on every
+# navigation. That's a wasted round trip per file for returning visitors.
+
+# Build assets. Next.js derives these filenames from a hash of their contents
+# (polyfills-c67a75d1b6f99dc8.js), so a changed file is a different URL and
+# this cache can never serve something stale. `immutable` tells the browser not
+# to bother revalidating even on a reload.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# TinaCMS media. Deliberately shorter, because these are NOT content-hashed —
+# an editor replacing a photo keeps the same filename, and a year-long cache
+# would strand the old one. A week is long enough to help repeat visitors and
+# short enough that a swap lands on its own.
+/uploads/*
+  Cache-Control: public, max-age=604800
+
+# HTML keeps the Pages default (edge-cached, browser-revalidated) on purpose:
+# it's what makes a TinaCMS edit appear immediately rather than after an
+# expiry. Don't add a max-age here without deciding you're fine with content
+# updates lagging by that long.

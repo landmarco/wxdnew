@@ -5,8 +5,8 @@
 	"scripts": {
 		"dev": "tinacms dev -c \"next dev\"",
 		"dev3001": "tinacms dev -c \"next dev -p 3001\"",
-		"build": "tinacms build && next build && next export",
-		"build-notina": "next build && next export",
+		"build": "tinacms build && next build && next export && node scripts/generate-sitemap.js",
+		"build-notina": "next build && next export && node scripts/generate-sitemap.js",
 		"preview": "tinacms build --local --skip-cloud-checks --skip-search-index -c \"next build && next export\" && npm run serve",
 		"serve": "serve out -l 3000",
 		"start": "tinacms build && next start",

@@ -1,0 +1,50 @@
+# WXDU — robots.txt
+#
+# Served identically at three hostnames. Two copies exist; keep them in sync:
+#
+#   www.wxdu.org   this file, shipped into out/ by `next export`
+#   wxdu.org       proxied to the old-site docroot by nginx on 152.3.0.228
+#   old.wxdu.org   robots.txt at the root of the wwwxdu repo — the same file
+#                  the apex proxies to, so those two share one copy
+#
+# The three hostnames serve different things, so some rules below are no-ops
+# on some of them. That's deliberate: one file is easier to keep honest than
+# three that drift apart.
+
+User-agent: *
+
+# Playlist data. These routes are query-string addressed and rendered
+# client-side, so every crawl hit turns into a live API call against 20+
+# years of playlists. /search/ is the worst of them — the query space is
+# unbounded, so a crawler (or a label checking its catalogue) can walk the
+# entire archive one search at a time without ever repeating a URL.
+Disallow: /search/
+Disallow: /show/
+Disallow: /dj/
+Disallow: /playlist/
+Disallow: /current/
+
+# Not content.
+Disallow: /api/
+Disallow: /admin/
+Disallow: /fix-schedule-grid/
+Disallow: /404/
+
+# Playlist manager. Lives on the old site and is still served in place on
+# the wxdu.org apex after the cutover. Dynamic PHP on a spinning disk, and
+# none of it is public content.
+Disallow: /plmanager/
+Disallow: /index.php/
+
+# URL shortener. Redirects only, and keeping crawlers out is what keeps the
+# YOURLS click statistics meaningful.
+Disallow: /short/
+
+# Optional. Restores the rights reservation Cloudflare was serving here
+# before this file existed, but as an actual directive rather than a comment.
+# Uncomment to stay fully indexable by search engines while opting out of
+# model training. Setting ai-input=no as well would also exclude WXDU from
+# AI-generated search answers, which cuts both ways for discoverability.
+# Content-Signal: search=yes, ai-input=yes, ai-train=no
+
+Sitemap: https://www.wxdu.org/sitemap.xml
