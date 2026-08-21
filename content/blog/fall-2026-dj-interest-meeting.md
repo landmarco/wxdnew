@@ -4,5 +4,10 @@ author: Training Director
 cover: /uploads/Fall26InterestFlyer2.webp
 categories:
   - category: content/category/event.md
+published: 2026-08-20T04:00:00.000Z
+description: Get trained as a WXDU DJ!
 ---
 
+Interested in becoming a WXDU DJ? Come out to an interest meeting to learn how to get trained this fall! We'll be holding two sessions, the first on September 13 at 3pm at Duke Coffeehouse, and the second on September 15 at 6pm at the Ruby Lounge (right next to the station). Meet our DJs and join us!
+
+WXDU's Training Directors - Brian, Lance, & Hayes
