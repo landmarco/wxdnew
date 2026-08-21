@@ -4,18 +4,3 @@
 
 <a href="https://wxdu.org/" target="_blank"> Visit live site</a>
 
-<br/>
-
-<img width="1146" alt="image" src="https://github.com/haowens/website/assets/69762131/75c67f8a-f69b-4d54-934d-ce528c9c6964">
-<p>[the development of this site is brought to you by the easily accessible assortment of photos of Adrianne Lenker that live on my desktop]</p>
-
-<h3>Wishlist</h3>
-<ul>
-<li>Setlist component for blog posts</li>
-<li>
-Contact form and instagram integrations (implemented in development, need to figure out how to host)
-</li>
-<li>Search bar for archive and blog</li>
-<li>Utilize Tina blocks to make more components of site editable by admin</li>
-<li>Embed audio player in layout so music can continue as you browse the site</li>
-</ul>
