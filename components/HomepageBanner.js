@@ -1,24 +1,24 @@
-import React, {useState, useEffect} from 'react'
+import React, {useState} from 'react'
 import {IoIosCloseCircle} from 'react-icons/io'
 import logo from '../images/logo.png'
 import {useAudio} from './AudioContext'
 
-// Returns true once the viewport is at least `px` wide. Starts false on the
-// server and on first client render (so SSR/hydration match), then flips after
-// mount. We use it to keep the mobile-hidden collage columns OUT of the DOM on
-// small screens — a `display:none` <img> still downloads, so phones would
-// otherwise pay for images they never see. Tailwind's `lg` breakpoint = 1024px.
-const useMinWidth = (px) => {
-	const [matches, setMatches] = useState(false)
-	useEffect(() => {
-		const mq = window.matchMedia(`(min-width: ${px}px)`)
-		const update = () => setMatches(mq.matches)
-		update()
-		mq.addEventListener('change', update)
-		return () => mq.removeEventListener('change', update)
-	}, [px])
-	return matches
-}
+// The collage's outer columns are extras: the first column on each side always
+// shows, the rest are `hidden lg:flex`. We still don't want phones downloading
+// what they can never see (a `display:none` <img> downloads anyway), but the
+// gate can't be JS anymore — see EXTRA_COLUMN_MEDIA below.
+//
+// This is deliberately looser than the `lg` (1024px) breakpoint those columns
+// actually appear at: tablets fetch the extras without showing them. Four columns
+// squeezed into a tablet width reads as cramped, but pre-fetching them means a
+// rotate or resize up to desktop finds the images already there, and it keeps the
+// fetch rule off the exact edge of the display rule. Phones (< 768px) still
+// download nothing extra, which is the part worth protecting.
+const EXTRA_COLUMN_MEDIA = '(min-width: 768px)'
+
+// 1x1 transparent GIF. Inline, so "fetching" it costs nothing.
+const BLANK_PIXEL =
+	'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
 
 // Soft fade on the collage's top and bottom edges, so the tiles dissolve into
 // the page instead of ending on a hard line.
@@ -60,10 +60,6 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 		if (isPlaying || isHighQuality) togglePlayPause()
 		else setHighQuality(true, {startIfStopped: true})
 	}
-	// Extra collage columns are `hidden lg:flex` (desktop-only). Gate their actual
-	// rendering on this so mobile never downloads them; see useMinWidth above.
-	const isDesktop = useMinWidth(1024)
-
 	if (isClosed || columns.length === 0) {
 		return null
 	}
@@ -77,19 +73,36 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 	// stepping through every banner image.
 	// TODO: eventually link each image to where it came from (the blog post,
 	// event, etc.) instead of defaulting to the stream toggle.
-	const renderBannerImage = (item, imgIndex) => {
+	//
+	// `extra` marks a tile in one of the `hidden lg:flex` outer columns. Those used
+	// to be gated out of the DOM by a JS width check, which kept them off phones but
+	// meant they only started downloading AFTER hydration — late enough that the
+	// outer tiles were still blank when the page looked done. Instead we always
+	// render them and let a <picture> media query decide what gets fetched: the
+	// preload scanner evaluates <source media> before CSS or JS runs, so wide
+	// viewports start these downloads with everything else, and narrow ones resolve
+	// to an inline 1x1 and fetch nothing. Resizing across the breakpoint swaps the
+	// source natively.
+	const renderBannerImage = (item, imgIndex, {extra = false} = {}) => {
 		const img = (
 			<img
-				src={item.image}
+				src={extra ? BLANK_PIXEL : item.image}
 				alt={item.alt || `Image ${imgIndex + 1}`}
 				// The collage is the above-the-fold hero, so load eagerly — lazy
 				// loading left visible edge tiles blank. decoding="async" still keeps
 				// image decode off the main thread so the page stays responsive.
-				// (The mobile-hidden columns don't render at all — see isDesktop below —
-				// so phones still avoid downloading what they can't see.)
 				decoding="async"
 				className="w-full h-auto rounded-lg md:rounded-3xl"
 			/>
+		)
+
+		const picture = extra ? (
+			<picture>
+				<source media={EXTRA_COLUMN_MEDIA} srcSet={item.image} />
+				{img}
+			</picture>
+		) : (
+			img
 		)
 
 		return (
@@ -101,7 +114,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 				title={isPlaying ? 'Pause stream' : 'Play stream'}
 				className="block w-full cursor-pointer border-0 bg-transparent p-0"
 			>
-				{img}
+				{picture}
 			</button>
 		)
 	}
@@ -127,13 +140,14 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 					style={{maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE}}
 				>
 					{leftColumns.map((column, colIndex) => {
-						// colIndex > 0 columns are desktop-only; don't render (or download) on mobile.
-						if (colIndex > 0 && !isDesktop) return null
+						// colIndex > 0 columns are the extras — shown from `lg` up, but
+						// fetched from `md` up (see EXTRA_COLUMN_MEDIA).
+						const extra = colIndex > 0
 						return (
-							<div key={colIndex} className={`flex-1 flex flex-col gap-1 md:gap-3 ${colIndex > 0 ? 'hidden lg:flex' : ''}`}>
+							<div key={colIndex} className={`flex-1 flex flex-col gap-1 md:gap-3 ${extra ? 'hidden lg:flex' : ''}`}>
 								{column.images?.map((item, imgIndex) => (
-									<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl bg-neutral-800">
-										{renderBannerImage(item, imgIndex)}
+									<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl">
+										{renderBannerImage(item, imgIndex, {extra})}
 									</div>
 								))}
 							</div>
@@ -156,7 +170,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 								{aboveLogo.map((column, colIndex) => (
 									<div key={colIndex} className="flex-1 flex flex-col-reverse gap-1 md:gap-3">
 										{column.images?.map((item, imgIndex) => (
-											<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl bg-neutral-800">
+											<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl">
 												{renderBannerImage(item, imgIndex)}
 											</div>
 										))}
@@ -189,7 +203,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 								{belowLogo.map((column, colIndex) => (
 									<div key={colIndex} className="flex-1 flex flex-col gap-1 md:gap-3">
 										{column.images?.map((item, imgIndex) => (
-											<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl bg-neutral-800">
+											<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl">
 												{renderBannerImage(item, imgIndex)}
 											</div>
 										))}
@@ -205,13 +219,14 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 					style={{maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE}}
 				>
 					{rightColumns.map((column, colIndex) => {
-						// colIndex > 0 columns are desktop-only; don't render (or download) on mobile.
-						if (colIndex > 0 && !isDesktop) return null
+						// colIndex > 0 columns are the extras — shown from `lg` up, but
+						// fetched from `md` up (see EXTRA_COLUMN_MEDIA).
+						const extra = colIndex > 0
 						return (
-							<div key={colIndex} className={`flex-1 flex flex-col gap-1 md:gap-3 ${colIndex > 0 ? 'hidden lg:flex' : ''}`}>
+							<div key={colIndex} className={`flex-1 flex flex-col gap-1 md:gap-3 ${extra ? 'hidden lg:flex' : ''}`}>
 								{column.images?.map((item, imgIndex) => (
-									<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl bg-neutral-800">
-										{renderBannerImage(item, imgIndex)}
+									<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl">
+										{renderBannerImage(item, imgIndex, {extra})}
 									</div>
 								))}
 							</div>

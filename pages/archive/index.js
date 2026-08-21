@@ -43,6 +43,16 @@ export default function EventList(props) {
 				<div className="relative z-20 mt-5 text-sm md:text-base">
 						Coming soon: an archive of WXDU&apos;s activities from our 75+ years as a
 						radio station. Watch this space!
+						{/* Blank line before the old-site pointer: two <br>s, since this block
+						    is a plain text run rather than separate <p>s. */}
+						<br></br>
+						<br></br>
+						Miss our old site? We loved it too! You can go back whenever by
+						visiting{' '}
+						<a href="https://old.wxdu.org" className="underline">
+							old.wxdu.org
+						</a>
+						{'.'}
 						{/* Hidden until there is enough in the archive to be worth browsing. Both
 						    destinations still exist and still build, so this is uncommenting when
 						    ready. Use Link for internal nav to preserve SPA navigation + semantics. */}
