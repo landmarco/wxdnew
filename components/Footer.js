@@ -10,7 +10,7 @@ import Image from 'next/image'
 import {FaPhone} from 'react-icons/fa6'
 
 import {AiFillGithub} from 'react-icons/ai'
-import {FaTumblr, FaBandcamp, FaTwitch} from "react-icons/fa6";
+import {FaTumblr, FaBandcamp, FaTwitch, FaYoutube} from "react-icons/fa6";
 import {useAudio} from './AudioContext'
 import {useModal} from './ModalContext'
 import {useBackground} from './BackgroundContext'
@@ -80,6 +80,9 @@ const Footer = () => {
 						    reach the channel the rest of the time. */}
 						<a target="_blank" rel="noopener noreferrer" href="https://twitch.tv/wxdu887" aria-label="WXDU Twitch">
 							<FaTwitch size={32} className="ml-.5 mt-0.5" />
+						</a>
+						<a target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/@WXDU88.7" aria-label="WXDU YouTube">
+							<FaYoutube size={32} className="ml-.5 mt-0.5" />
 						</a>
 				</div>
 				<div className="mt-1 flex flex-col items-start gap-2">

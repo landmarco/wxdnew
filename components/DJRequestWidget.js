@@ -311,7 +311,7 @@ export default function DJRequestWidget() {
                                         onChange={(e) => setMessageText(e.target.value)}
                                         className="font-courierprime w-full rounded bg-zinc-800 px-3 py-2 text-white"
                                         rows={4}
-                                        placeholder="Write your message to the DJ..."
+                                        placeholder="Write yer message to the DJ..."
                                     />
                                 </div>
                                 <button
