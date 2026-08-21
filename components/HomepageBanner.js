@@ -4,13 +4,16 @@ import logo from '../images/logo.png'
 import {useAudio} from './AudioContext'
 
 // The collage's outer columns are extras: the first column on each side always
-// shows, the rest are `hidden md:flex`. We still don't want phones downloading
+// shows, the rest are `hidden lg:flex`. We still don't want phones downloading
 // what they can never see (a `display:none` <img> downloads anyway), but the
 // gate can't be JS anymore — see EXTRA_COLUMN_MEDIA below.
 //
-// Tailwind's `md` breakpoint = 768px. Keep this in sync with the `hidden md:flex`
-// classes on the extra columns; the two are the same rule expressed twice, once
-// for layout and once for the fetch.
+// This is deliberately looser than the `lg` (1024px) breakpoint those columns
+// actually appear at: tablets fetch the extras without showing them. Four columns
+// squeezed into a tablet width reads as cramped, but pre-fetching them means a
+// rotate or resize up to desktop finds the images already there, and it keeps the
+// fetch rule off the exact edge of the display rule. Phones (< 768px) still
+// download nothing extra, which is the part worth protecting.
 const EXTRA_COLUMN_MEDIA = '(min-width: 768px)'
 
 // 1x1 transparent GIF. Inline, so "fetching" it costs nothing.
@@ -71,7 +74,7 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 	// TODO: eventually link each image to where it came from (the blog post,
 	// event, etc.) instead of defaulting to the stream toggle.
 	//
-	// `extra` marks a tile in one of the `hidden md:flex` outer columns. Those used
+	// `extra` marks a tile in one of the `hidden lg:flex` outer columns. Those used
 	// to be gated out of the DOM by a JS width check, which kept them off phones but
 	// meant they only started downloading AFTER hydration — late enough that the
 	// outer tiles were still blank when the page looked done. Instead we always
@@ -137,11 +140,11 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 					style={{maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE}}
 				>
 					{leftColumns.map((column, colIndex) => {
-						// colIndex > 0 columns are the extras — shown from `md` up, and
-						// fetched on the same query (see renderBannerImage).
+						// colIndex > 0 columns are the extras — shown from `lg` up, but
+						// fetched from `md` up (see EXTRA_COLUMN_MEDIA).
 						const extra = colIndex > 0
 						return (
-							<div key={colIndex} className={`flex-1 flex flex-col gap-1 md:gap-3 ${extra ? 'hidden md:flex' : ''}`}>
+							<div key={colIndex} className={`flex-1 flex flex-col gap-1 md:gap-3 ${extra ? 'hidden lg:flex' : ''}`}>
 								{column.images?.map((item, imgIndex) => (
 									<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl">
 										{renderBannerImage(item, imgIndex, {extra})}
@@ -216,11 +219,11 @@ const Banner = ({columns = [], aboveLogo = [], belowLogo = []}) => {
 					style={{maskImage: EDGE_FADE, WebkitMaskImage: EDGE_FADE}}
 				>
 					{rightColumns.map((column, colIndex) => {
-						// colIndex > 0 columns are the extras — shown from `md` up, and
-						// fetched on the same query (see renderBannerImage).
+						// colIndex > 0 columns are the extras — shown from `lg` up, but
+						// fetched from `md` up (see EXTRA_COLUMN_MEDIA).
 						const extra = colIndex > 0
 						return (
-							<div key={colIndex} className={`flex-1 flex flex-col gap-1 md:gap-3 ${extra ? 'hidden md:flex' : ''}`}>
+							<div key={colIndex} className={`flex-1 flex flex-col gap-1 md:gap-3 ${extra ? 'hidden lg:flex' : ''}`}>
 								{column.images?.map((item, imgIndex) => (
 									<div key={imgIndex} className="flex-shrink-0 overflow-hidden rounded-lg md:rounded-3xl">
 										{renderBannerImage(item, imgIndex, {extra})}
