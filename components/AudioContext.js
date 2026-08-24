@@ -20,6 +20,12 @@ const WATCHDOG_INTERVAL_MS = 2000
 const STALL_TIMEOUT_MS = 6000
 const RECONNECT_DEBOUNCE_MS = 2000
 
+// Ceiling for the retry backoff. A handoff that lands in a dead zone can leave
+// us retrying for a while; without a cap we'd either hammer the server or, with
+// a naive doubling, drift so far apart that recovery feels broken. 30s is short
+// enough that a listener who walks back into coverage rejoins on their own.
+const RECONNECT_MAX_DELAY_MS = 30000
+
 // On resume after a pause, the browser has usually kept buffering the live
 // broadcast, so we skip the playhead forward to the freshest buffered audio
 // instead of replaying the stale paused moment — making a brief pause feel like
@@ -82,6 +88,9 @@ export const AudioProvider = ({ children }) => {
     // Wall-clock time the listener last paused, so on resume we can tell how far
     // behind live we are and whether the buffer can catch us up on its own.
     const pausedAtRef = useRef(0)
+    // Consecutive failed reconnect attempts, for the retry backoff. Reset the
+    // moment audio actually flows again (see markProgress).
+    const reconnectAttemptsRef = useRef(0)
 
     const getActive = () => (activeId === 'a' ? audioARef.current : audioBRef.current)
     const getInactive = () => (activeId === 'a' ? audioBRef.current : audioARef.current)
@@ -139,15 +148,34 @@ export const AudioProvider = ({ children }) => {
         }
 
         // A live stream has no resumable position: to recover, rejoin the live
-        // edge by reloading the current source. Debounced so a downed server (or
-        // repeated watchdog checks) isn't hammered. Used for both hard errors and
-        // silent stalls detected by the watchdog.
-        const reconnect = () => {
-            if (!wantsToPlayRef.current || reconnectTimer.current) return
+        // edge by reloading the current source. Used for hard errors, silent
+        // stalls caught by the watchdog, and the network-change signals below.
+        //
+        // `immediate` skips the debounce. Reserve it for events that already
+        // prove the old connection is gone — 'online' after a network handoff,
+        // or the listener returning to a stream that isn't running. Those are
+        // the cases where every second of delay matters, because a backgrounded
+        // page is racing the browser's freeze (see the network-change effect).
+        // Everything else stays debounced so a downed server isn't hammered.
+        //
+        // Repeated failures back off exponentially. Without this, a handoff into
+        // no coverage would retry every 2s until the battery noticed.
+        const reconnect = ({immediate = false} = {}) => {
+            if (!wantsToPlayRef.current) return
+            if (reconnectTimer.current) {
+                if (!immediate) return
+                // An immediate trigger outranks a debounce already in flight.
+                clearTimeout(reconnectTimer.current)
+                reconnectTimer.current = null
+            }
             setIsStalled(true)
-            reconnectTimer.current = setTimeout(() => {
+
+            const attempt = () => {
                 reconnectTimer.current = null
                 if (!wantsToPlayRef.current) return
+                // Pointless while the radio is off — 'online' will call us back.
+                if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+                reconnectAttemptsRef.current += 1
                 audio.src = currentSrcRef.current
                 audio.load()
                 audio.play().catch(() => {})
@@ -155,7 +183,18 @@ export const AudioProvider = ({ children }) => {
                 // clock so the watchdog retries this attempt if it produces no audio.
                 lastTimeRef.current = -1
                 lastProgressAtRef.current = Date.now()
-            }, RECONNECT_DEBOUNCE_MS)
+            }
+
+            if (immediate) {
+                attempt()
+                return
+            }
+
+            const delay = Math.min(
+                RECONNECT_DEBOUNCE_MS * 2 ** reconnectAttemptsRef.current,
+                RECONNECT_MAX_DELAY_MS
+            )
+            reconnectTimer.current = setTimeout(attempt, delay)
         }
 
         // Confirm *genuine forward progress* before declaring the stream healthy.
@@ -176,6 +215,7 @@ export const AudioProvider = ({ children }) => {
                 lastTimeRef.current = t
                 lastProgressAtRef.current = Date.now()
                 clearReconnect()
+                reconnectAttemptsRef.current = 0
                 setIsStalled(false)
             }
         }
@@ -189,12 +229,33 @@ export const AudioProvider = ({ children }) => {
         const handlePlay = () => setIsPlaying(true)
         const handlePause = () => setIsPlaying(false)
 
+        // Wrapped so the DOM Event object is never passed through as options.
+        const handleDrop = () => reconnect()
+
+        // 'stalled'/'waiting' are ambiguous: they fire both when a live
+        // connection dies and when one is merely slow to fill on a weak cell
+        // signal. Treating the second case as a drop would tear down a startup
+        // that was about to succeed and make bad connections strictly worse, so
+        // only act once we've seen audio actually flow — the same "have we ever
+        // progressed" guard the watchdog uses.
+        const handleStall = () => {
+            if (lastProgressAtRef.current === 0) return
+            reconnect()
+        }
+
         audio.addEventListener('play', handlePlay)
         audio.addEventListener('playing', markProgress)
         audio.addEventListener('timeupdate', markProgress)
         audio.addEventListener('pause', handlePause)
         audio.addEventListener('ended', handlePause)
-        audio.addEventListener('error', reconnect)
+        audio.addEventListener('error', handleDrop)
+        // A dropped connection often surfaces as 'stalled' or 'waiting' with no
+        // 'error' at all — the element just quietly stops receiving data. Both
+        // also fire during ordinary buffering, which is why they route through
+        // the debounced path: if audio resumes on its own, markProgress cancels
+        // the pending attempt before it runs.
+        audio.addEventListener('stalled', handleStall)
+        audio.addEventListener('waiting', handleStall)
 
         // Watchdog: if we want to play and the element isn't paused, but no
         // progress has arrived for STALL_TIMEOUT_MS, the stream has silently died
@@ -205,15 +266,70 @@ export const AudioProvider = ({ children }) => {
             if (Date.now() - lastProgressAtRef.current > STALL_TIMEOUT_MS) reconnect()
         }, WATCHDOG_INTERVAL_MS)
 
+        // --- Recovering across a network change --------------------------------
+        //
+        // The case this exists for: a phone on the lock screen moving between
+        // wifi and cell service. The socket dies, and the element frequently
+        // reports nothing at all — which would leave the watchdog above as the
+        // only thing that notices. That doesn't hold up backgrounded, because
+        // the watchdog is a setInterval, and browsers throttle timers hard (or
+        // suspend them outright) once a page is hidden.
+        //
+        // Worse, the exemption that keeps a hidden page running at all is the
+        // fact that it's playing audio. The instant the stream drops, that
+        // exemption goes with it and the page becomes eligible to be frozen.
+        // So recovery is racing the freeze, and a 2s debounce is most of the
+        // budget. Events still get delivered where timers stop firing, which is
+        // why the signals below are the ones doing the real work.
+        //
+        // 'online' fires on precisely the transition we care about, so it
+        // reconnects immediately instead of paying the debounce.
+        const handleOnline = () => reconnect({immediate: true})
+
+        // Nothing can succeed while the radio is off: cancel any pending
+        // attempt rather than burning it on a dead network, and let the
+        // listener know we're on it. 'online' above restarts us.
+        const handleOffline = () => {
+            if (!wantsToPlayRef.current) return
+            clearReconnect()
+            setIsStalled(true)
+        }
+
+        // If the page was frozen before any of that could run, this is the
+        // catch-all for coming back: the listener unlocks the phone, and if
+        // they still want audio and none is flowing, rejoin at once. Without
+        // this the stream stays dead until they think to hit play — which is
+        // the reported symptom.
+        const handleReturn = () => {
+            if (document.hidden || !wantsToPlayRef.current) return
+            const flowing =
+                !audio.paused &&
+                lastProgressAtRef.current > 0 &&
+                Date.now() - lastProgressAtRef.current < STALL_TIMEOUT_MS
+            if (!flowing) reconnect({immediate: true})
+        }
+
+        window.addEventListener('online', handleOnline)
+        window.addEventListener('offline', handleOffline)
+        document.addEventListener('visibilitychange', handleReturn)
+        // A bfcache restore fires pageshow and no visibilitychange, so cover both.
+        window.addEventListener('pageshow', handleReturn)
+
         return () => {
             clearReconnect()
             clearInterval(watchdog)
+            window.removeEventListener('online', handleOnline)
+            window.removeEventListener('offline', handleOffline)
+            document.removeEventListener('visibilitychange', handleReturn)
+            window.removeEventListener('pageshow', handleReturn)
             audio.removeEventListener('play', handlePlay)
             audio.removeEventListener('playing', markProgress)
             audio.removeEventListener('timeupdate', markProgress)
             audio.removeEventListener('pause', handlePause)
             audio.removeEventListener('ended', handlePause)
-            audio.removeEventListener('error', reconnect)
+            audio.removeEventListener('error', handleDrop)
+            audio.removeEventListener('stalled', handleStall)
+            audio.removeEventListener('waiting', handleStall)
         }
     }, [activeId])
 
@@ -345,11 +461,15 @@ export const AudioProvider = ({ children }) => {
             setIsStalled(false)
             lastProgressAtRef.current = 0
             lastTimeRef.current = -1
+            reconnectAttemptsRef.current = 0
             audio.pause()
         } else {
             wantsToPlayRef.current = true
             lastProgressAtRef.current = 0 // startup grace until 'playing' fires
             lastTimeRef.current = -1
+            // A deliberate play starts the backoff over: whatever failed before,
+            // the listener is asking again now and shouldn't wait out a 30s delay.
+            reconnectAttemptsRef.current = 0
             if (!audio.getAttribute('src')) {
                 // Cold start: nothing buffered, just point at the stream and play.
                 audio.src = currentSrcRef.current
