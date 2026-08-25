@@ -51,3 +51,6 @@ yarn-error.log*
 # API server
 /api/node_modules
 /api/.env
+
+# wrangler (local Pages dev cache)
+/.wrangler/

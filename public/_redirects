@@ -1,0 +1,33 @@
+# Cloudflare Pages reads this from the root of the build output. `next export`
+# copies public/ verbatim, so this lands at out/_redirects — same mechanism as
+# public/_headers and public/_routes.json.
+#
+# ---------------------------------------------------------------------------
+# URL shortener — send /short/ back to the apex, which serves YOURLS.
+#
+# The shortener lives on the old box and is proxied in place from the wxdu.org
+# apex (see docs/cutover-wxdu-org.md); it has never existed on this site. The
+# problem is that visitors get moved onto www without asking:
+#
+#   wxdu.org/short/typo   -> YOURLS 302 -> https://wxdu.org/short   (no slash)
+#   wxdu.org/short        -> the apex regex wants "short/" WITH a slash, so
+#                            this misses the proxy rule, falls to the catch-all
+#                            and 302s to https://www.wxdu.org/short
+#   www.wxdu.org/short    -> 404, and now the address bar says www
+#
+# From there, correcting the typo in the address bar fails too, because
+# www.wxdu.org/short/<code> has no route. This rule fixes that half: the
+# corrected link resolves from whichever host the visitor happens to be on.
+#
+# Deliberately NOT matching bare /short. That would loop — the apex bounces
+# bare /short straight back to www, and this rule would bounce it right back
+# again. /short/* requires the slash, so it can't catch the bare form.
+#
+# 302 rather than 301: nothing here is worth pinning in browser caches, and a
+# permanent redirect would be awkward to unwind if the shortener ever moves
+# onto this site.
+#
+# The real fix for landing on www at all is one character in nginx on the
+# apex — see the "URL shortener" note in docs/cutover-wxdu-org.md.
+# ---------------------------------------------------------------------------
+/short/*  https://wxdu.org/short/:splat  302

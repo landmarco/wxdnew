@@ -1,0 +1,12 @@
+{
+	"version": 1,
+	"description": "Keep functions/_middleware.js off asset traffic. Pages auto-generates this file for a project with a functions/ directory and routes /* to it, meaning every request — every JS chunk, every image — costs a Worker invocation. The middleware only ever acts on an HTML 404, so the prefixes below are pure overhead. Excluded paths are served straight from the static asset store, exactly as they were before the function existed. Note the exclude syntax only supports a trailing wildcard, so root-level images (/vinyl-cd.webp and friends) cannot be listed here and still invoke the function; that is a handful of files, not the bulk. next export copies public/ verbatim, so this lands at out/_routes.json — same mechanism as public/_headers. Confirm in the Pages deploy log that this file is the one picked up rather than the generated default.",
+	"include": ["/*"],
+	"exclude": [
+		"/_next/*",
+		"/uploads/*",
+		"/nowplaying/*",
+		"/archive/*",
+		"/admin/*"
+	]
+}

@@ -183,6 +183,45 @@ The apex `A` record itself never changes, so the only DNS edit left for OIT is
 repointing `www.wxdu.org` from `united.wxdu.duke.edu.` to
 `wxdu-website.pages.dev.`.
 
+### Known wart: a bad short link strands you on www
+
+`/short/` is in group 1, so `wxdu.org/short/<code>` proxies to YOURLS and works.
+A **mistyped** code does not degrade gracefully:
+
+```
+wxdu.org/short/chaus  -> YOURLS 302 -> https://wxdu.org/short   (note: no slash)
+wxdu.org/short        -> group 1 wants "short/" WITH a slash, so this misses the
+                         proxy rule, falls through to the catch-all, and 302s to
+                         https://www.wxdu.org/short
+www.wxdu.org/short    -> 404, and the address bar now says www
+```
+
+The visitor is now on the wrong host, so correcting the typo in the address bar
+fails a second time. `public/_redirects` in the website repo covers that second
+failure — `www.wxdu.org/short/<code>` now bounces back to the apex, so a
+corrected link resolves from either host.
+
+What it cannot fix is landing on www in the first place, which is an apex
+concern. Two exact-match blocks keep the visitor here instead:
+
+```nginx
+location = /short  { return 404; }
+location = /short/ { return 404; }
+```
+
+`location =` outranks regex matching in nginx, so these win without touching the
+group 1 pattern. The visitor gets a plain 404 on `wxdu.org`, with the address
+bar still saying `wxdu.org/short` — which is the whole point, since they can
+then just finish typing the code.
+
+Add these to **both** the `:80` and `:443` blocks. Untested — written from the
+observed behaviour above, not from a live edit.
+
+Do **not** widen group 1 to `short/?` instead. It is unanchored at the end, so
+it would also swallow `/shorten`, `/shortcuts` and anything else starting with
+those five letters. If you would rather widen than add exact matches, `short($|/)`
+is the safe spelling.
+
 ### Re-run the inventory before flipping to 301
 
 The path lists above are a snapshot. Before making the redirects permanent,
