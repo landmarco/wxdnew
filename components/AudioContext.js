@@ -26,6 +26,25 @@ const RECONNECT_DEBOUNCE_MS = 2000
 // enough that a listener who walks back into coverage rejoins on their own.
 const RECONNECT_MAX_DELAY_MS = 30000
 
+// How long after a drop we'll still bring the stream back on our own.
+//
+// Recovery has to be time-boxed or it becomes a haunting. Nothing else in here
+// ever decides a listening session is over — wantsToPlay only clears on an
+// explicit pause — so without this, two things happen that nobody wants: audio
+// starting by itself in a pocket twenty minutes later when coverage returns,
+// and audio starting on unlock however long afterwards.
+//
+// A real wifi/cell handoff takes seconds, so 3 minutes recovers every genuine
+// one silently — with room for a subway stop or an elevator — while still
+// ruling out the ghosts. Past the window we stop trying and leave a normal
+// paused player, which the lock-screen play button can restart (Media Session
+// is wired up in NavPlayer).
+//
+// Measured against wall-clock at event time, never with a timer: a frozen page
+// runs no timers, so a setTimeout giveup wouldn't fire during the freeze and
+// would then go off late, at the worst possible moment.
+const RECOVERY_WINDOW_MS = 180000 // 3 minutes
+
 // On resume after a pause, the browser has usually kept buffering the live
 // broadcast, so we skip the playhead forward to the freshest buffered audio
 // instead of replaying the stale paused moment — making a brief pause feel like
@@ -91,6 +110,9 @@ export const AudioProvider = ({ children }) => {
     // Consecutive failed reconnect attempts, for the retry backoff. Reset the
     // moment audio actually flows again (see markProgress).
     const reconnectAttemptsRef = useRef(0)
+    // Wall-clock time the stream dropped, starting the RECOVERY_WINDOW_MS clock.
+    // 0 means healthy (or deliberately stopped) — nothing to recover from.
+    const droppedAtRef = useRef(0)
 
     const getActive = () => (activeId === 'a' ? audioARef.current : audioBRef.current)
     const getInactive = () => (activeId === 'a' ? audioBRef.current : audioARef.current)
@@ -160,8 +182,51 @@ export const AudioProvider = ({ children }) => {
         //
         // Repeated failures back off exponentially. Without this, a handoff into
         // no coverage would retry every 2s until the battery noticed.
+        // Start (or keep) the recovery clock. First detection wins, so the window
+        // is measured from when the audio actually stopped, not from whichever
+        // signal happened to reach us last.
+        const noteDrop = () => {
+            if (droppedAtRef.current === 0) droppedAtRef.current = Date.now()
+        }
+
+        // The recovery window has passed. Stop trying and leave a clean paused
+        // player rather than a stream that might erupt later.
+        //
+        // Clearing wantsToPlay is what makes this stick: it's the gate on every
+        // reconnect path, so once it's false nothing here can restart audio —
+        // not a later 'online', not the listener unlocking their phone. Only a
+        // deliberate play does, which is the whole point.
+        //
+        // The connection is released too, so we aren't holding a listener slot
+        // for someone who stopped listening. The visibility effect re-warms it
+        // when they come back to the tab, keeping the next tap instant.
+        const giveUp = () => {
+            clearReconnect()
+            wantsToPlayRef.current = false
+            droppedAtRef.current = 0
+            reconnectAttemptsRef.current = 0
+            lastProgressAtRef.current = 0
+            lastTimeRef.current = -1
+            setIsStalled(false)
+            setIsPlaying(false)
+            audio.pause()
+            audio.removeAttribute('src')
+            audio.load()
+        }
+
+        const recoveryExpired = () =>
+            droppedAtRef.current > 0 && Date.now() - droppedAtRef.current > RECOVERY_WINDOW_MS
+
         const reconnect = ({immediate = false} = {}) => {
             if (!wantsToPlayRef.current) return
+            noteDrop()
+            // Checked here and again inside attempt(): a debounced attempt can
+            // come due well after it was scheduled, and on a frozen page the gap
+            // between the two is exactly where the window tends to lapse.
+            if (recoveryExpired()) {
+                giveUp()
+                return
+            }
             if (reconnectTimer.current) {
                 if (!immediate) return
                 // An immediate trigger outranks a debounce already in flight.
@@ -173,6 +238,10 @@ export const AudioProvider = ({ children }) => {
             const attempt = () => {
                 reconnectTimer.current = null
                 if (!wantsToPlayRef.current) return
+                if (recoveryExpired()) {
+                    giveUp()
+                    return
+                }
                 // Pointless while the radio is off — 'online' will call us back.
                 if (typeof navigator !== 'undefined' && navigator.onLine === false) return
                 reconnectAttemptsRef.current += 1
@@ -216,6 +285,7 @@ export const AudioProvider = ({ children }) => {
                 lastProgressAtRef.current = Date.now()
                 clearReconnect()
                 reconnectAttemptsRef.current = 0
+                droppedAtRef.current = 0
                 setIsStalled(false)
             }
         }
@@ -291,15 +361,24 @@ export const AudioProvider = ({ children }) => {
         // listener know we're on it. 'online' above restarts us.
         const handleOffline = () => {
             if (!wantsToPlayRef.current) return
+            // Starts the recovery clock even though no media event may have
+            // fired yet — losing the radio is itself the drop, and the window
+            // should run from here rather than from whenever the element
+            // eventually notices.
+            noteDrop()
             clearReconnect()
             setIsStalled(true)
         }
 
         // If the page was frozen before any of that could run, this is the
         // catch-all for coming back: the listener unlocks the phone, and if
-        // they still want audio and none is flowing, rejoin at once. Without
-        // this the stream stays dead until they think to hit play — which is
-        // the reported symptom.
+        // they still want audio and none is flowing, rejoin.
+        //
+        // Bounded by the same recovery window as everything else, and that is
+        // deliberate. Unlocking seconds after a handoff picks the stream back
+        // up, which is the point. Unlocking twenty minutes later does not
+        // ambush anyone with audio — reconnect() sees the window has lapsed and
+        // gives up instead, leaving a normal paused player.
         const handleReturn = () => {
             if (document.hidden || !wantsToPlayRef.current) return
             const flowing =
@@ -462,14 +541,17 @@ export const AudioProvider = ({ children }) => {
             lastProgressAtRef.current = 0
             lastTimeRef.current = -1
             reconnectAttemptsRef.current = 0
+            droppedAtRef.current = 0
             audio.pause()
         } else {
             wantsToPlayRef.current = true
             lastProgressAtRef.current = 0 // startup grace until 'playing' fires
             lastTimeRef.current = -1
-            // A deliberate play starts the backoff over: whatever failed before,
-            // the listener is asking again now and shouldn't wait out a 30s delay.
+            // A deliberate play starts a fresh session: clear both the backoff
+            // and the recovery clock, so this attempt isn't judged by how long
+            // an earlier drop has been sitting there.
             reconnectAttemptsRef.current = 0
+            droppedAtRef.current = 0
             if (!audio.getAttribute('src')) {
                 // Cold start: nothing buffered, just point at the stream and play.
                 audio.src = currentSrcRef.current
