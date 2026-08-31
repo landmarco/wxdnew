@@ -28,11 +28,12 @@ const RECONNECT_MAX_DELAY_MS = 30000
 
 // How long after a drop we'll still bring the stream back on our own.
 //
-// Recovery has to be time-boxed or it becomes a haunting. Nothing else in here
-// ever decides a listening session is over — wantsToPlay only clears on an
-// explicit pause — so without this, two things happen that nobody wants: audio
-// starting by itself in a pocket twenty minutes later when coverage returns,
-// and audio starting on unlock however long afterwards.
+// Recovery has to be time-boxed or it becomes a haunting. The only other things
+// that end a session are an explicit pause and the OS pausing us (a route change
+// — see handlePause); a network drop on its own never does, so without this
+// window two things happen that nobody wants: audio starting by itself in a
+// pocket twenty minutes later when coverage returns, and audio starting on
+// unlock however long afterwards.
 //
 // A real wifi/cell handoff takes seconds, so 3 minutes recovers every genuine
 // one silently — with room for a subway stop or an elevator — while still
@@ -44,6 +45,13 @@ const RECONNECT_MAX_DELAY_MS = 30000
 // runs no timers, so a setTimeout giveup wouldn't fire during the freeze and
 // would then go off late, at the worst possible moment.
 const RECOVERY_WINDOW_MS = 180000 // 3 minutes
+
+// A pause we didn't ask for is the OS stopping us, and we stop for good (see
+// handlePause). Our own programmatic pause()/load() calls also fire 'pause',
+// though, so anything within this long of one of ours is treated as ours. The
+// element queues its 'pause' task rather than firing it inline, so this is a
+// short wall-clock window rather than a flag flipped back on the next line.
+const INTERNAL_PAUSE_WINDOW_MS = 1000
 
 // On resume after a pause, the browser has usually kept buffering the live
 // broadcast, so we skip the playhead forward to the freshest buffered audio
@@ -113,6 +121,14 @@ export const AudioProvider = ({ children }) => {
     // Wall-clock time the stream dropped, starting the RECOVERY_WINDOW_MS clock.
     // 0 means healthy (or deliberately stopped) — nothing to recover from.
     const droppedAtRef = useRef(0)
+    // Deadline before which an incoming 'pause' event is one of ours. Set by
+    // markInternalPause() ahead of every programmatic pause/load that can pause
+    // the active element while the listener still wants to play.
+    const internalPauseUntilRef = useRef(0)
+
+    const markInternalPause = () => {
+        internalPauseUntilRef.current = Date.now() + INTERNAL_PAUSE_WINDOW_MS
+    }
 
     const getActive = () => (activeId === 'a' ? audioARef.current : audioBRef.current)
     const getInactive = () => (activeId === 'a' ? audioBRef.current : audioARef.current)
@@ -189,8 +205,9 @@ export const AudioProvider = ({ children }) => {
             if (droppedAtRef.current === 0) droppedAtRef.current = Date.now()
         }
 
-        // The recovery window has passed. Stop trying and leave a clean paused
-        // player rather than a stream that might erupt later.
+        // End the listening session: stop trying to recover and leave a clean
+        // paused player rather than a stream that might erupt later. Called when
+        // the recovery window lapses, and when the OS pauses us (see handlePause).
         //
         // Clearing wantsToPlay is what makes this stick: it's the gate on every
         // reconnect path, so once it's false nothing here can restart audio —
@@ -200,7 +217,7 @@ export const AudioProvider = ({ children }) => {
         // The connection is released too, so we aren't holding a listener slot
         // for someone who stopped listening. The visibility effect re-warms it
         // when they come back to the tab, keeping the next tap instant.
-        const giveUp = () => {
+        const stopPlayback = () => {
             clearReconnect()
             wantsToPlayRef.current = false
             droppedAtRef.current = 0
@@ -224,7 +241,7 @@ export const AudioProvider = ({ children }) => {
             // come due well after it was scheduled, and on a frozen page the gap
             // between the two is exactly where the window tends to lapse.
             if (recoveryExpired()) {
-                giveUp()
+                stopPlayback()
                 return
             }
             if (reconnectTimer.current) {
@@ -239,12 +256,14 @@ export const AudioProvider = ({ children }) => {
                 reconnectTimer.current = null
                 if (!wantsToPlayRef.current) return
                 if (recoveryExpired()) {
-                    giveUp()
+                    stopPlayback()
                     return
                 }
                 // Pointless while the radio is off — 'online' will call us back.
                 if (typeof navigator !== 'undefined' && navigator.onLine === false) return
                 reconnectAttemptsRef.current += 1
+                // load() below pauses the element and fires 'pause'; that one is ours.
+                markInternalPause()
                 audio.src = currentSrcRef.current
                 audio.load()
                 audio.play().catch(() => {})
@@ -293,11 +312,35 @@ export const AudioProvider = ({ children }) => {
         // Derive UI state from what the element is actually doing. 'play' fires
         // immediately on play(), keeping the button instant. 'playing'/'timeupdate'
         // mean audio is actually flowing.
-        // Note: a reconnect's own load() can fire 'pause', so we don't clear the
-        // stalled/overlay state here — only real progress or an explicit user
-        // pause does. This keeps the overlay steady across reconnect attempts.
         const handlePlay = () => setIsPlaying(true)
-        const handlePause = () => setIsPlaying(false)
+
+        // A 'pause' nobody asked for means something outside the page stopped the
+        // audio — on a phone that is almost always the output route going away:
+        // CarPlay unplugged, a Bluetooth speaker disconnecting, headphones pulled,
+        // or another app taking over audio. Native players treat that as the end of
+        // listening, and so do we.
+        //
+        // This is the difference between a route change and a network drop, and it
+        // matters: a dead connection doesn't pause the element at all (it just
+        // stops advancing currentTime, which is what the watchdog above is for), so
+        // an actual 'pause' is a clean signal that the *device* stopped us, not the
+        // network. Without this, the drop looks recoverable, wantsToPlay stays set,
+        // and the next unlock hits handleReturn and starts audio in someone's
+        // pocket — exactly what a pocket-safe player must never do.
+        //
+        // Restarting stays entirely in the listener's hands: the lock-screen and
+        // steering-wheel play buttons route through togglePlayPause via Media
+        // Session (wired in NavPlayer), same as tapping play on the page.
+        //
+        // Two pauses are NOT this: our own programmatic ones (markInternalPause
+        // covers the window around each), and the user's own pause, which clears
+        // wantsToPlay before pausing and so falls out at the guard below.
+        const handlePause = () => {
+            setIsPlaying(false)
+            if (!wantsToPlayRef.current) return
+            if (Date.now() < internalPauseUntilRef.current) return
+            stopPlayback()
+        }
 
         // Wrapped so the DOM Event object is never passed through as options.
         const handleDrop = () => reconnect()
@@ -498,6 +541,8 @@ export const AudioProvider = ({ children }) => {
             lastTimeRef.current = -1
             lastProgressAtRef.current = Date.now()
             // Tear down the now-stale element so its connection closes promptly.
+            // Its listeners may not have detached yet, so claim the 'pause'.
+            markInternalPause()
             old.pause()
             old.removeAttribute('src')
             old.load()
@@ -604,6 +649,8 @@ export const AudioProvider = ({ children }) => {
         // Surface the "Reconnecting" overlay while the fresh connection buffers;
         // markProgress clears it once the new stream is actually flowing.
         setIsStalled(true)
+        // load() pauses the element and fires 'pause'; that one is ours.
+        markInternalPause()
         audio.src = currentSrcRef.current
         audio.load()
         audio.play().catch(() => {})
@@ -705,6 +752,8 @@ export const AudioProvider = ({ children }) => {
             lastTimeRef.current = -1
             lastProgressAtRef.current = Date.now()
             // Tear down the old element so its connection closes promptly.
+            // Its listeners may not have detached yet, so claim the 'pause'.
+            markInternalPause()
             old.pause()
             old.removeAttribute('src')
             old.load()
