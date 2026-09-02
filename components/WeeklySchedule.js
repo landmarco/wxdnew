@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { djHref, AUTO_DJ_ID } from "@/lib/djLink"
+import { formatHourLabel, formatHourRange, formatSeasonLabel } from "@/lib/schedule/labels"
 
 /*
 Receives parsed CSV data from lib/scheduleParser.js and renders a weekly grid.
@@ -171,7 +172,7 @@ export default function WeeklySchedule({schedule}) {
 											: "top-0 z-30 bg-black text-red-500 lg:top-16"
 								}`}
 							>
-								{dayIndex === 0 ? "summer 2026" : day}
+								{dayIndex === 0 ? formatSeasonLabel(day) : day}
 								{dayIndex === todayColumnIndex && <span className="sr-only"> (today)</span>}
 							</th>
 						))}
@@ -187,9 +188,9 @@ export default function WeeklySchedule({schedule}) {
 								<tr key={`lunokhod-${collapseAwareHourRow.startHour}-${rowIndex}`}>
 									<th className={firstColumnClass}>
 										{
-											collapseAwareHourRow.startHour.replace(/–.*$/, "")
+											formatHourLabel(collapseAwareHourRow.startHour.replace(/–.*$/, ""))
 										}↔↔{
-											collapseAwareHourRow.endHour.replace(/^.*–/, "")
+											formatHourLabel(collapseAwareHourRow.endHour.replace(/^.*–/, ""))
 										}
 									</th>
 
@@ -243,7 +244,7 @@ export default function WeeklySchedule({schedule}) {
 
                                 {/* first column is the hour */}
 								<th scope="row" className={firstColumnClass}>
-									{hour}
+									{formatHourRange(hour)}
 								</th>
 
                                 {/* loop for remaining columns, including multi-hour show logic */}

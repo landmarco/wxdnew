@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { djHref } from "@/lib/djLink"
+import { formatHourLabel } from "@/lib/schedule/labels"
 
 // Receives parsed CSV data from lib/schedule.js and renders today's schedule.
 export default function TodaySchedule({ schedule }) {
@@ -12,8 +13,9 @@ export default function TodaySchedule({ schedule }) {
 	}, [])
 
 	// scheduleCarrier structure:
-	// [0] headerRow: ["summer26", "monday", "tuesday", ...]
-	// [1] hourColumn: ["midnight–1 am", "1 am–2 am", ...]
+	// [0] headerRow: ["fall26", "monday", "tuesday", ...]
+	// [1] hourColumn: ["12 am–1 am", "1 am–2 am", ...] (spelled out for display
+	//     by formatHourLabel, not in the CSV itself)
 	// [3] showGrid: 2D array (24 hours × 7 days) w/o headers
 
 	const headerRow = Array.isArray(schedule?.[0]) ? schedule[0] : []
@@ -38,18 +40,21 @@ export default function TodaySchedule({ schedule }) {
 
 	const showColIndex = todayIndex - 1
 
-	// parses "10 am–11 am" -> { startLabel: "10 am", endLabel: "11 am" }
+	// parses "10 am–11 am" -> { startLabel: "10 am", endLabel: "11 am" }, spelling
+	// out the two ambiguous hours ("12 am" -> "midnight", "12 pm" -> "noon")
 	function parseHourCell(hourCell) {
 		const value = String(hourCell || "").trim()
 		if (!value) {
 			return { startLabel: "", endLabel: "" }
 		}
 
-		const [startLabel, endLabel] = value.split("–").map((part) => String(part || "").trim())
+		const [startLabel, endLabel] = value
+			.split("–")
+			.map((part) => formatHourLabel(part))
 
 		// fallback keeps output stable if the delimiter changes unexpectedly
 		if (!endLabel) {
-			return { startLabel: value, endLabel: value }
+			return { startLabel: formatHourLabel(value), endLabel: formatHourLabel(value) }
 		}
 
 		return { startLabel, endLabel }
