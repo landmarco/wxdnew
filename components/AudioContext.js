@@ -18,6 +18,27 @@ const HIDDEN_UNLOAD_DELAY_MS = 138000 // 2m 18s
 // treat the stream as dead and rejoin the live edge.
 const WATCHDOG_INTERVAL_MS = 2000
 const STALL_TIMEOUT_MS = 6000
+
+// How long a play attempt may produce no audio at all before we treat the start
+// itself as failed and rejoin.
+//
+// STALL_TIMEOUT_MS can't cover this: it measures the gap since audio last
+// flowed, and on a start that never delivers a byte there is no such moment to
+// measure from. A connection that opens and then hangs fires no 'error' and no
+// 'pause' — the element just sits at readyState 0 with play() pending — so
+// without a deadline here nothing ever retries and the play button stays lit
+// over silence.
+//
+// Measured healthy cold starts are ~3s to first audio on the 192 mount and ~5s
+// on 320, over a good desktop connection. 15s leaves room for several times
+// that on a weak phone signal before we give up on an attempt and start a
+// fresh one, which is the cheaper mistake of the two.
+//
+// The crossovers (crossoverToLive, setHighQuality) bound their fresh connection
+// with this same value, for the same reason and on the same evidence: it is the
+// one question both are asking — how long may a new connection produce no audio
+// before we call it failed — so it stays one number rather than two that drift.
+const STARTUP_TIMEOUT_MS = 15000
 const RECONNECT_DEBOUNCE_MS = 2000
 
 // Ceiling for the retry backoff. A handoff that lands in a dead zone can leave
@@ -52,6 +73,16 @@ const RECOVERY_WINDOW_MS = 180000 // 3 minutes
 // element queues its 'pause' task rather than firing it inline, so this is a
 // short wall-clock window rather than a flag flipped back on the next line.
 const INTERNAL_PAUSE_WINDOW_MS = 1000
+
+// How long handlePause waits before concluding a pause was the audio route
+// disappearing. End-of-stream is the one other thing that pauses us unasked,
+// and the spec fires its 'pause' *before* its 'ended' — two separate queued
+// tasks — so the two are indistinguishable at the moment 'pause' arrives. This
+// is just long enough for a following 'ended' to land and say "connection
+// closed, not route lost", and short enough that a genuine route change still
+// stops us promptly. Ending a session is the irreversible call here; spending
+// 50ms to make it correctly is cheap.
+const ROUTE_CHANGE_SETTLE_MS = 50
 
 // On resume after a pause, the browser has usually kept buffering the live
 // broadcast, so we skip the playhead forward to the freshest buffered audio
@@ -125,6 +156,13 @@ export const AudioProvider = ({ children }) => {
     // markInternalPause() ahead of every programmatic pause/load that can pause
     // the active element while the listener still wants to play.
     const internalPauseUntilRef = useRef(0)
+    // Wall-clock time the listener's current play attempt began. Bounds the
+    // startup grace period: lastProgressAtRef === 0 means "no audio has ever
+    // flowed, don't police a stream that's still buffering", which is right
+    // until it isn't — a connection that hangs without ever delivering a byte
+    // sits in that state forever. This is what gives that state a deadline.
+    // 0 means no attempt is outstanding.
+    const playAttemptAtRef = useRef(0)
 
     const markInternalPause = () => {
         internalPauseUntilRef.current = Date.now() + INTERNAL_PAUSE_WINDOW_MS
@@ -185,6 +223,17 @@ export const AudioProvider = ({ children }) => {
             }
         }
 
+        // Pending "was that pause a route change?" decision (see handlePause).
+        // Effect-local rather than a ref: it never outlives the listeners that
+        // schedule it, and the cleanup below cancels it with them.
+        let pendingStopTimer = null
+        const clearPendingStop = () => {
+            if (pendingStopTimer) {
+                clearTimeout(pendingStopTimer)
+                pendingStopTimer = null
+            }
+        }
+
         // A live stream has no resumable position: to recover, rejoin the live
         // edge by reloading the current source. Used for hard errors, silent
         // stalls caught by the watchdog, and the network-change signals below.
@@ -224,6 +273,7 @@ export const AudioProvider = ({ children }) => {
             reconnectAttemptsRef.current = 0
             lastProgressAtRef.current = 0
             lastTimeRef.current = -1
+            playAttemptAtRef.current = 0
             setIsStalled(false)
             setIsPlaying(false)
             audio.pause()
@@ -332,14 +382,49 @@ export const AudioProvider = ({ children }) => {
         // steering-wheel play buttons route through togglePlayPause via Media
         // Session (wired in NavPlayer), same as tapping play on the page.
         //
-        // Two pauses are NOT this: our own programmatic ones (markInternalPause
-        // covers the window around each), and the user's own pause, which clears
-        // wantsToPlay before pausing and so falls out at the guard below.
+        // Three pauses are NOT this: our own programmatic ones (markInternalPause
+        // covers the window around each), the user's own pause, which clears
+        // wantsToPlay before pausing and so falls out at the guard below, and
+        // end-of-stream, which the deferred check below sorts out.
         const handlePause = () => {
             setIsPlaying(false)
             if (!wantsToPlayRef.current) return
             if (Date.now() < internalPauseUntilRef.current) return
-            stopPlayback()
+            // Don't decide yet. A stream the server closed pauses us exactly like
+            // a route change does, and only the 'ended' that follows tells them
+            // apart — so settle it a beat later instead of here.
+            clearPendingStop()
+            pendingStopTimer = setTimeout(() => {
+                pendingStopTimer = null
+                if (!wantsToPlayRef.current) return
+                // Audio is running again — a deliberate play, or a reconnect
+                // attempt that beat us here. Nothing to stop.
+                if (!audio.paused) return
+                // The connection closed rather than the device taking our audio
+                // away. Covers a browser that fires 'ended' before its 'pause';
+                // handleEnded covers the spec order.
+                if (audio.ended) {
+                    reconnect()
+                    return
+                }
+                stopPlayback()
+            }, ROUTE_CHANGE_SETTLE_MS)
+        }
+
+        // A live stream has no natural end, so 'ended' means the server or the CDN
+        // closed the connection — the same class of event as 'error', and squarely
+        // inside what the recovery window exists to ride out. Treating it as a route
+        // change (which is what routing it through handlePause used to do) ended the
+        // session outright and left the listener staring at a dead play button.
+        //
+        // Debounced like handleDrop rather than immediate: an origin that closes
+        // connections as fast as we open them is exactly the case the exponential
+        // backoff protects, and hammering it would make a bad minute worse.
+        const handleEnded = () => {
+            setIsPlaying(false)
+            if (!wantsToPlayRef.current) return
+            clearPendingStop()
+            reconnect()
         }
 
         // Wrapped so the DOM Event object is never passed through as options.
@@ -360,7 +445,7 @@ export const AudioProvider = ({ children }) => {
         audio.addEventListener('playing', markProgress)
         audio.addEventListener('timeupdate', markProgress)
         audio.addEventListener('pause', handlePause)
-        audio.addEventListener('ended', handlePause)
+        audio.addEventListener('ended', handleEnded)
         audio.addEventListener('error', handleDrop)
         // A dropped connection often surfaces as 'stalled' or 'waiting' with no
         // 'error' at all — the element just quietly stops receiving data. Both
@@ -375,7 +460,19 @@ export const AudioProvider = ({ children }) => {
         // — rejoin. lastProgressAtRef === 0 means startup buffering, so we wait.
         const watchdog = setInterval(() => {
             if (!wantsToPlayRef.current || audio.paused) return
-            if (lastProgressAtRef.current === 0) return
+            if (lastProgressAtRef.current === 0) {
+                // Still starting up: no audio has ever flowed, so there's no
+                // progress gap to measure. Police the attempt itself instead —
+                // a connection that hangs here reports nothing at all, and
+                // without this the grace period never ends.
+                if (
+                    playAttemptAtRef.current > 0 &&
+                    Date.now() - playAttemptAtRef.current > STARTUP_TIMEOUT_MS
+                ) {
+                    reconnect()
+                }
+                return
+            }
             if (Date.now() - lastProgressAtRef.current > STALL_TIMEOUT_MS) reconnect()
         }, WATCHDOG_INTERVAL_MS)
 
@@ -439,6 +536,7 @@ export const AudioProvider = ({ children }) => {
 
         return () => {
             clearReconnect()
+            clearPendingStop()
             clearInterval(watchdog)
             window.removeEventListener('online', handleOnline)
             window.removeEventListener('offline', handleOffline)
@@ -448,7 +546,7 @@ export const AudioProvider = ({ children }) => {
             audio.removeEventListener('playing', markProgress)
             audio.removeEventListener('timeupdate', markProgress)
             audio.removeEventListener('pause', handlePause)
-            audio.removeEventListener('ended', handlePause)
+            audio.removeEventListener('ended', handleEnded)
             audio.removeEventListener('error', handleDrop)
             audio.removeEventListener('stalled', handleStall)
             audio.removeEventListener('waiting', handleStall)
@@ -525,7 +623,19 @@ export const AudioProvider = ({ children }) => {
         if (!next) return
         setIsRejoining(true)
 
+        // A connection that hangs fires neither 'playing' nor 'error' — it just
+        // never reports anything (the same failure STARTUP_TIMEOUT_MS exists for).
+        // Without a deadline the crossover never settles: "REJOINING" stays on
+        // screen for good, and the idle element holds a dead connection open.
+        // Time it out into onError, which is already the "fresh connection
+        // failed" path — it releases the connection and leaves the listener on
+        // the buffered audio.
+        let settleTimer = null
         const cleanup = () => {
+            if (settleTimer) {
+                clearTimeout(settleTimer)
+                settleTimer = null
+            }
             next.removeEventListener('playing', onReady)
             next.removeEventListener('error', onError)
         }
@@ -565,6 +675,7 @@ export const AudioProvider = ({ children }) => {
         next.src = currentSrcRef.current
         next.load()
         next.play().catch(() => {})
+        settleTimer = setTimeout(onError, STARTUP_TIMEOUT_MS)
     }
 
     const togglePlayPause = () => {
@@ -587,10 +698,15 @@ export const AudioProvider = ({ children }) => {
             lastTimeRef.current = -1
             reconnectAttemptsRef.current = 0
             droppedAtRef.current = 0
+            playAttemptAtRef.current = 0
             audio.pause()
         } else {
             wantsToPlayRef.current = true
             lastProgressAtRef.current = 0 // startup grace until 'playing' fires
+            // ...but a bounded one: this is the deadline the watchdog measures
+            // the startup against, covering both a cold start and a warm resume
+            // whose connection died while we were paused.
+            playAttemptAtRef.current = Date.now()
             lastTimeRef.current = -1
             // A deliberate play starts a fresh session: clear both the backoff
             // and the recovery clock, so this attempt isn't judged by how long
@@ -736,7 +852,17 @@ export const AudioProvider = ({ children }) => {
             return
         }
 
+        // Same deadline as the crossover above, and for the same reason: a hung
+        // connection reports nothing, so without it the switch never settles —
+        // the overlay ("MY EMERALD!" / "RELINQUISHING") sticks forever while
+        // isHighQuality claims a bitrate that never actually started. onError
+        // releases the connection and reverts the flag.
+        let settleTimer = null
         const cleanup = () => {
+            if (settleTimer) {
+                clearTimeout(settleTimer)
+                settleTimer = null
+            }
             next.removeEventListener('playing', onReady)
             next.removeEventListener('error', onError)
         }
@@ -777,6 +903,7 @@ export const AudioProvider = ({ children }) => {
         next.src = targetUrl
         next.load()
         next.play().catch(() => {})
+        settleTimer = setTimeout(onError, STARTUP_TIMEOUT_MS)
 
         // Stopped: start the current bitrate on the active element right away so
         // audio is flowing during the switchover. (Already playing: leave the
