@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import Link from "next/link"
-import { djHref, AUTO_DJ_ID } from "@/lib/djLink"
+import { djHref, scheduleCellHref, AUTO_DJ_ID } from "@/lib/djLink"
 import { formatHourLabel, formatHourRange, formatSeasonLabel } from "@/lib/schedule/labels"
 
 /*
@@ -106,6 +106,11 @@ export default function WeeklySchedule({schedule}) {
 
 	// MySQL id grid aligned with the dj-name grid (schedule[3]); used to link cells
 	const idGrid = Array.isArray(schedule?.[4]) ? schedule[4] : []
+
+	// Search pins aligned with the same grid: cells whose schedule.csv entry named
+	// quoted terms (e.g. '[SP] Local Music Hour | "local music hour"') link to a
+	// /search query instead of one DJ's page. null for every other cell.
+	const searchGrid = Array.isArray(schedule?.[6]) ? schedule[6] : []
 
 	// make sure we aren"t passing in non-arrays or nothing
 	if (!Array.isArray(reconstructedSchedule) || reconstructedSchedule.length === 0) {
@@ -278,7 +283,9 @@ export default function WeeklySchedule({schedule}) {
 										// resolved MySQL id for this cell; null for specialty/custom/unmatched
 										// cells, which then render as plain text instead of linking to Otto.
 										const djId = idGrid?.[collapseAwareHourRow.originalRowIndex]?.[dayIndex]
-										const href = djHref(djId)
+										// a search pin wins over the DJ id; cells with neither stay plain text
+										const cellSearch = searchGrid?.[collapseAwareHourRow.originalRowIndex]?.[dayIndex]
+										const href = scheduleCellHref(cellSearch, djId)
 
 										return (
 											<td
