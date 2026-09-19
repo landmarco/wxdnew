@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { useAudio } from "../AudioContext";
-import { subscribeNowPlaying } from "../../lib/nowPlaying";
+import { subscribeNowPlaying, setStreamHold } from "../../lib/nowPlaying";
 import getCovers from "../../lib/getCovers";
 import cardinalsFallback from "../../images/cardinals.jpg";
 import Emerald from "../Emerald";
@@ -51,6 +51,15 @@ const NavPlayer = () => {
         });
         return unsubscribe;
     }, []);
+
+    // While the stream is actually playing, keep the now-playing connection alive
+    // even with the tab hidden: it feeds navigator.mediaSession below, so dropping
+    // it would freeze the lock-screen / car display mid-listen. When playback
+    // stops, an idle hidden tab is free to release it again.
+    useEffect(() => {
+        setStreamHold(isPlaying);
+        return () => setStreamHold(false);
+    }, [isPlaying]);
 
     // Look up the current track's cover art (by artist + album) for the OS media
     // metadata. Gated behind USE_REAL_COVER_ART so we don't even hit the API

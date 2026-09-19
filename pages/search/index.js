@@ -2,31 +2,100 @@
 // URL: /search?q=<text>&pp=<playlists page>&sp=<shows page> — client-fetched for
 // the static export. Two independently-paged sections: playlists (shows whose
 // tracks match) and shows (whose title/subtitle/sub-genre match), 100 per page.
+//
+// `q` may repeat, and `dj` may carry comma-separated DJ ids:
+//
+//   /search/?q=local%20music%20hour            one term (the plain search box)
+//   /search/?q=local%20music%20hour&q=local    either term
+//   /search/?q=local&dj=900                    that term, or anything DJ 900 did
+//   ...&in=shows                               show fields only, no tracklists
+//
+// Schedule cells link here via lib/djLink.js when their schedule.csv entry pins
+// quoted terms instead of a DJ id.
+//
+// One term with no DJ ids keeps the original server-paged path exactly. More than
+// one source can't be paged by the server (the API has no OR across terms), so
+// those are merged in lib/search.js and paged client-side over the merged rows.
 
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AiFillTag } from "react-icons/ai";
-import { searchPlaylists, searchShows, SEARCH_PAGE_SIZE } from "@/lib/search";
+import {
+    searchPlaylists,
+    searchShows,
+    searchPlaylistsCombined,
+    searchShowsCombined,
+    SEARCH_PAGE_SIZE,
+} from "@/lib/search";
 import { showDate, showTime, showTitleOrDefault, showSubGenre } from "@/lib/showFormat";
+import { getDj } from "@/lib/djShows";
+
+// A repeated query param arrives as an array, a single one as a string.
+function toArray(value) {
+    if (value == null) return [];
+    return (Array.isArray(value) ? value : [value])
+        .map((v) => String(v).trim())
+        .filter(Boolean);
+}
+
+function parseDjIds(value) {
+    return toArray(value)
+        .flatMap((v) => v.split(","))
+        .map((part) => parseInt(part.trim(), 10))
+        .filter((n) => Number.isInteger(n) && n > 0);
+}
+
+// ["a", "b", "c"] -> `a, b <joiner> c`
+function formatList(items, joiner) {
+    if (items.length <= 1) return items.join("");
+    return items.slice(0, -1).join(", ") + ` ${joiner} ` + items[items.length - 1];
+}
+
+// "a", "b" or "c" -> for the results heading
+function joinTerms(terms) {
+    return formatList(terms.map((t) => `\u201C${t}\u201D`), "or");
+}
 
 export default function SearchPage() {
     const router = useRouter();
-    const q = router.isReady ? (router.query.q || "").toString() : "";
+    const terms = useMemo(
+        () => (router.isReady ? toArray(router.query.q) : []),
+        [router.isReady, router.query.q]
+    );
+    const djIds = useMemo(
+        () => (router.isReady ? parseDjIds(router.query.dj) : []),
+        [router.isReady, router.query.dj]
+    );
     const pp = router.isReady ? Math.max(parseInt(router.query.pp, 10) || 0, 0) : 0;
     const sp = router.isReady ? Math.max(parseInt(router.query.sp, 10) || 0, 0) : 0;
 
-    const [playlists, setPlaylists] = useState([]);
-    const [shows, setShows] = useState([]);
+    // More than one source to union means the server can't page it for us.
+    const combined = terms.length > 1 || djIds.length > 0;
+    const hasQuery = terms.length > 0 || djIds.length > 0;
+
+    // Schedule links pass in=shows: match show fields only, never tracklists.
+    const showsOnly = router.isReady && String(router.query.in || "") === "shows";
+
+    const [playlists, setPlaylists] = useState({ rows: [], truncated: false });
+    const [shows, setShows] = useState({ rows: [], truncated: false });
+    const [djNames, setDjNames] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Stable primitives so the effect doesn't refire on identical arrays. In
+    // combined mode the page params are held at 0: paging happens over rows we
+    // already hold, so changing page must not refetch.
+    const termsKey = terms.join("\u0000");
+    const djKey = djIds.join(",");
+    const fetchPp = combined ? 0 : pp;
+    const fetchSp = combined ? 0 : sp;
+
     useEffect(() => {
         if (!router.isReady) return;
-        const query = q.trim();
-        if (!query) {
-            setPlaylists([]);
-            setShows([]);
+        if (!hasQuery) {
+            setPlaylists({ rows: [], truncated: false });
+            setShows({ rows: [], truncated: false });
             setLoading(false);
             setError(null);
             return;
@@ -37,13 +106,22 @@ export default function SearchPage() {
             try {
                 setLoading(true);
                 setError(null);
-                const [playlistRows, showRows] = await Promise.all([
-                    searchPlaylists(query, pp),
-                    searchShows(query, sp),
+                const emptyResult = { rows: [], truncated: false };
+                const [playlistResult, showResult] = await Promise.all([
+                    // Skipped entirely when the page won't render them, so a
+                    // schedule click costs no tracklist queries at all.
+                    showsOnly
+                        ? emptyResult
+                        : combined
+                          ? searchPlaylistsCombined(terms)
+                          : searchPlaylists(terms[0], fetchPp).then((rows) => ({ rows, truncated: false })),
+                    combined
+                        ? searchShowsCombined(terms, djIds)
+                        : searchShows(terms[0], fetchSp).then((rows) => ({ rows, truncated: false })),
                 ]);
                 if (!cancelled) {
-                    setPlaylists(playlistRows);
-                    setShows(showRows);
+                    setPlaylists(playlistResult);
+                    setShows(showResult);
                 }
             } catch (err) {
                 if (!cancelled) setError(err);
@@ -55,45 +133,106 @@ export default function SearchPage() {
         return () => {
             cancelled = true;
         };
-    }, [router.isReady, q, pp, sp]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router.isReady, hasQuery, combined, showsOnly, termsKey, djKey, fetchPp, fetchSp]);
 
-    if (router.isReady && !q.trim()) {
+    // Resolve DJ ids to names for the heading — "plus everything from DJ 900" is
+    // meaningless to a listener. Failures fall back to the id, so the heading
+    // still says something true if the lookup is down.
+    useEffect(() => {
+        if (!djIds.length) {
+            setDjNames({});
+            return;
+        }
+        let cancelled = false;
+        Promise.all(
+            djIds.map((id) =>
+                getDj(id)
+                    .then((dj) => [id, dj?.defdjname || dj?.djname || null])
+                    .catch(() => [id, null])
+            )
+        ).then((pairs) => {
+            if (!cancelled) setDjNames(Object.fromEntries(pairs));
+        });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [djKey]);
+
+    if (router.isReady && !hasQuery) {
         return <Message>Type something in the search box to find playlists and shows.</Message>;
     }
     if (!router.isReady || loading) {
         return <Message>Searching…</Message>;
     }
     if (error) {
-        return <Message>Something went wrong with your search. Try again.</Message>;
+        return (
+            <Message>
+                {error.code === "ETIMEDOUT"
+                    ? "The search took too long to answer. Check your connection and try again."
+                    : "Something went wrong with your search. Try again."}
+            </Message>
+        );
     }
+
+    // Combined mode holds every merged row, so this page's slice is taken here.
+    // Single-term mode already receives exactly one page from the server.
+    const pageSlice = (result, page) =>
+        combined
+            ? result.rows.slice(page * SEARCH_PAGE_SIZE, (page + 1) * SEARCH_PAGE_SIZE)
+            : result.rows;
+    const hasNextPage = (result, page) =>
+        combined
+            ? result.rows.length > (page + 1) * SEARCH_PAGE_SIZE
+            : result.rows.length === SEARCH_PAGE_SIZE;
+
+    const djLabels = djIds.map((id) => djNames[id] || `DJ ${id}`);
+    const heading = terms.length ? joinTerms(terms) : formatList(djLabels, "and");
+    const alsoDjs = terms.length && djIds.length
+        ? `plus everything from ${formatList(djLabels, "and")}`
+        : "";
 
     return (
         <div id="main-content" className="min-h-screen text-white pb-8">
             <div className="text-center py-6">
                 <p className="text-base text-gray-300 tracking-wide">Search results for</p>
                 <h1 className="text-4xl font-light leading-tight break-words px-4">
-                    &ldquo;{q.trim()}&rdquo;
+                    {heading}
                 </h1>
+                {alsoDjs ? (
+                    <p className="mt-2 text-sm text-zinc-400 px-4">({alsoDjs})</p>
+                ) : null}
             </div>
 
             <div className="mx-auto w-full max-w-2xl px-4 space-y-12">
-                <ResultsSection
-                    title="Playlists containing your text"
-                    emptyText="No playlists matched your text."
-                    rows={playlists}
-                    page={pp}
-                    pageParam="pp"
-                    q={q.trim()}
-                    otherParam="sp"
-                    otherValue={sp}
-                />
+                {showsOnly ? null : (
+                    <ResultsSection
+                        title="Playlists containing your text"
+                        emptyText="No playlists matched your text."
+                        rows={pageSlice(playlists, pp)}
+                        hasNext={hasNextPage(playlists, pp)}
+                        truncated={playlists.truncated}
+                        page={pp}
+                        pageParam="pp"
+                        terms={terms}
+                        djIds={djIds}
+                        showsOnly={showsOnly}
+                        otherParam="sp"
+                        otherValue={sp}
+                    />
+                )}
                 <ResultsSection
                     title="Shows matching your text"
                     emptyText="No show titles, subtitles or sub-genres matched your text."
-                    rows={shows}
+                    rows={pageSlice(shows, sp)}
+                    hasNext={hasNextPage(shows, sp)}
+                    truncated={shows.truncated}
                     page={sp}
                     pageParam="sp"
-                    q={q.trim()}
+                    terms={terms}
+                    djIds={djIds}
+                    showsOnly={showsOnly}
                     otherParam="pp"
                     otherValue={pp}
                 />
@@ -102,15 +241,22 @@ export default function SearchPage() {
     );
 }
 
-function ResultsSection({ title, emptyText, rows, page, pageParam, q, otherParam, otherValue }) {
+function ResultsSection({
+    title, emptyText, rows, hasNext, truncated, page, pageParam, terms, djIds, showsOnly, otherParam, otherValue,
+}) {
     const hasPrev = page > 0;
-    const hasNext = rows.length === SEARCH_PAGE_SIZE;
 
-    // Build an href that changes only this section's page, preserving q and the
-    // other section's page.
+    // Build an href that changes only this section's page, preserving every term,
+    // the DJ ids and the other section's page.
     const pageHref = (nextPage) => ({
         pathname: "/search",
-        query: { q, [pageParam]: nextPage, [otherParam]: otherValue },
+        query: {
+            q: terms,
+            ...(djIds.length ? { dj: djIds.join(",") } : {}),
+            ...(showsOnly ? { in: "shows" } : {}),
+            [pageParam]: nextPage,
+            [otherParam]: otherValue,
+        },
     });
 
     return (
@@ -162,6 +308,13 @@ function ResultsSection({ title, emptyText, rows, page, pageParam, q, otherParam
                         );
                     })}
                 </ul>
+            )}
+
+            {truncated && (
+                <p className="mt-3 text-xs text-zinc-500">
+                    Showing the most recent matches only — one of these terms has more
+                    results than we fetch at once. Narrow the term to see older shows.
+                </p>
             )}
 
             {(hasPrev || hasNext) && (
