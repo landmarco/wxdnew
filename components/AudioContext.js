@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { PRIMARY_HOST, FALLBACK_HOST, streamUrl, withHost, shouldFailover } from '@/lib/streamHosts'
 
 const AudioContext = createContext()
 
-const STREAM_LOW = 'https://stream.wxdu.art/wxdu192.mp3'
-const STREAM_HIGH = 'https://stream.wxdu.art/wxdu320.mp3'
+// Stream hosts, URL building and the failover decision all live in
+// lib/streamHosts.js, so the decision can be unit-tested away from the browser's
+// timing (see the note there on why elapsed time, not attempt count, is the
+// real trigger).
 
 // How long a backgrounded, idle (not-playing) tab stays warm before we release
 // the stream connection. Brief tab-flips — copying a link, glancing at another
@@ -141,8 +144,12 @@ export const AudioProvider = ({ children }) => {
     // reconnect's load() resets currentTime, which must not be mistaken for the
     // audio actually resuming. -1 means "(re)loaded, awaiting a fresh baseline".
     const lastTimeRef = useRef(-1)
-    // The URL the active element should be playing (follows quality changes).
-    const currentSrcRef = useRef(STREAM_LOW)
+    // The URL the active element should be playing (follows quality changes and,
+    // if the primary host stops answering, failover).
+    const currentSrcRef = useRef(streamUrl(PRIMARY_HOST, false))
+    // Which host we're currently pointed at. Sticky for the rest of the session
+    // once we fail over — see the failover block in reconnect() for why.
+    const activeHostRef = useRef(PRIMARY_HOST)
     // Wall-clock time the listener last paused, so on resume we can tell how far
     // behind live we are and whether the buffer can catch us up on its own.
     const pausedAtRef = useRef(0)
@@ -271,6 +278,12 @@ export const AudioProvider = ({ children }) => {
             wantsToPlayRef.current = false
             droppedAtRef.current = 0
             reconnectAttemptsRef.current = 0
+            // Back to the primary for the next fresh start: the fallback is a
+            // way to survive an outage, not somewhere to leave people parked.
+            if (activeHostRef.current !== PRIMARY_HOST) {
+                activeHostRef.current = PRIMARY_HOST
+                currentSrcRef.current = withHost(currentSrcRef.current, PRIMARY_HOST)
+            }
             lastProgressAtRef.current = 0
             lastTimeRef.current = -1
             playAttemptAtRef.current = 0
@@ -311,6 +324,25 @@ export const AudioProvider = ({ children }) => {
                 }
                 // Pointless while the radio is off — 'online' will call us back.
                 if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+
+                // The primary has been failing long enough to look like an
+                // outage rather than a blip: move to the fallback host and give
+                // it a clean backoff of its own. We do NOT move back mid-session
+                // — flapping between two hosts sounds worse to a listener than
+                // staying put, and stopPlayback() resets us for the next start.
+                const outageMs = droppedAtRef.current > 0
+                    ? Date.now() - droppedAtRef.current
+                    : 0
+                if (shouldFailover({
+                    activeHost: activeHostRef.current,
+                    attempts: reconnectAttemptsRef.current,
+                    outageMs,
+                })) {
+                    activeHostRef.current = FALLBACK_HOST
+                    currentSrcRef.current = withHost(currentSrcRef.current, FALLBACK_HOST)
+                    reconnectAttemptsRef.current = 0
+                }
+
                 reconnectAttemptsRef.current += 1
                 // load() below pauses the element and fires 'pause'; that one is ours.
                 markInternalPause()
@@ -828,9 +860,11 @@ export const AudioProvider = ({ children }) => {
     const setHighQuality = (toHigh, { startIfStopped = false } = {}) => {
         if (toHigh === isHighQuality) return
 
-        const targetUrl = toHigh ? STREAM_HIGH : STREAM_LOW
+        // Built from the host we're actually on, so switching bitrate while
+        // failed over doesn't quietly send us back to a host that isn't answering.
+        const targetUrl = streamUrl(activeHostRef.current, toHigh)
         // The bitrate currently playing/armed, which keeps sounding until the cut.
-        const sourceUrl = toHigh ? STREAM_LOW : STREAM_HIGH
+        const sourceUrl = streamUrl(activeHostRef.current, !toHigh)
         currentSrcRef.current = targetUrl
         setIsHighQuality(toHigh)
 
