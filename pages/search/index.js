@@ -8,6 +8,7 @@
 //   /search/?q=local%20music%20hour            one term (the plain search box)
 //   /search/?q=local%20music%20hour&q=local    either term
 //   /search/?q=local&dj=900                    that term, or anything DJ 900 did
+//   ...&in=shows                               show fields only, no tracklists
 //
 // Schedule cells link here via lib/djLink.js when their schedule.csv entry pins
 // quoted terms instead of a DJ id.
@@ -28,6 +29,7 @@ import {
     SEARCH_PAGE_SIZE,
 } from "@/lib/search";
 import { showDate, showTime, showTitleOrDefault, showSubGenre } from "@/lib/showFormat";
+import { getDj } from "@/lib/djShows";
 
 // A repeated query param arrives as an array, a single one as a string.
 function toArray(value) {
@@ -44,11 +46,15 @@ function parseDjIds(value) {
         .filter((n) => Number.isInteger(n) && n > 0);
 }
 
-// "a", "b" and "c" -> for the results heading
+// ["a", "b", "c"] -> `a, b <joiner> c`
+function formatList(items, joiner) {
+    if (items.length <= 1) return items.join("");
+    return items.slice(0, -1).join(", ") + ` ${joiner} ` + items[items.length - 1];
+}
+
+// "a", "b" or "c" -> for the results heading
 function joinTerms(terms) {
-    if (terms.length <= 1) return terms.map((t) => `\u201C${t}\u201D`).join("");
-    const quoted = terms.map((t) => `\u201C${t}\u201D`);
-    return quoted.slice(0, -1).join(", ") + " or " + quoted[quoted.length - 1];
+    return formatList(terms.map((t) => `\u201C${t}\u201D`), "or");
 }
 
 export default function SearchPage() {
@@ -68,8 +74,12 @@ export default function SearchPage() {
     const combined = terms.length > 1 || djIds.length > 0;
     const hasQuery = terms.length > 0 || djIds.length > 0;
 
+    // Schedule links pass in=shows: match show fields only, never tracklists.
+    const showsOnly = router.isReady && String(router.query.in || "") === "shows";
+
     const [playlists, setPlaylists] = useState({ rows: [], truncated: false });
     const [shows, setShows] = useState({ rows: [], truncated: false });
+    const [djNames, setDjNames] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -96,15 +106,19 @@ export default function SearchPage() {
             try {
                 setLoading(true);
                 setError(null);
-                const [playlistResult, showResult] = combined
-                    ? await Promise.all([
-                          searchPlaylistsCombined(terms),
-                          searchShowsCombined(terms, djIds),
-                      ])
-                    : await Promise.all([
-                          searchPlaylists(terms[0], fetchPp).then((rows) => ({ rows, truncated: false })),
-                          searchShows(terms[0], fetchSp).then((rows) => ({ rows, truncated: false })),
-                      ]);
+                const emptyResult = { rows: [], truncated: false };
+                const [playlistResult, showResult] = await Promise.all([
+                    // Skipped entirely when the page won't render them, so a
+                    // schedule click costs no tracklist queries at all.
+                    showsOnly
+                        ? emptyResult
+                        : combined
+                          ? searchPlaylistsCombined(terms)
+                          : searchPlaylists(terms[0], fetchPp).then((rows) => ({ rows, truncated: false })),
+                    combined
+                        ? searchShowsCombined(terms, djIds)
+                        : searchShows(terms[0], fetchSp).then((rows) => ({ rows, truncated: false })),
+                ]);
                 if (!cancelled) {
                     setPlaylists(playlistResult);
                     setShows(showResult);
@@ -120,7 +134,31 @@ export default function SearchPage() {
             cancelled = true;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [router.isReady, hasQuery, combined, termsKey, djKey, fetchPp, fetchSp]);
+    }, [router.isReady, hasQuery, combined, showsOnly, termsKey, djKey, fetchPp, fetchSp]);
+
+    // Resolve DJ ids to names for the heading — "plus everything from DJ 900" is
+    // meaningless to a listener. Failures fall back to the id, so the heading
+    // still says something true if the lookup is down.
+    useEffect(() => {
+        if (!djIds.length) {
+            setDjNames({});
+            return;
+        }
+        let cancelled = false;
+        Promise.all(
+            djIds.map((id) =>
+                getDj(id)
+                    .then((dj) => [id, dj?.defdjname || dj?.djname || null])
+                    .catch(() => [id, null])
+            )
+        ).then((pairs) => {
+            if (!cancelled) setDjNames(Object.fromEntries(pairs));
+        });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [djKey]);
 
     if (router.isReady && !hasQuery) {
         return <Message>Type something in the search box to find playlists and shows.</Message>;
@@ -149,11 +187,10 @@ export default function SearchPage() {
             ? result.rows.length > (page + 1) * SEARCH_PAGE_SIZE
             : result.rows.length === SEARCH_PAGE_SIZE;
 
-    const heading = terms.length
-        ? joinTerms(terms)
-        : `DJ ${djIds.join(", ")}`;
+    const djLabels = djIds.map((id) => djNames[id] || `DJ ${id}`);
+    const heading = terms.length ? joinTerms(terms) : formatList(djLabels, "and");
     const alsoDjs = terms.length && djIds.length
-        ? ` (plus everything from DJ ${djIds.join(", ")})`
+        ? `plus everything from ${formatList(djLabels, "and")}`
         : "";
 
     return (
@@ -164,24 +201,27 @@ export default function SearchPage() {
                     {heading}
                 </h1>
                 {alsoDjs ? (
-                    <p className="mt-2 text-sm text-zinc-400 px-4">{alsoDjs.trim()}</p>
+                    <p className="mt-2 text-sm text-zinc-400 px-4">({alsoDjs})</p>
                 ) : null}
             </div>
 
             <div className="mx-auto w-full max-w-2xl px-4 space-y-12">
-                <ResultsSection
-                    title="Playlists containing your text"
-                    emptyText="No playlists matched your text."
-                    rows={pageSlice(playlists, pp)}
-                    hasNext={hasNextPage(playlists, pp)}
-                    truncated={playlists.truncated}
-                    page={pp}
-                    pageParam="pp"
-                    terms={terms}
-                    djIds={djIds}
-                    otherParam="sp"
-                    otherValue={sp}
-                />
+                {showsOnly ? null : (
+                    <ResultsSection
+                        title="Playlists containing your text"
+                        emptyText="No playlists matched your text."
+                        rows={pageSlice(playlists, pp)}
+                        hasNext={hasNextPage(playlists, pp)}
+                        truncated={playlists.truncated}
+                        page={pp}
+                        pageParam="pp"
+                        terms={terms}
+                        djIds={djIds}
+                        showsOnly={showsOnly}
+                        otherParam="sp"
+                        otherValue={sp}
+                    />
+                )}
                 <ResultsSection
                     title="Shows matching your text"
                     emptyText="No show titles, subtitles or sub-genres matched your text."
@@ -192,6 +232,7 @@ export default function SearchPage() {
                     pageParam="sp"
                     terms={terms}
                     djIds={djIds}
+                    showsOnly={showsOnly}
                     otherParam="pp"
                     otherValue={pp}
                 />
@@ -201,7 +242,7 @@ export default function SearchPage() {
 }
 
 function ResultsSection({
-    title, emptyText, rows, hasNext, truncated, page, pageParam, terms, djIds, otherParam, otherValue,
+    title, emptyText, rows, hasNext, truncated, page, pageParam, terms, djIds, showsOnly, otherParam, otherValue,
 }) {
     const hasPrev = page > 0;
 
@@ -212,6 +253,7 @@ function ResultsSection({
         query: {
             q: terms,
             ...(djIds.length ? { dj: djIds.join(",") } : {}),
+            ...(showsOnly ? { in: "shows" } : {}),
             [pageParam]: nextPage,
             [otherParam]: otherValue,
         },
