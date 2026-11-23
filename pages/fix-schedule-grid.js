@@ -30,6 +30,7 @@ import { formatHourRange } from "@/lib/schedule/labels"
 import { scheduleCellHref, AUTO_DJ_ID } from "@/lib/djLink"
 import { apiFetch } from "@/lib/api"
 import { fixEncodingDeep } from "@/lib/fixEncoding"
+import { BRIDGE } from "@/lib/schedule/scheduleBridge"
 
 // what an empty cell renders as (see djName-lookup.js)
 const AUTO_DJ_NAME = "Lunokhod 3"
@@ -1039,7 +1040,32 @@ export default function FixScheduleGrid({ headerRow, hourColumn, rawGrid, idGrid
 	// keep real names out of the exported CSV (see stripName in downloadCsv)
 	const [stripRealNames, setStripRealNames] = useState(true)
 
+	// Saving straight to the site, available only when this page is open inside
+	// the Tina admin's Schedule screen (tina/scheduleScreen.jsx), which does the
+	// actual write with the editor's Tina login. Standalone, it's download-only.
+	const [inTina, setInTina] = useState(false)
+	const [save, setSave] = useState({ status: "idle" }) // idle | saving | saved | error
+	const pendingSave = useRef(null) // { id, cells } of the save in flight
+
 	const days = headerRow.slice(1)
+
+	useEffect(() => {
+		if (window.parent === window) return
+		const onMessage = (event) => {
+			if (event.source !== window.parent || event.origin !== window.location.origin) return
+			const msg = event.data
+			if (!msg || typeof msg !== "object") return
+			if (msg.type === BRIDGE.ready) setInTina(true)
+			if (msg.type === BRIDGE.saved && pendingSave.current?.id === msg.id) {
+				const { cells: savedCells } = pendingSave.current
+				pendingSave.current = null
+				setSave(msg.ok ? { status: "saved", cells: savedCells } : { status: "error", error: msg.error })
+			}
+		}
+		window.addEventListener("message", onMessage)
+		window.parent.postMessage({ type: BRIDGE.hello }, window.location.origin)
+		return () => window.removeEventListener("message", onMessage)
+	}, [])
 
 	useEffect(() => {
 		let cancelled = false
@@ -1201,9 +1227,29 @@ export default function FixScheduleGrid({ headerRow, hourColumn, rawGrid, idGrid
 		return `${shown} | ${tail ?? ids.join(",")}`.trim()
 	}
 
-	const downloadCsv = () => {
+	const buildCsv = () => {
 		const body = cells.map((row, r) => [hourColumn[r] ?? "", ...row.map((cell, c) => exportCell(cell, r, c))])
-		const csv = toCsv([headerRow, ...body])
+		return toCsv([headerRow, ...body])
+	}
+
+	// Hands the CSV to the Tina admin around this page, which replaces
+	// public/uploads/schedule.csv in one commit (see tina/scheduleScreen.jsx).
+	// The site reads the schedule at build time, so this page keeps showing the
+	// old file until the rebuild that commit triggers. Edits stay in the
+	// browser draft until then, and the draft drops itself once the rebuilt
+	// page's schedule.csv no longer matches the one it was made against.
+	const saveToSite = () => {
+		if (!inTina || save.status === "saving") return
+		const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+		pendingSave.current = { id, cells }
+		setSave({ status: "saving" })
+		window.parent.postMessage({ type: BRIDGE.save, id, csv: buildCsv() }, window.location.origin)
+	}
+	// "saved" only describes the grid as it was saved; any edit after that is unsaved again
+	const savedNow = save.status === "saved" && save.cells === cells
+
+	const downloadCsv = () => {
+		const csv = buildCsv()
 
 		const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
 		const url = URL.createObjectURL(blob)
@@ -1234,28 +1280,45 @@ export default function FixScheduleGrid({ headerRow, hourColumn, rawGrid, idGrid
 				<h1 className="text-3xl font-light">Fix Schedule Grid</h1>
 				<p className="mt-2 max-w-3xl text-sm text-zinc-400">
 					Click any hour to change who&apos;s on, what the slot is called, or where it links.
-					Slots that don&apos;t link anywhere yet are flagged in red. When you&apos;re done,
-					download the corrected <code>schedule.csv</code> and upload it to replace{" "}
-					<code>public/uploads/schedule.csv</code>.
+					Slots that don&apos;t link anywhere yet are flagged in red.{" "}
+					{inTina ? (
+						<>
+							When you&apos;re done, click <strong>Save to site</strong>.
+						</>
+					) : (
+						<>
+							When you&apos;re done, download the corrected <code>schedule.csv</code> and upload it to
+							replace <code>public/uploads/schedule.csv</code>, or open this editor from{" "}
+							<code>/admin</code> → <strong>Schedule</strong> to save it directly.
+						</>
+					)}
 				</p>
 
 				<details className="mt-4 rounded border border-zinc-700 bg-zinc-900/40 p-3 text-sm text-zinc-300">
 					<summary className="cursor-pointer font-semibold text-[#e0ff05]">How to apply this</summary>
 					<ol className="mt-2 list-decimal space-y-1 pl-5">
-						<li>Edit the slots below, then click <strong>Download schedule.csv</strong>.</li>
 						<li>
-							With Tina, go to <code>/admin</code> → <strong>Media Manager</strong> → the <code>uploads</code> folder
-							and upload the file, replacing the existing one. Keep the exact name{" "}
-							<code>schedule.csv</code> (delete the old one first if it won&apos;t overwrite).
+							Log in at <code>/admin</code> and open <strong>Schedule</strong> in the sidebar (under
+							Site). That&apos;s this editor, with a <strong>Save to site</strong> button.
 						</li>
 						<li>
-							Redeploy / rebuild the site — the schedule is parsed at <em>build time</em>, so the
-							changes appear after the next deploy. Then reload this page to confirm everything resolves.
+							Edit the slots below, then click <strong>Save to site</strong>. It replaces{" "}
+							<code>public/uploads/schedule.csv</code> in a single commit.
+						</li>
+						<li>
+							Wait for the site to rebuild (a few minutes). The schedule is read at{" "}
+							<em>build time</em>, so the changes appear after that deploy. Then reload this page
+							to confirm everything resolves.
 						</li>
 					</ol>
 					<p className="mt-2 text-xs text-zinc-400">
-						Edits are kept in this browser until you download or reset, so a reload won&apos;t lose
-						them.
+						Opened outside the admin, this page can&apos;t save. Use{" "}
+						<strong>Download schedule.csv</strong> and upload the file in the admin&apos;s Media
+						Manager instead, keeping the exact name <code>schedule.csv</code>.
+					</p>
+					<p className="mt-2 text-xs text-zinc-400">
+						Edits are kept in this browser until the rebuilt page picks them up (or you reset), so a
+						reload won&apos;t lose them, even between saving and the deploy finishing.
 					</p>
 					<p className="mt-2 text-xs text-zinc-400">
 						Tip: the DJ search matches both on-air names and real names, so a semester sheet full
@@ -1359,8 +1422,37 @@ export default function FixScheduleGrid({ headerRow, hourColumn, rawGrid, idGrid
 								>
 									Download schedule.csv
 								</button>
+								{inTina && (
+									<button
+										type="button"
+										onClick={saveToSite}
+										disabled={djStatus === "loading" || save.status === "saving" || savedNow}
+										className="rounded border border-[#e0ff05]/70 bg-[#e0ff05]/10 px-4 py-2 text-sm font-semibold text-[#e0ff05] transition-colors hover:bg-[#e0ff05]/20 disabled:cursor-not-allowed disabled:opacity-40"
+										title={
+											unresolved.length === 0
+												? "Replace public/uploads/schedule.csv with this grid"
+												: "You can save now, but some slots still don't link anywhere"
+										}
+									>
+										{save.status === "saving" ? "Saving…" : savedNow ? "Saved ✓" : "Save to site"}
+									</button>
+								)}
 							</div>
 						</div>
+
+						{savedNow && (
+							<p className="mt-4 rounded border border-emerald-500/50 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+								Saved <code>schedule.csv</code>. The site is rebuilding now, and the new schedule goes
+								live when that deploy finishes, usually within a few minutes. Until then this page
+								still shows your edits as changes, because it was built from the old file.
+							</p>
+						)}
+						{save.status === "error" && (
+							<p className="mt-4 rounded border border-red-500/60 bg-red-500/10 p-3 text-sm text-red-300">
+								Couldn&apos;t save: {save.error} Your edits are still here; try again, or use{" "}
+								<strong>Download schedule.csv</strong> and upload it in the Media Manager.
+							</p>
+						)}
 
 						{missingOnAirNames.length > 0 && (
 							<div className="mt-4 rounded border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-100">
